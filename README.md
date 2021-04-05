@@ -32,5 +32,9 @@ Carga horária: 3 horas
 
 # Plataforma
 
-- O minicurso será realizado através do Microsoft Teams
-- Versões do software: Julia v1.6 e Pluto.jl v0.14
+O minicurso será realizado através do Microsoft Teams.
+
+- Versões do software:
+  - Julia v1.6
+  - GeoStats.jl v0.24
+  - Pluto.jl v0.14
