@@ -29,3 +29,8 @@ Carga horária: 3 horas
 - [ ] [30min]: agendamento com participante
 
 Carga horária: 3 horas
+
+# Plataforma
+
+- O minicurso será realizado através do Microsoft Teams
+- Versões do software: Julia v1.6 e Pluto.jl v0.14
