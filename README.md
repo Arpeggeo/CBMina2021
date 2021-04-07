@@ -38,3 +38,30 @@ O minicurso será realizado através do Microsoft Teams.
   - Julia v1.6
   - GeoStats.jl v0.24
   - Pluto.jl v0.14
+
+# Como executar os notebooks?
+
+Faca o download do repositório e salve em uma pasta
+de fácil acesso no seu sistema operacional.
+
+Caso não tenha o Pluto instalado no seu ambiente Julia,
+execute o seguinte comando de instalação:
+
+```julia
+] add Pluto
+```
+
+O caractere `]` no início da linha irá levá-lo ao modo
+de instalação de pacotes.
+
+Após a instalação, pressione <kbd>Backspace</kbd> para
+voltar ao modo de execução.
+
+Com o Pluto instalado, inicie o sistema de notebooks:
+
+```julia
+import Pluto
+Pluto.run()
+```
+
+e selecione um dos notebooks na pasta com extensão `.jl`.
