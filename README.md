@@ -48,7 +48,7 @@ O minicurso será realizado através do Microsoft Teams.
 ] add Pluto
 ```
 
-O caractere `]` no início da linha irá levá-lo ao modo
+O caractere <kbd>]</kbd> no início da linha irá levá-lo ao modo
 de instalação de pacotes.
 
 Após a instalação, pressione <kbd>Backspace</kbd> para
