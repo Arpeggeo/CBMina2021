@@ -4,21 +4,21 @@ Instrutores: [Júlio Hoffimann](https://github.com/juliohm), [Franco Naghetini](
 
 # Agenda
 
-## 26 de Abril (16h - 19h)
+## 26 de Abril (16:00hs - 19:30hs)
 - [30min]: Introdução ao minicurso
 - [30min]: Instalacao do software
 - [1hora]: Krigagem 3D de recursos
-- [1hora]: Outras funcionalidades
+- [1hora]: Geocência de dados
 
-Carga horária: 3 horas
+Carga horária: 3 horas + 30 minutos discussão
 
-## 27 de Abril (16h - 19h)
+## 27 de Abril (16:00hs - 19:30hs)
 - [30min]: Estimação vs. Simulação
 - [1hora]: Simulação 3D de recursos
-- [30min]: Geociência de dados
 - [1hora]: Aprendizado geoestatístico
+- [30min]: Discussão e fechamento
 
-Carga horária: 3 horas
+Carga horária: 3 horas + 30 minutos discussão
 
 ## 30 de Abril (horário a ser definido)
 - [30min]: agendamento com participante
