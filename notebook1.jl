@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -15,8 +15,7 @@ end
 
 # ╔═╡ 980f4910-96f3-11eb-0d4f-b71ad9888d73
 begin
-    using Pkg; Pkg.activate(@__DIR__)
-    Pkg.instantiate(); Pkg.precompile()
+    using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
     using CSV, DataFrames, Query
     using PlutoUI, Random
     using Statistics, StatsBase
@@ -1499,7 +1498,7 @@ begin
 end
 
 # ╔═╡ Cell order:
-# ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
+# ╠═980f4910-96f3-11eb-0d4f-b71ad9888d73
 # ╟─14ac7b6e-9538-40a0-93d5-0379fa009872
 # ╟─20fff27a-4328-43ac-97df-a35b63a6fdd0
 # ╟─c544614a-3e5c-4d22-9340-592aabf84871
