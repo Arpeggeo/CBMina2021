@@ -4,13 +4,24 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
+        el
+    end
+end
+
 # ╔═╡ 3e0ccac6-3efd-11eb-2949-a9aa855356b2
 begin
 	# instantiate environment
 	using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
 	
 	# load packages used in this notebook
-	using GeoStats, Query, PlutoUI, Plots
+	using GeoStats, Query, Statistics
+	using CSV, DataFrames, PlutoUI
+	using Plots, StatsPlots
 	
 	# default plot settings
 	gr(format=:png)
@@ -220,13 +231,283 @@ function emoji(name)
 	missing
 end
 
+# ╔═╡ 47e58082-70ac-4155-a900-54e6184e5d44
+md"""
+Isso é tudo que precisamos saber de programação básica em Julia para o restante minicurso. Para aprender mais sobre a linguagem, recomendamos a leitura do [manual oficial](https://docs.julialang.org/en/v1/manual/getting-started) e os fóruns de usuários como [Discourse](https://discourse.julialang.org) e [Zulip](https://julialang.zulipchat.com) para tirar dúvidas.
+"""
+
 # ╔═╡ cce1ce0d-002f-4c5a-a753-e89b076f7041
 md"""
 ### Geociência de dados
+
+Investigaremos os dados `Bonnie` disponibilizados sob a seguinte licença:
+
+```
+The Bonnie Project Example is under copyright of Transmin Metallurgical Consultants, 2019. It is issued under the Creative Commons Attribution-ShareAlike 4.0 International Public License.
+```
+
+Os dados estão no formato CSV no arquivo `data/bonnie.csv`. Para carregar o arquivo no notebook, utilizaremos os pacotes `CSV.jl` e `DataFrames.jl`.
+
+Especificamos o caminho do arquivo e redirecionamos o resultado para uma tabela `DataFrame` utilizando o operador `|>`, conhecido como operador "pipe" em Julia:
 """
 
-# ╔═╡ 8254c0c3-2211-4370-8afe-21a556e11f23
-# TODO
+# ╔═╡ 03422030-504e-47fb-96a1-4a2d35842107
+table = CSV.File("data/bonnie.csv") |> DataFrame
+
+# ╔═╡ d84ab2b1-eb39-4432-9899-ef69839d459c
+md"""
+Podemos obter estatísticas básicas de cada coluna da tabela com a função `describe`:
+"""
+
+# ╔═╡ e3581031-38e4-4180-bff6-065c565ecc40
+describe(table)
+
+# ╔═╡ 0dca6624-99e1-4e85-b3f5-bda0a3388983
+md"""
+Notamos que cada coluna tem um tipo de elemento `eltype` e que a coluna `:CODE` tem 70 elementos faltantes. Elementos faltantes neste caso tem o tipo `Union{Missing,String}` que representa a união do tipo `String` com o tipo `Missing`. Ou seja, a coluna `:CODE` tem elementos que são `String` mas algumas linhas tem o elemento `missing`.
+"""
+
+# ╔═╡ 68b81f0e-9560-4fbb-8131-84071115bf9b
+md"""
+#### Limpeza de dados
+
+O primeiro passo na geociência de dados é a limpeza e preparação dos dados. Usaremos o pacote `Query.jl` para manipular tabelas de uma forma sucinta e poderosa. O pacote introduz um conjunto de operações que podem ser facilmente concatenadas para produzir novas tabelas:
+
+```julia
+table |> @filter(...) |> @select(...)
+```
+
+Por exemplo, podemos eliminar as linhas da tabela que contém elementos faltantes usando a operação `@dropna` e em seguida renomear algumas das colunas da tabela resultante para maior legibilidade usando a operação `@rename`:
+"""
+
+# ╔═╡ 8afea00a-ede9-435a-9b69-0c3d854a7ca8
+samples = table |> @dropna() |> @rename(:EAST=>:X, :NORTH=>:Y, :RL=>:Z,
+	                                    :Auppm=>:Au, :Agppm=>:Ag, :Cuppm=>:Cu,
+	                                    :Asppm=>:As, :Sper=>:S, :CODE=>:geo,
+	                                    :OX=>:litho, :ISBD=>:ρ)
+
+# ╔═╡ 78655ad4-1c53-48c1-b108-c7a6c23cc331
+md"""
+##### Exercício
+
+Utilizando a [documentação](http://www.queryverse.org/Query.jl/stable/standalonequerycommands/#The-@replacena-command-1) do `Query.jl`, escreva uma query que troca todos os valores faltantes da tabela `table` pelo valor `0` e salva o resultado na variável `q1`:
+"""
+
+# ╔═╡ 741cdeca-45ff-40df-b45b-96ba97cefa83
+q1 = missing
+
+# ╔═╡ b20b8d48-c4ad-43ef-a39c-ca983a0323c1
+md"""
+#### Filtragem de dados
+
+Para poder responder qualquer pergunta sobre os dados, nós precisamos saber filtrar as linhas da tabela que são relevantes para o cálculo da resposta. Para isso, utilizaremos a operação `@filter`.
+
+A operação utiliza o símbolo especial `_` para se referir a linha atual da tabela sendo filtrada. Podemos escrever `_.Au` para nos referirmos ao valor da coluna (ou variável) `Au` na linha atual.
+
+Por exemplo, podemos filtrar todas as amostras onde `Au > 0.5` e `Cu > 0`:
+"""
+
+# ╔═╡ 8bba9702-8166-4399-a801-51f67971056d
+samples |> @filter(_.Au > 0.5 && _.Cu > 0)
+
+# ╔═╡ e9355bf7-ae22-4a7f-9da3-8e42ccd563e6
+md"""
+##### Exercício
+
+Encontre todas as amostras onde a soma dos teores de `Au` e `Cu` é inferior a `0.5`. Salve o resultado da query na variável `q2`.
+"""
+
+# ╔═╡ 900f4fc6-027a-47a6-b56c-45dd2cd82a2b
+q2 = missing
+
+# ╔═╡ 84e1bdab-677c-417a-98ba-6b4506ed47e4
+md"""
+#### Agrupamento de dados
+
+Para responder perguntas mais avançadas sobre os dados, precisamos saber agrupar informações que estão dispersas na tabela, mas que fazem parte de um mesmo grupo (e.g. litologia). Para isso, utilizaremos as operações `@groupby` e `@map`.
+
+A operação `@map` tem um formato mais difícil de entender:
+
+```julia
+@map({col1 = exp1, col2 = exp2, coln = expn})
+```
+
+Neste formato, estamos criando novas colunas `col1`, `col2`, ..., `coln` a partir de diferentes expressões `exp1`, `exp2`, ..., `expn` em função de outras colunas.
+
+Para exemplificar o formato, vamos calcular o valor médio e desvio padrão de `Au` dentro de cada geologia `geo`. Para fazer isso, utilizaremos as funções `mean` e `std` da biblioteca padrão `Statistics`.
+
+Vamos criar duas novas colunas chamadas `μAu` e `σ²Au` após agruparmos as amostras por geologia:
+"""
+
+# ╔═╡ 62cfb9ee-35f0-46a8-af76-4d2c7a09661c
+samples |> @groupby(_.geo) |> @map({geo = key(_), μAu = mean(_.Au), σ²Au = std(_.Au)})
+
+# ╔═╡ 1e8bd0a3-3a4a-4681-a994-53d6185eca97
+md"""
+A função `key(_)` retorna o valor da variável utilizada no agrupamento. Neste caso, a geologia pode assumir os valores `C1` ou `C2` como ilustrado na tabela. 
+"""
+
+# ╔═╡ 4cf756d2-98e6-47f0-9952-17c47bab8210
+md"""
+##### Exercício
+
+Escreva uma query para encontrar as litologias `litho` dentro de cada geologia `geo`.
+Utilize os nomes de coluna `geo` e `litho`, nesta ordem, na tabela de resultados.
+"""
+
+# ╔═╡ e84dedf5-fdee-49c1-8765-8bc3bb869933
+function query3(samples)
+	missing
+end
+
+# ╔═╡ 6d757d5f-69ec-41ec-b05c-c5731af2c33b
+md"""
+##### Exemplo mais avançado
+
+Suponha que estamos interessados na massa total de ouro `Au` que será minada de cada litologia `litho`. Vamos assumir que o volume de cada amostra é `1` unidade por simplicidade.
+
+Podemos escrever uma query que:
+
+1. Usa a operação `@mutate` para calcular uma nova coluna `mass` com a massa de `Au`
+2. Usa a operação `@groupby` para agrupar as amostras por litologia `litho`
+3. Usa a operação `@map` para somar a massa de `Au` dentro de cada litologia `litho`
+"""
+
+# ╔═╡ 972939e8-85d1-4754-9c41-fbac682d5245
+samples |>
+@mutate(mass = _.ρ * 1 * _.Au) |>
+@groupby(_.litho) |>
+@map({litho = key(_), mass = sum(_.mass)})
+
+# ╔═╡ 5b58bf67-fb11-44f8-9b36-f534b0e66a8e
+md"""
+#### Visualização de dados
+
+Além de responder perguntas sobre os dados, e ajudar no cálculo de estatísticas de interesse, a geociência de dados abrange metodologias de visualização, super importantes para gerar conhecimento.
+
+Diferentemente da ciência de dados tradicional, existem dois tipos de espaço de visualização na **geo**ciência de dados, são eles:
+
+1. Espaço geográfico
+2. Espaço de características
+
+Começaremos investigando o espaço geográfico através de visualizações das amostras em suas localizações no mundo físico. Utilizaremos o pacote `StatsPlots.jl` pela sua boa integração com o pacote `Query.jl`. O pacote introduz a operação `@df` como demonstrado a seguir:
+"""
+
+# ╔═╡ 28b22b40-7b26-48ad-839f-0a7770fd7765
+samples |> @df scatter(:X, :Y, :Z, group = :litho, marker = :square,
+	                   xlabel = "X", ylabel = "Y", zlabel = "Z")
+
+# ╔═╡ cadf9937-8c09-49d2-b5f5-f745c1a07050
+md"""
+Essa operação recebe uma tabela e permite criar plots acessando os nomes das colunas. No exemplo acima, utilizamos as colunas `X`, `Y` e `Z` com as coordenadas geográficas e agrupamos as amostras por litologia `litho`.
+
+Em outro exemplo, podemos gerar uma visão de topo do modelo de blocos utilizando apenas as coordenadas `X` e `Y` da tabela:
+"""
+
+# ╔═╡ 472eec28-72ed-4e2d-ba1e-36e804298066
+samples |> @df scatter(:X, :Y, group = :litho, marker = :square,
+	                   xlabel = "X", ylabel = "Y")
+
+# ╔═╡ b0aa83f8-49f4-4e58-983e-7a80da3ea474
+md"""
+##### Interatividade
+
+Para explorar melhor os dados, podemos adicionar elementos de interatividade. Esses elementos permitem que o usuário manipule paramêtros do notebook, como os ângulos de visualização. Utilizaremos o pacote `PlutoUI.jl` para adicionar elementos de interatividade:
+"""
+
+# ╔═╡ 5c628225-ab3c-4f08-afcb-bf78f9c68d7a
+@bind θ Slider(0:90, default=30)
+
+# ╔═╡ f8e40e45-31bb-4f52-bab5-850533df0caa
+@bind ϕ Slider(0:90, default=30)
+
+# ╔═╡ 5c10f73d-2f10-4c02-b484-1ddbaf565a20
+samples |> @df scatter(:X, :Y, :Z, group = :litho,
+	                   marker = :square, camera = (θ, ϕ),
+	                   xlabel = "X", ylabel = "Y", zlabel = "Z")
+
+# ╔═╡ 007bfdb2-4cd9-46a1-ac0a-41374192fd45
+md"""
+##### Exercício
+
+Visualize todas as localizações `X`, `Y`, `Z` com amostras tais que `Au > 0.5`. Crie um elemento `Slider` para interagir com o valor de cutoff.
+"""
+
+# ╔═╡ 87c0e372-4472-41da-a3ec-716e2d42167a
+
+
+# ╔═╡ 907a7f9b-b7da-421f-a2b8-91753c0d78ac
+md"""
+Além de gerar visualizações no espaço geográfico, podemos facilmente gerar visualizações no espaço de características (ou variáveis) das amostras.
+
+Por exemplo, podemos gerar uma visualização dos teores de `Au` versus `Ag` agrupados por `litho`:
+"""
+
+# ╔═╡ 309e1817-17a1-4763-abc5-d3bf1ef7f7e7
+samples |> @df scatter(:Au, :Ag, group = :litho, xlabel = "Au", ylabel = "Ag")
+
+# ╔═╡ d9639cc5-8bc0-41f8-91e2-031bdcec173b
+md"""
+Ou gerar histogramas para diferentes variáveis:
+"""
+
+# ╔═╡ 61ce0145-cef4-49e3-9e66-418e3440658d
+samples |> @df histogram(:Au, group = :litho, xlabel = "Au", ylabel = "Counts")
+
+# ╔═╡ f365b503-29a8-4572-9be0-467d9d208960
+md"""
+##### Exemplo mais avançado
+
+Suponha que estamos interessados em visualizar a função densidade de probabilidade de `Ag` para cada geologia `geo` considerando apenas amostras na litologia `"TR1"` que estão livres de `S`.
+
+Podemos escrever uma visualização que:
+
+1. Usa a operação `@filter` para eliminar amostras irrelevantes
+2. Usa a operação `@df` para gerar o plot de densidade
+
+Escrevemos uma operação por linha para facilitar a leitura:
+"""
+
+# ╔═╡ 3339d4f1-5f6d-4d8a-a179-4f77995bf1b3
+samples |>
+@filter(_.litho == "TR1" && _.S == 0) |>
+@df density(:Ag, group = :geo,
+	        fill = true, legend = :topleft,
+            xlabel = "Ag", ylabel = "PDF")
+
+# ╔═╡ 0cf80a48-a326-4c64-b657-4be2f95e66ea
+md"""
+#### Outros exemplos
+
+Exemplos mais avançados podem ser facilmente construídos seguindo os mesmos princípios que aprendemos neste módulo. Com tempo, prática e conhecimento de domínio você vai ser capaz de gerar visualizações úteis que são impossíveis de gerar em softwares comerciais.
+
+Violin plot de `Cu` agrupado por geologia `geo`, para diferentes litologias `litho`:
+"""
+
+# ╔═╡ 76decafb-0aa9-46df-b3a2-f699ea202406
+samples |> @df violin(:litho, :Cu, group = :geo, xlabel = "Lithology", ylabel = "Cu")
+
+# ╔═╡ 056db77f-4187-45cc-b771-5434a08be0e6
+md"""
+Histograma bivariado entre `Au` and `Cu`:
+"""
+
+# ╔═╡ f7055ed8-4ea3-41a5-91f4-3993c5147b15
+samples |> @df marginalhist(:Au, :Cu, xlabel="Au", ylabel="Cu")
+
+# ╔═╡ 253b8c06-b045-481a-89ca-9099ba1a1e39
+md"""
+e muitas outras possibilidades.
+"""
+
+# ╔═╡ bc0738b1-aa76-4c36-adc3-12854720dd4e
+md"""
+### Concluimos por hoje 🎉
+
+Se chegou até aqui, parabéns por esta conquista! 👏🏻 Esperamos que esteja gostando do minicurso! Está muito difícil? Muito fácil? O que podemos fazer para melhorar o material? Compartilhe conosco e tentaremos melhorar numa próxima versão.
+
+Compartilhe visualizações com seus colegas de minicurso no fórum. Tem uma outra tabela de dados interessante pra compartilhar? Queremos aprender também!
+"""
 
 # ╔═╡ 200257ea-3ef2-11eb-0f63-2fed43dabcaf
 begin
@@ -321,6 +602,62 @@ end
 # ╔═╡ 808cb788-41fc-11eb-3085-895eec8a68be
 hint(md"Basta escrever uma sequência de `if name == \"diamond\" return \"💎\" end`")
 
+# ╔═╡ fed76047-e402-4f6a-b9a2-b998f6d2879d
+begin
+	scored5 = false
+	if ismissing(q1)
+		still_missing()
+	elseif q1 |> DataFrame == (table |> @replacena(0) |> DataFrame)
+		scored5 = true
+		correct()
+	else
+		keep_working()
+	end
+end
+
+# ╔═╡ cebff47b-9a33-41b6-9757-cc99f89190f8
+hint(md"Utilize a operação `@replacena`")
+
+# ╔═╡ cceabfd2-728c-49fa-b944-cfddf3adf2e7
+begin
+	scored6 = false
+	if ismissing(q2)
+		still_missing()
+	elseif q2 |> DataFrame == (samples |> @filter(_.Au + _.Cu < 0.5) |> DataFrame)
+	# elseif DataFrame(q2) == DataFrame(geo=["C1","C2"], litho=[["TR1","OX1","OX2"],["OX1","FR1","TR1","OX2"]])
+		scored6 = true
+		correct()
+	else
+		keep_working()
+	end
+end
+
+# ╔═╡ bd122b99-38b3-4b5c-a18f-8590aeadd4db
+hint(md"Use o último exemplo como ponto de partida.")
+
+# ╔═╡ 2a12ec7e-617f-441a-885e-6d21a63acf87
+begin
+	scored7 = false
+	q3 = query3(samples)
+	if ismissing(q3)
+		still_missing()
+	elseif DataFrame(q3) == DataFrame(geo=["C1","C2"], litho=[["TR1","OX1","OX2"],["OX1","FR1","TR1","OX2"]])
+		scored7 = true
+		correct()
+	else
+		keep_working()
+	end
+end
+
+# ╔═╡ 74b9ea7e-5acc-48e1-b7de-468993c50be0
+scored7 ? q3 : nothing
+
+# ╔═╡ 0887e587-4857-40ec-a356-7280c7152994
+hint(md"Adapte o último exemplo para usar a função `unique` na coluna `litho`.")
+
+# ╔═╡ 4d1bf0ad-9c9c-45d4-9f18-5832b7ee0226
+hint(md"Utilize `@filter` para filtrar as amostras antes de utilizar `@df`")
+
 # ╔═╡ Cell order:
 # ╟─3e0ccac6-3efd-11eb-2949-a9aa855356b2
 # ╟─51dd001e-41f7-11eb-0f21-6b97ea0d70cb
@@ -370,6 +707,55 @@ hint(md"Basta escrever uma sequência de `if name == \"diamond\" return \"💎\"
 # ╠═80809c78-41fc-11eb-0249-af3de04c3d83
 # ╟─80871a58-41fc-11eb-1820-b1604f6aa881
 # ╟─808cb788-41fc-11eb-3085-895eec8a68be
+# ╟─47e58082-70ac-4155-a900-54e6184e5d44
 # ╟─cce1ce0d-002f-4c5a-a753-e89b076f7041
-# ╠═8254c0c3-2211-4370-8afe-21a556e11f23
+# ╠═03422030-504e-47fb-96a1-4a2d35842107
+# ╟─d84ab2b1-eb39-4432-9899-ef69839d459c
+# ╠═e3581031-38e4-4180-bff6-065c565ecc40
+# ╟─0dca6624-99e1-4e85-b3f5-bda0a3388983
+# ╟─68b81f0e-9560-4fbb-8131-84071115bf9b
+# ╠═8afea00a-ede9-435a-9b69-0c3d854a7ca8
+# ╟─78655ad4-1c53-48c1-b108-c7a6c23cc331
+# ╠═741cdeca-45ff-40df-b45b-96ba97cefa83
+# ╟─fed76047-e402-4f6a-b9a2-b998f6d2879d
+# ╟─cebff47b-9a33-41b6-9757-cc99f89190f8
+# ╟─b20b8d48-c4ad-43ef-a39c-ca983a0323c1
+# ╠═8bba9702-8166-4399-a801-51f67971056d
+# ╟─e9355bf7-ae22-4a7f-9da3-8e42ccd563e6
+# ╠═900f4fc6-027a-47a6-b56c-45dd2cd82a2b
+# ╟─cceabfd2-728c-49fa-b944-cfddf3adf2e7
+# ╟─bd122b99-38b3-4b5c-a18f-8590aeadd4db
+# ╟─84e1bdab-677c-417a-98ba-6b4506ed47e4
+# ╠═62cfb9ee-35f0-46a8-af76-4d2c7a09661c
+# ╟─1e8bd0a3-3a4a-4681-a994-53d6185eca97
+# ╟─4cf756d2-98e6-47f0-9952-17c47bab8210
+# ╠═e84dedf5-fdee-49c1-8765-8bc3bb869933
+# ╟─74b9ea7e-5acc-48e1-b7de-468993c50be0
+# ╟─2a12ec7e-617f-441a-885e-6d21a63acf87
+# ╟─0887e587-4857-40ec-a356-7280c7152994
+# ╟─6d757d5f-69ec-41ec-b05c-c5731af2c33b
+# ╠═972939e8-85d1-4754-9c41-fbac682d5245
+# ╟─5b58bf67-fb11-44f8-9b36-f534b0e66a8e
+# ╠═28b22b40-7b26-48ad-839f-0a7770fd7765
+# ╟─cadf9937-8c09-49d2-b5f5-f745c1a07050
+# ╠═472eec28-72ed-4e2d-ba1e-36e804298066
+# ╟─b0aa83f8-49f4-4e58-983e-7a80da3ea474
+# ╠═5c628225-ab3c-4f08-afcb-bf78f9c68d7a
+# ╠═f8e40e45-31bb-4f52-bab5-850533df0caa
+# ╠═5c10f73d-2f10-4c02-b484-1ddbaf565a20
+# ╟─007bfdb2-4cd9-46a1-ac0a-41374192fd45
+# ╠═87c0e372-4472-41da-a3ec-716e2d42167a
+# ╟─4d1bf0ad-9c9c-45d4-9f18-5832b7ee0226
+# ╟─907a7f9b-b7da-421f-a2b8-91753c0d78ac
+# ╠═309e1817-17a1-4763-abc5-d3bf1ef7f7e7
+# ╟─d9639cc5-8bc0-41f8-91e2-031bdcec173b
+# ╠═61ce0145-cef4-49e3-9e66-418e3440658d
+# ╟─f365b503-29a8-4572-9be0-467d9d208960
+# ╠═3339d4f1-5f6d-4d8a-a179-4f77995bf1b3
+# ╟─0cf80a48-a326-4c64-b657-4be2f95e66ea
+# ╠═76decafb-0aa9-46df-b3a2-f699ea202406
+# ╟─056db77f-4187-45cc-b771-5434a08be0e6
+# ╠═f7055ed8-4ea3-41a5-91f4-3993c5147b15
+# ╟─253b8c06-b045-481a-89ca-9099ba1a1e39
+# ╟─bc0738b1-aa76-4c36-adc3-12854720dd4e
 # ╟─200257ea-3ef2-11eb-0f63-2fed43dabcaf
