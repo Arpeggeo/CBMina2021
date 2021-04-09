@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.0
 
 using Markdown
 using InteractiveUtils
@@ -33,7 +33,7 @@ md"""
 
 ![geostats-logo](https://github.com/JuliaEarth/GeoStats.jl/blob/master/docs/src/assets/logo-text.svg?raw=true)
 
-# Estimativa de recursos em 3D
+# Geoestatística moderna
 
 Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](https://github.com/fnaghetini)
 
@@ -42,13 +42,13 @@ Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](
 # ╔═╡ c544614a-3e5c-4d22-9340-592aabf84871
 md"""
 
-## Introdução
+## Estimativa (tradicional) de recursos
 
-Este notebook objetiva demonstrar um fluxo de trabalho completo de estimativa de recursos realizado com a linguagem [Julia](https://docs.julialang.org/en/v1/) e o pacote [GeoStats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html).
+Este módulo objetiva demonstrar um fluxo de trabalho completo de estimativa (tradicional) de recursos por Krigagem realizado com a linguagem [Julia](https://docs.julialang.org/en/v1/) e o pacote [GeoStats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html).
 
-Nesse sentido, cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a validação de uma estimativa geoestatística de recursos (Figura 1).
+Nesse sentido, cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a estimativa dos recursos num modelo de blocos 3D (Figura 1).
 
-Portanto, o **produto final** é um **modelo de blocos estimado** por krigagem ordinária.
+Portanto, o **produto final** é um **modelo de blocos estimado** por Krigagem ordinária.
 
 """
 
@@ -69,67 +69,24 @@ html"""
 
 """
 
-# ╔═╡ c66d36e2-d6be-4d70-a3c3-a691d0b1064e
-html"""
+# ╔═╡ f443543c-c4f4-447b-996d-9ad00c67b1af
+md"""
 
-    <h2>Agenda</h2>
+### Agenda
 
-    <a href="#importacao_dos_dados">
-
-        <big>1. Importação dos dados e geração dos furos</big>
-
-    </a><br><br>
-
-	<a href="#compositagem">
-
-        <big>2. Compositagem de amostras</big>
-	</a><br><br>
-
-    <a href="#AED">
-
-        <big>3. Análise exploratória dos dados</big>
-
-    </a><br><br>
-
-	<a href="#declus">
-
-        <big>4. Declusterização</big>
-
-    </a><br><br>
-
-    <a href="#vg_exp_model_vg">
-
-        <big>5. Cálculo e modelagem de variogramas experimentais</big>
-
-    </a><br><br>
-
-    <a href="#estimativa_de_recursos">
-
-        <big>6. Estimativa de recursos</big>
-
-    </a><br><br>
-
-    <a href="#exportacao">
-
-        <big>7. Exportação do modelo estimado</big>
-
-    </a><br><br>
+1. Importação e geração dos furos
+2. Compositagem das amostras
+3. Análise exploratória
+4. Declusterização
+5. Variografia
+6. Krigagem
 
 """
 
 # ╔═╡ ff01a7d7-d491-4d49-b470-a2af6783c82b
-html"""
-
-    <div id="importacao_dos_dados">
-
-        <h2>1. Importação dos dados e geração dos furos</h2>
-
-    </div>
-
-"""
-
-# ╔═╡ ca724400-26a6-4332-bf19-2eb8ffe7d817
 md"""
+
+### 1. Importação e geração dos furos
 
 É comum que os dados de sondagem sejam apresentados por meio de um conjunto de três (ou mais) tabelas distintas, relacionadas entre si por um campo-chave (Figura 2).
 
@@ -170,20 +127,20 @@ md"""
 # ╔═╡ 444402c6-99a3-4829-9e66-c4962fb83612
 begin
 	# Importação da tabela Collar
-	collar = Collar(file="data/collar.csv",
-					holeid=:HOLEID, x=:X, y=:Y, z=:Z)
+	collar = Collar(file = "data/collar.csv",
+					holeid = :HOLEID, x = :X, y = :Y, z = :Z)
 
 	# Importação da tabela Survey
-	survey = Survey(file="data/survey.csv",
-					holeid=:HOLEID, at=:AT, azm=:AZM, dip=:DIP)
+	survey = Survey(file = "data/survey.csv",
+					holeid = :HOLEID, at = :AT, azm = :AZM, dip = :DIP)
 
 	# Importação da tabela Assay
-	assay = Interval(file="data/assay.csv",
-					 holeid=:HOLEID, from=:FROM, to=:TO)
+	assay = Interval(file = "data/assay.csv",
+					 holeid = :HOLEID, from = :FROM, to = :TO)
 
 	# Importação da tabela Litho
-	litho  = Interval(file="data/litho.csv",
-					  holeid=:HOLEID, from=:FROM, to=:TO)
+	litho  = Interval(file = "data/litho.csv",
+					  holeid = :HOLEID, from = :FROM, to = :TO)
 end;
 
 # ╔═╡ 0d0d610a-b06c-4c16-878d-8d2d124b8b9e
@@ -200,24 +157,21 @@ md"""
 
 Ao final da geração dos furos, são criados quatro objetos:
 
-   - `drillholes.table`: tabela dos furos.
+- `drillholes.table`: tabela dos furos.
 
-   - `drillholes.trace`: tabela de perfilagem dos furos.
+- `drillholes.trace`: tabela de perfilagem dos furos.
 
-   - `drillholes.pars`: nomes das colunas presentes no arquivo de furos.
+- `drillholes.pars`: nomes das colunas presentes no arquivo de furos.
 
-   - `drillholes.warns`: tabela que contém erros e avisos identificados durante o processo de *desurveying*.
+- `drillholes.warns`: tabela que contém erros e avisos identificados durante o processo de *desurveying*.
+
+Por exemplo, podemos investigar a tabela de furos:
 
 """
 
 # ╔═╡ 412cfe3d-f9f1-49a5-9f40-5ab97946df6d
-begin
-	# Armazenando a tabela dos furos na variável "dh"
-	dh = deepcopy(drillholes.table)
-
-	# Visualização das 5 primeiras linhas da tabela de furos
-	first(dh, 5)
-end
+# Armazenando a tabela dos furos na variável "dh"
+dh = copy(drillholes.table)
 
 # ╔═╡ 8e2b3339-a65d-4e1b-a9fb-69b6cd4631ea
 md"""
@@ -402,33 +356,25 @@ A partir do sumário estatístico acima, nota-se que:
 md"""
 #### Remoção dos valores faltantes
 
-Como o objetivo deste notebook é a geração de um modelo de teores de Cu estimado, podemos remover os 307 valores faltantes do banco de dados.
+Como o objetivo deste módulo é a geração de um modelo de teores de Cu estimado, podemos remover os 307 valores faltantes do banco de dados.
 
 """
 
 # ╔═╡ 4d5f2467-c7d5-4a82-9968-97f193090bd6
 begin
     # Remoção dos valores faltantes de CU e LITH do banco de dados
-    dropmissing!(dh, disallowmissing=true)
+    dropmissing!(dh, disallowmissing = true)
 
     # Sumário estatístico do banco de dados após a exclusão dos valores faltantes
     describe(dh)
 end
 
 # ╔═╡ f4bd13d4-70d3-4167-84ff-9d3c7200e143
-html"""
-    <div id="compositagem">
-
-        <h2>2. Compositagem de amostras</h2>
-
-    </div>
-"""
-
-# ╔═╡ 7a2899ab-496e-4919-a02e-e6ad8dd2b676
 md"""
-#### Introdução
 
-Dados brutos de sondagem normalmente são obtidos em suportes amostrais variados. Nesse sentido, caso não houver um tratamento prévio desses dados, amostras de diferentes suportes amostrais terão mesmo peso na estimativa.
+### 2. Compositagem de amostras
+
+Dados brutos de sondagem normalmente são obtidos em suportes amostrais variados. Nesse sentido, caso não haja um tratamento prévio desses dados, amostras de diferentes suportes amostrais terão mesmo peso na estimativa.
 
 Portanto, um procedimento denominado **compositagem** deve ser conduzido, visando os seguintes objetivos:
 
@@ -436,7 +382,7 @@ Portanto, um procedimento denominado **compositagem** deve ser conduzido, visand
 
 - Aumentar o suporte amostral (suporte x variância = k).
 
-- Adequar o comprimento das amostras à escala de trabalho (**Figura 3**).
+- Adequar o comprimento das amostras à escala de trabalho (Figura 3).
 
 Quando a compositagem é realizada, os teores originais são recalculados, a partir de uma média dos teores amostrais ponderada pelo comprimento amostral. Os teores resultantes são denominados **teores compostos (Tc)**:
 
@@ -472,27 +418,33 @@ Uma análise das estatísticas e do histograma da variável suporte amostral é 
 
 """
 
-# ╔═╡ 1f07ba56-2ebd-4b4b-b0e8-cabcfe102e0f
+# ╔═╡ 79dfd582-1b75-40b0-8feb-4ee92c1b4acc
 # Criação do sumário estatístico para a variável LENGTH (dataframe)
-sum_sup = DataFrame(Min = minimum(dh.LENGTH),
-                    Max = maximum(dh.LENGTH), 
-                    X̅ = round(mean(dh.LENGTH), digits=2),
-                    P50 = median(dh.LENGTH),
-                    S = round(std(dh.LENGTH), digits=2),
-                    CV = round(variation(dh.LENGTH), digits=2))
+stats = DataFrame(Min    = minimum(dh.LENGTH),
+                  Max    = maximum(dh.LENGTH), 
+                  Mean   = mean(dh.LENGTH),
+                  Median = median(dh.LENGTH),
+		          Mode   = mode(dh.LENGTH),
+                  STD    = std(dh.LENGTH),
+                  CV     = variation(dh.LENGTH))
 
 # ╔═╡ 41790d87-ce85-461f-a16d-04821a3624bb
 begin
     # Histograma da variável LENGTH
-    dh |> @df histogram(:LENGTH, xlabel="Suporte Amostral (m)",
-        				ylabel="Frequência Absoluta", color="gray90",
-        				legend=:topleft, label=false, alpha=0.75)
+    dh |> @df histogram(:LENGTH,
+		                legend = :topleft,
+		                label  = false,
+		 				color  = :gray90,
+						alpha  = 0.75,
+	                    xlabel = "Suporte Amostral (m)",
+        				ylabel = "Frequência Absoluta",
+	                    title  = "Histograma de suporte amostral")
 
     # Linha vertical contínua vermelha (média)
-    vline!([sum_sup.X̅], c="red", ls=:solid, label="X̅")
+    vline!([stats.Mean], label = "Média")
 
     # Linha vertical contínua verde (mediana)
-    vline!([sum_sup.P50], c="green", ls=:solid, label="P50")
+    vline!([stats.Median], label = "Mediana")
 end
 
 # ╔═╡ 7ea21049-5edd-4979-9782-8a20d4bb287b
@@ -500,7 +452,7 @@ md"""
 
 A partir das estatísticas e do histograma acima podemos chegar a algumas informações:
 
-- Grande parte das amostras apresenta um comprimento igual a 5 m.
+- Grande parte das amostras apresenta um comprimento igual a $(stats.Mode) m.
 
 - A variável suporte amostral apresenta uma distribuição assimétrica negativa.
 
@@ -510,24 +462,25 @@ A partir das estatísticas e do histograma acima podemos chegar a algumas inform
 
 # ╔═╡ d8ce39f1-8017-4df3-a55d-648bdd3dbc04
 md"""
+
 #### Compositagem das amostras
 
 Primeiramente, vamos supor que o **tamanho da bancada da mina de Cu é de 10 m**.
 
-Embora as amostras já estejam regularizadas para um suporte de 5 metros, iremos compositá-las para um tamanho igual a 10 m, com o intuito de **adequar o suporte amostral à escala de trabalho**.
+Embora as amostras já estejam regularizadas para um suporte de $(stats.Mode) m, iremos compositá-las para um tamanho igual a 10 m, com o intuito de **adequar o suporte amostral à escala de trabalho**.
 
 """
 
 # ╔═╡ 32f75604-b01a-4a0b-a008-33b2a56f4b57
 begin
 	# Compositagem das amostras para um suporte de 10 m
-	composites = composite(drillholes, interval=10.0, mode=:nodiscard)
+	composites = composite(drillholes, interval = 10.0, mode = :nodiscard)
 
 	# Armazenando a tabela de furos compositados na variável "comps"
-	comps = composites.table
+	cp = composites.table
 
 	# Sumário estatístico da tabela de furos compositados
-	describe(comps)
+	describe(cp)
 end
 
 # ╔═╡ 8a54cc04-7c95-4fd8-a219-7153e7492634
@@ -542,11 +495,10 @@ Nesse sentido, esses valores faltantes devem também ser removidos.
 
 # ╔═╡ 12d3d075-bfad-431e-bbdc-341bb01a89a2
 # Remoção dos valores faltantes de CU
-dropmissing!(comps, disallowmissing=true);
+dropmissing!(cp, disallowmissing = true);
 
 # ╔═╡ b6712822-7c4d-4936-bcc2-21b48be99a66
 md"""
-###### Descrição estatística pós-compositagem
 
 Agora, com os furos compositados, podemos analisar novamente as estatísticas e histograma do suporte amostral:
 
@@ -554,25 +506,31 @@ Agora, com os furos compositados, podemos analisar novamente as estatísticas e 
 
 # ╔═╡ c6051297-bdfe-4783-b0bd-9f89912ac96d
 # Criação do sumário estatístico para a variável LENGTH (dataframe)
-sum_comp = DataFrame(Min = minimum(comps.LENGTH),
-                    Max = maximum(comps.LENGTH), 
-                    X̅ = round(mean(comps.LENGTH), digits=2),
-                    P50 = median(comps.LENGTH),
-                    S = round(std(comps.LENGTH), digits=2),
-                    CV = round(variation(comps.LENGTH), digits=2))
+stats2 = DataFrame(Min    = minimum(cp.LENGTH),
+                   Max    = maximum(cp.LENGTH), 
+                   Mean   = mean(cp.LENGTH),
+                   Median = median(cp.LENGTH),
+	               Mode   = mode(cp.LENGTH),
+                   STD    = std(cp.LENGTH),
+                   CV     = variation(cp.LENGTH))
 
 # ╔═╡ 87808ab0-3bcb-428d-9ebf-71ffefbcb357
 begin
-    # Histograma da variável LENGTH compositada
-    comps |> @df histogram(:LENGTH, xlabel="Suporte Amostral Compositado (m)",
-        				ylabel="Frequência Absoluta", color="gray90",
-        				legend=:topleft, label=false, alpha=0.75)
+    # Histograma da variável LENGTH
+    cp |> @df histogram(:LENGTH,
+	                    legend = :topleft,
+                        label  = false,
+                        color  = :gray90,
+                        alpha  = 0.75,
+	                    xlabel = "Suporte Amostral (m)",
+                        ylabel = "Frequência Absoluta",
+		                title  = "Histograma de suporte amostral")
 
     # Linha vertical contínua vermelha (média)
-    vline!([sum_comp.X̅], c="red", ls=:solid, label="X̅")
+    vline!([stats2.Mean], label = "Média")
 
     # Linha vertical contínua verde (mediana)
-    vline!([sum_comp.P50], c="green", ls=:solid, label="P50")
+    vline!([stats2.Median], label = "Mediana")
 end
 
 # ╔═╡ 893d7d19-878b-4990-80b1-ef030b716048
@@ -580,11 +538,11 @@ md"""
 
 Com base no histograma e no sumário estatístico acima, chegamos às seguintes informações acerca do suporte amostral pós-compositagem:
 
-- A média do suporte amostral dos furos compositados encontra-se muito próxima do comprimento pré-estabelecido (10 metros).
+- A média do suporte amostral dos furos compositados encontra-se muito próxima do comprimento pré-estabelecido (10 m).
 
 - Houve uma redução da dispersão do suporte amostral.
 
-- A distribuição da variável suporte amostral, após a compositagem, passou a ser praticamente simétrica.
+- A distribuição da variável suporte amostral, após a compositagem, passou a ser aproximadamente simétrica.
 
 """
 
@@ -597,38 +555,34 @@ Podemos avaliar o impacto da compositagem a partir de uma comparação entre os 
 """
 
 # ╔═╡ 59dfbb66-f188-49f1-87ba-4f7020c4c031
-begin
-	# P10, P50 e P90 do Cu original
-	q_cu_orig = quantile(dh.CU, [0.1, 0.5, 0.9])
-	# P10, P50 e P90 do Cu compositado
-	q_cu_comp = quantile(comps.CU, [0.1, 0.5, 0.9])
-	
+begin	
 	# Sumário estatístico do Cu original
-	sum_cu_orig = DataFrame(
-								Variável=:Cu_Original,
-								X̅=round(mean(dh.CU),digits=2),
-								S²=round(var(dh.CU),digits=2),
-								S=round(std(dh.CU),digits=2),
-								Cᵥ=round(variation(dh.CU),digits=2),
-								P10=round(q_cu_orig[1],digits=2),
-								P50=round(q_cu_orig[2],digits=2),
-								P90=round(q_cu_orig[3],digits=2)
-							)
+	Cu_orig = DataFrame(Variable = "Cu (original)",
+						X̄        = mean(dh.CU),
+						S²       = var(dh.CU),
+						S        = std(dh.CU),
+						Cᵥ       = variation(dh.CU),
+						P10      = quantile(dh.CU, 0.1),
+						P50      = quantile(dh.CU, 0.5),
+						P90      = quantile(dh.CU, 0.9),
+	                    Skew     = skewness(dh.CU),
+					    Kurt     = kurtosis(dh.CU))
 	
 	# Sumário estatístico do Cu compositado
-	sum_cu_comp = DataFrame(
-								Variável=:Cu_Compositado,
-								X̅=round(mean(comps.CU),digits=2),
-								S²=round(var(comps.CU),digits=2),
-								S=round(std(comps.CU),digits=2),
-								Cᵥ=round(variation(comps.CU),digits=2),
-								P10=round(q_cu_comp[1],digits=2),
-								P50=round(q_cu_comp[2],digits=2),
-								P90=round(q_cu_comp[3],digits=2)
-							)
+	Cu_comp = DataFrame(Variable = "Cu (compositado)",
+						X̄        = mean(cp.CU),
+						S²       = var(cp.CU),
+						S        = std(cp.CU),
+						Cᵥ       = variation(cp.CU),
+						P10      = quantile(cp.CU, 0.1),
+						P50      = quantile(cp.CU, 0.5),
+						P90      = quantile(cp.CU, 0.9),
+		                Skew     = skewness(cp.CU),
+					    Kurt     = kurtosis(cp.CU))
 	
 	# Concatenação vertical dos dois sumários estatísticos
-	vcat(sum_cu_orig, sum_cu_comp)
+	[Cu_orig
+	 Cu_comp]
 end
 
 # ╔═╡ 7a021fbd-83ac-4a36-bb8c-98519e6f8acb
@@ -646,115 +600,86 @@ Como as estatísticas de Cu se mantiveram similares após a compositagem dos fur
 
 """
 
-# ╔═╡ 439837bf-941d-4300-ba96-6f372b7e514f
-html"""
-    <div id="AED">
-
-        <h2>3. Análise exploratória dos dados</h2>
-
-    </div>
-"""
-
 # ╔═╡ f2be5f11-1923-4658-93cf-800ce57c32d3
 md"""
 
-A **Análise exploratória dos dados (AED)** é uma das etapas mais cruciais do fluxo de trabalho. Em essência, ela consiste em sumarizar, descrever e obter insights a partir do banco de dados.
+### 3. Análise exploratória
 
-A AED antecede a análise de continuidade espacial (e a estimativa) e objetiva transformar dados em informações. Esta etapa pode ser definida como:
+A análise exploratória dos dados é uma das etapas mais cruciais do fluxo de trabalho. Em essência, ela consiste em sumarizar as principais características do dado através de estatísticas de interesse e visualizações. Veremos esta etapa em mais detalhes no segundo módulo **geociência de dados** hoje.
 
-              "A arte de torturar os dados até que eles confessem informações"
-
-Neste notebook a AED será dividida em duas subetapas:
-
-- **Visualização espacial**
-
-- **Descrição univariada**
-
-Ao final, sumarizaremos as informações e insights obtidos a partir dos dados.
+Aqui apresentaremos o resultado de uma análise simples e visualizações interativas para ilustrar o potencial do modelo de trabalho com notebooks [Pluto](https://github.com/fonsp/Pluto.jl).
 
 """
 
 # ╔═╡ c0604ed8-766e-4c5d-a628-b156615f8140
 md"""
 
-### 3.1. Visualização espacial
+#### Visualização espacial
 
-Nesta etapa, visualizaremos a distribuição dos teores de Cu (%) na malha de sondagem.
+Como estamos lidando com dados regionalizados, a visualização espacial da variável de interesse sempre deve ser realizada em conjunto com a sua descrição estatística. Devemos ficar atentos a possíveis agrupamentos preferenciais de amostras em regiões "mais ricas" do depósito.
 
-Como estamos lidando com dados regionalizados, a visualização espacial da variável de interesse sempre deve ser realizada em conjunto com a sua descrição estatística.
-
-Devemos ficar atentos a possíveis agrupamentos preferenciais de amostras em regiões "mais ricas" do depósito.
-
-"""
-
-# ╔═╡ f855019a-27b0-42b5-a867-82fc25ef9e82
-md"""
-#### Visualização espacial dos teores de Cu (%)
 """
 
 # ╔═╡ 8bb2f630-8234-4f7f-a05c-8206993bdd45
 md"""
 
-Rotação em Z: $(@bind αₜ Slider(0:10:90, default=30, show_value=true))°
+Rotação em Z: $(@bind α Slider(0:10:90, default=30, show_value=true))°
 
-Rotação em X: $(@bind βₜ Slider(0:10:90, default=30, show_value=true))°
+Rotação em X: $(@bind β Slider(0:10:90, default=30, show_value=true))°
 
 """
 
 # ╔═╡ 074bff0b-6b41-4bbc-9b5c-77fbf62c4dc6
 # Visualização dos furos por teor de Cu
-comps |> @df scatter(:X, :Y, :Z, marker_z=:CU, marker=:circle,
-                  markersize=4, camera=(αₜ,βₜ),
-                  xlabel="X", ylabel="Y", zlabel="Z",
-                  legend=false, colorbar=true, c=:jet)
+cp |> @df scatter(:X, :Y, :Z,
+	              marker_z = :CU,
+	              marker   = (:circle, 4),
+	              colorbar = true,
+	              color    = :berlin,
+                  xlabel   = "X",
+	              ylabel   = "Y",
+	              zlabel   = "Z",
+	              label    = "Teor de Cu (%)",
+                  camera   = (α, β))
 
 # ╔═╡ 862dd0cf-69ae-48e7-92fb-ff433f62e67c
 md"""
 
-#### Visualização espacial dos *high grades* e *low grades* de Cu
+Quando não se tem muito conhecimento acerca de um depósito, a seguinte convenção é comumente utilizada para definição dos *low grades* e *high grades*:
 
-Uma etapa muito importante é a visualização da posição espacial dos _low grades_ e _high grades_ de um depósito.
+- `low grades`: Cu (%) < P10
 
-Quando não se tem muito conhecimento acerca de um depósito, a seguinte convenção é comumente utilizada:
+- `high grades`: Cu (%) > P90
 
-- **Low grades < P10**
-
-- **High grades > P90**
-
-"""
-
-# ╔═╡ 36fad6e9-038c-4ba2-a49c-badeda404356
-md"""
-Rotação em Z: $(@bind α₂ Slider(0:10:90, default=30, show_value=true))°
-
-Rotação em X: $(@bind β₂ Slider(0:10:90, default=30, show_value=true))°
 """
 
 # ╔═╡ ea0968ca-a997-40c6-a085-34b3aa89807e
 begin
-
-	# P10
-	P10 = quantile(comps.CU, [0.1])[1]
-	# P90
-	P90 = quantile(comps.CU, [0.9])[1]
 	
-    # Filtragem dos teores highgrade (> P90)
-    hg = comps |> @filter(_.CU > P90)
     # Filtragem dos teores lowgrade (< P10)
-    lg = comps |> @filter(_.CU ≤ P10)
+    lg = cp |> @filter(_.CU ≤ Cu_comp.P10[])
+	
+	# Filtragem dos teores highgrade (> P90)
+    hg = cp |> @filter(_.CU > Cu_comp.P90[])
 
     # Visualização de todas as amostras (cinza claro)
-    @df comps scatter(:X, :Y, :Z, marker=:circle, markersize=4,
-                    color="gray95",xlabel="X", markeralpha=0.5,
-                    ylabel="Y", zlabel="Z", label=false)
+    @df cp scatter(:X, :Y, :Z,
+		           marker = (:circle, 4, :gray95, 0.5),
+		           label  = false,
+		           xlabel = "X",
+                   ylabel = "Y",
+		           zlabel = "Z",
+	               camera = (α, β))
+	
+	# Visualização de lowgrades (azul)
+    @df lg scatter!(:X, :Y, :Z,
+		            marker = (:circle, 4, :deepskyblue),
+		            label  = "Low grade")
     
     # Visualização de highgrades (vermelho)
-    @df hg scatter!(:X, :Y, :Z, marker=:circle, markersize=4,
-                    camera=(α₂,β₂),color="red", label="High grade")
-
-    # Visualização de lowgrades (azul)
-    @df lg scatter!(:X, :Y, :Z, marker=:circle, markersize=4,
-                    legend=:topright, color="deepskyblue", label="Low grade")
+    @df hg scatter!(:X, :Y, :Z,
+		            marker = (:circle, 4, :red),
+		            label  = "High grade")
 
 end
 
@@ -767,107 +692,62 @@ A partir da visualização espacial dos _high grades_ e _low grades_, nota-se qu
 
 - Os _low grades_ tendem a se concentrar em porções de densidade amostral baixa.
 
-- As amostras apresentam-se ligeiramente agrupadas preferencialmente na porção SE do depósito.
+- As amostras apresentam-se ligeiramente agrupadas na porção sudeste do depósito.
 
 """
 
-# ╔═╡ 7f3f9c03-097d-4dd1-a122-53cceef56cbd
+# ╔═╡ cdf51f38-0e3d-47dd-8792-fdb5741db45b
 md"""
-### 3.2. Descrição Univariada
-"""
 
-# ╔═╡ 462264f1-cad2-4ae6-abc2-5273f175569b
-md"""
-#### Descrição da variável cobre
+#### Estatísticas básicas
 
-A partir do sumário estatístico e do histograma do Cu, podemos extrair informações acerca de sua variabilidade, tendências centrais, além da forma e simetria de sua distribuição:
+A partir do sumário estatístico realizado anteriormente e do histograma visualizado abaixo, podemos extrair informações acerca da variabilidade, tendências centrais, forma e simetria da distribuição do teor de Cu:
 
 """
 
-# ╔═╡ 2e94b106-56cd-4034-b5d4-00dae5c02c57
-# Sumário estatístico do Cu
-sum_cu = DataFrame(
-					Variável=:Cu,
-					X̅=round(mean(comps.CU),digits=2),
-					S²=round(var(comps.CU),digits=2),
-					S=round(std(comps.CU),digits=2),
-					Cᵥ=round(variation(comps.CU),digits=2),
-					P10=round(q_cu_comp[1],digits=2),
-					P50=round(q_cu_comp[2],digits=2),
-					P90=round(q_cu_comp[3],digits=2),
-					Skew=round(skewness(comps.CU),digits=2),
-					Kurt=round(kurtosis(comps.CU),digits=2)
-				  )
+# ╔═╡ e0bb58df-23d3-4d0f-82f9-bcb39782acd1
+Cu_comp[:,2:end]
 
 # ╔═╡ b95a6def-f3e6-4835-b15f-2a48577006f4
 begin 
 
     # Histograma do Cu
-    comps |> @df histogram(:CU, xlabel="Cu (%)",
-            			   ylabel="Frequência Absoluta", color="darkgoldenrod1",
-                           label=false, bins=30, alpha=0.55)
+    cp |> @df histogram(:CU,
+		                bins   = 30,
+		 				label  = false,
+		                color  = :darkgoldenrod1,
+		                alpha  = 0.7,
+		                xlabel = "Cu (%)",
+            			ylabel = "Frequência Absoluta")
 
     # Linha vertical contínua vermelha (média)
-    vline!([sum_cu.X̅], c="red", ls=:solid, label="X̅")
+    vline!([Cu_comp.X̄], color = :blue, label = "X̄")
 
     # Linha vertical contínua verde (mediana)
-    vline!([sum_cu.P50], c="green", ls=:solid, label="P50")
+    vline!([Cu_comp.P50], color = :green, label = "P50")
 	
 	# Linha vertical tracejada cinza (P10)
-    vline!([sum_cu.P10], c="gray", ls=:dashdot, label="P10")
-	
-	# Linha vertical tracejada cinza (P90)
-    vline!([sum_cu.P90], c="gray", ls=:dashdot, label="P90")
+    vline!([Cu_comp.P10, Cu_comp.P90], color = :gray,
+		    linestyle = :dashdot, primary = false)
 
 end
 
 # ╔═╡ 0808061f-4856-4b82-8560-46a59e669ac4
 md"""
 
-Algumas informações obtidas sobre o Cu:
+Algumas conclusões obtidas para este banco de dados:
 
-- A média do Cu é igual a 0.85%.
+- A média do Cu é igual a $(Cu_comp.X̄) %.
 
-- O coeficiente de variação do Cu é de 46%.
+- O coeficiente de variação do Cu é de $(Cu_comp.Cᵥ) %.
 
-- A princípio, os _low grades_ do depósito correspondem a amostras ≤ 0.47%.
+- A princípio, os _low grades_ do depósito correspondem a amostras ≤ $(Cu_comp.P10) %.
 
-- A princípio, os _high grades_ do depósito correspondem a amostras > 1.31%.
+- A princípio, os _high grades_ do depósito correspondem a amostras > $(Cu_comp.P90) %.
 
 - Como X̅ > P50, Skew > 0 e tem-se cauda alongada à direita, a distribuição da variável Cu é assimétrica positiva. Isso faz sentido, uma vez que o Cu é tipicamente um elemento menor.
 
-- Como Kurt(excessiva) > 0, a distribuição do Cu é leptocúrtica, ou seja, as caudas são mais densas do que as caudas de uma Distribuição Gaussiana.
-
-"""
-
-# ╔═╡ e752b573-9652-4d13-ab16-fde4137828ed
-md"""
-#### Descrição da variável litologia
-
-O banco de dados é composto por **três litotipos** distintos:
-
-- Tonalito Pórfiro (TnP)
-- Granodiorito Pórfiro (GnP)
-- Monzonito Pórfiro (MzP)
-
-"""
-
-# ╔═╡ b635a9ad-90ab-4a28-8cc4-ad2285fe2f0e
-# Criação de uma tabela com o número de amostras por litologia
-lito = dh |>
-    @groupby(_.LITH) |>
-    @map({Litologia=key(_), Contagem=length(_)}) |>
-    DataFrame
-
-# ╔═╡ 1e7c1b35-980c-4bd5-8287-1c93bc82d80f
-# Gráfico de barras de contagem de litotipos
-bar(lito[:,:Litologia], lito[:,:Contagem], legend=false,
-        ylabel="Contagem", color=:pink1, alpha=0.65)
-
-# ╔═╡ 20e2519a-041a-4790-8160-fdddf86e1801
-md"""
-
-As três litologias apresentam número de ocorrências muito semelhantes. Em outras palavras, encontram-se balanceadas.
+- Como Kurt(excessiva) > 0, a distribuição do Cu é leptocúrtica, ou seja, as caudas são mais densas do que as caudas de uma distribuição Gaussiana.
 
 """
 
@@ -881,19 +761,11 @@ md"""
 
 - Cu apresenta uma distribuição assimétrica positiva e é leptocúrtica.
 
-- Existem três litotipos distintos no conjunto de dados (TnP, MzP e GnP) distribuídos de forma balanceada.
-"""
-
-# ╔═╡ 85d1bce5-6d24-4b2a-83e3-d76c29677751
-html"""
-    <div id="declus">
-        <h2>4. Declusterização</h2>
-    </div>
 """
 
 # ╔═╡ 5bfa698a-4e29-47f8-96fe-3c533fbdb761
 md"""
-#### Introdução
+### 4. Declusterização
 
 É muito comum, na mineração, que regiões "mais ricas" de um depósito sejam mais amostradas do que suas porções "mais pobres" (Figura 4). Essa situação se justifica pelo fato de a sondagem ser um procedimento de elevado custo e, nesse sentido, é mais coerente que amostremos mais as regiões mais promissoras do depósito.
 
@@ -922,113 +794,94 @@ html"""
 
 # ╔═╡ 201b805b-7241-441d-b2d9-5698b0da58ab
 md"""
-#### Georreferenciamento
+#### Georeferenciamento
 
-Antes de realizar a declusterização, é necessário **georreferenciar os furos** compositados.
+Antes de realizar a declusterização, é necessário **georeferenciar os furos** compositados.
 
-No pacote [Geostats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html), georreferenciar os dados consiste em informar quais atributos devem ser tratados como coordenadas e quais devem ser entendidos com variáveis.
+No pacote [Geostats.jl](https://juliaearth.github.io/GeoStats.jl/stable), georreferenciar os dados consiste em informar quais atributos devem ser tratados como coordenadas geográficas e quais devem ser entendidos com variáveis.
 
-Quando se georreferencia um determinado conjunto de dados, ele passa a ser tratado  como um objeto espacial.
+Quando se georeferencia um determinado conjunto de dados, ele passa a ser tratado  como um objeto geoespacial. Um objeto geoespacial apresenta um **domínio (domain)**, ou seja, suas informações geoespaciais (coordenadas) e **valores (values)**, ou seja, suas variáveis.
 
-Um objeto espacial apresenta um **domínio (domain)**, ou seja, suas informações espaciais (coordenadas) e **valores (values)**, ou seja, suas variáveis.
-
-No caso, iremos georreferenciar o arquivo de furos compositados, de modo que as coordenadas `X`, `Y` e `Z` serão passadas como domínio e a variável `CU` será entendida como valor.
+No caso, iremos georreferenciar o arquivo de furos compositados, de modo que as coordenadas `X`, `Y` e `Z` serão passadas como domínio e a variável `CU` será entendida como variável.
 
 """
 
 # ╔═╡ 63b75ae2-8dca-40e3-afe0-68c6a639f54e
-begin
+# Georeferenciamento das amostras compositadas
+samples = georef(cp, (:X,:Y,:Z))
 
-    # Criando uma subtabela a partir dos furos apenas com as coordenadas e Cu
-    comps_sub = comps[:,[:X,:Y,:Z,:CU]]
-
-    # Georreferenciando da nova tabela criada acima
-    comps_georef = georef(comps_sub, (:X,:Y,:Z))
-
-end
+# ╔═╡ 5699c563-d6cb-4bc2-8063-e1be00722a41
+md"""
+Note que as coordenadas `X`, `Y` e `Z` foram agrupadas em uma geometria de ponto.
+"""
 
 # ╔═╡ f74b8675-64e4-438d-aa8e-7c5792d25651
 md"""
 #### Estatísticas declusterizadas
 
-Com os furos georreferenciados, podemos agora calcular **estatísticas declusterizadas** para o Cu.
+Com os furos georeferenciados, podemos agora calcular **estatísticas declusterizadas** para o Cu. As estatísticas declusterizadas serão utilizadas na etapa de validação da estimativa por Krigagem.
 
-As estatísticas declusterizadas serão utilizadas na etapa de validação da estimativa por krigagem.
-
-A tabela abaixo mostra uma comparação estatística entre os teores de Cu originais e declusterizados:
+A tabela abaixo mostra uma comparação estatística entre os teores de Cu antes e depois da declusterização das amostras:
 
 """
 
 # ╔═╡ 68e50bdd-b006-4abc-aeda-c4d67c30babb
 begin
-	# Sumário estatístico do Cu clusterizado (original)
-	sum_cu_clus = sum_cu[:,[:Variável, :X̅, :S², :S, :P10, :P50, :P90]]
-	
-	# P10, P50 e P90 do Cu declusterizado
-	q_dec = quantile(comps_georef, :CU, [0.1, 0.5, 0.9])
+	# Sumário estatístico do Cu clusterizado
+	Cu_clus = Cu_comp[:,[:Variable,:X̄,:S²,:P10,:P50,:P90]]
 	
 	# Sumário estatístico do Cu declusterizado
-	sum_cu_declus = DataFrame(
-								Variável = :CU_Declus,
-								X̅ = round(mean(comps_georef, :CU), digits=2),
-								S² = round(var(comps_georef, :CU), digits=2),
-								S = round(sqrt(var(comps_georef, :CU)), digits=2),
-								P10 = round(q_dec[1], digits=2),
-								P50 = round(q_dec[2], digits=2),
-								P90 = round(q_dec[3], digits=2)
-                          )
+	Cu_decl = DataFrame(Variable = "Cu (declusterizado)",
+						X̄        = mean(samples, :CU),
+						S²       = var(samples, :CU),
+						P10      = quantile(samples, :CU, 0.1),
+						P50      = quantile(samples, :CU, 0.5),
+						P90      = quantile(samples, :CU, 0.9))
 	
-	# Concatenação vertical dos sumários clusterizado e declusterizado
-	vcat(sum_cu_clus, sum_cu_declus)
+	# Razão das médias (%)
+	Xᵣ = (Cu_decl.X̄ / Cu_clus.X̄)[] * 100
+	
+	# Concatenação dos sumários
+	[Cu_clus
+     Cu_decl]
 end
 
 # ╔═╡ c6710e72-400c-4e90-94e5-fd48b62b088a
 begin
+	# Cálculo de histogram clusterizado de Cu
+	hist_clus = fit(Histogram, samples[:CU], nbins = 30)
 
     # Cálculo do histograma declusterizado de Cu
-    hist_dec = EmpiricalHistogram(comps_georef, :CU, nbins=30)
+    hist_decl = EmpiricalHistogram(samples, :CU, nbins = 30)
 
-    # Visualização do histograma declusterizado de Cu
-    plot(hist_dec, label=false, xlabel="Cu Declusterizado (%)",
-         color=:darkgoldenrod1, legend=true)
-
-    # Linha vertical tracejada vermelha (média original)
-    vline!([sum_cu_clus[:,:X̅]], label="X̅ Original",
-           color=:red, ls=:dashdot, linewidth=1.5)
-
-    # Linha vertical contínua vermelha (média declusterizada)
-    vline!([sum_cu_declus[:,:X̅]], label="X̅ Declusterizada",
-           color=:red, ls=:solid, linewidth=1.5)
-
+    # Visualização dos histogramas
+    plot(Statistics.normalize(hist_clus),
+		 seriestype = :step,
+		 normed     = true,
+         color      = :darkgoldenrod1,
+		 label      = "Clusterizado",
+	     xlabel     = "Cu (%)",
+	     ylabel     = "PDF")
+	
+	plot!(hist_decl,
+          color  = :green,
+		  legend = true,
+		  label  = "Declusterizado")
 end
 
 # ╔═╡ 32a075ee-e853-4bb3-8eff-44543b6db0d5
 md"""
 
-Nota-se que a média declusterizada representa **$(round(Int,((sum_cu_declus[:,:X̅] / sum_cu_clus[:,:X̅]) * 100)[1]))%** da média original. Ou seja, há uma diferença de **$(round((sum_cu_clus[:,:X̅] - sum_cu_declus[:,:X̅])[1], digits=2))%** de Cu entre a média original e a média declusterizada.
+Nota-se que a média declusterizada representa $(round(Xᵣ, digits=2)) % da média original. Ou seja, há uma diferença de $(round((100-Xᵣ), digits=2)) % de Cu entre a média original e a média declusterizada.
 
-Houve uma redução de **$(round((100.00 - ((sum_cu_declus[:,:S] / sum_cu_clus[:,:S]) *100)[1]),digits=2))%** do desvio padrão. Isso é curioso, já que, quando se aplica alguma técnica de declusterização, a tendência é haver um aumento na dispersão.
-
-"""
-
-# ╔═╡ d3b6724c-bc28-4d21-93e9-4f63508b0c2b
-html"""
-
-    <div id="vg_exp_model_vg">
-        <h2>5. Cálculo e modelagem de variogramas experimentais</h2>
-    </div>
-
-"""
-
-# ╔═╡ 162ce197-8d60-45dc-812f-91aa2f80fb95
-md"""
-#### Introdução
 """
 
 # ╔═╡ b02263dc-280a-40b4-be1e-9c3b6873e153
 md"""
 
-##### Função variograma/semivariograma
+### 5. Variografia
+
+#### Função variograma/semivariograma
 
 A **função variograma** é uma função matemática que mapeia o comportamento espacial de uma variável regionalizada. No nosso caso, essa variável é o Cu.
 
@@ -1804,7 +1657,7 @@ Dessa forma, a equação geral dos estimadores lineares ponderados é definida c
 ẑ(uₒ) = \sum_{i=1}^{n} wᵢ.z(uᵢ) = w₁.z(u₁) + w₂.z(u₂) + w₃.z(u₃) + ... + wₙ.z(uₙ)
 ```
 
-Neste notebook, estimaremos os teores de Cu a partir dos estimadores Krigagem Simples e Krigagem Ordinária.
+Neste módulo, estimaremos os teores de Cu a partir dos estimadores Krigagem Simples e Krigagem Ordinária.
 
 Na **Krigagem Simples (SK)**, a média populacional (μ) é assumida como conhecida e invariável em todo o domínio de estimativa. Em outras palavras, devemos definir uma média estacionária como entrada desse estimador que, no nosso contexto, será a média declusterizada. Diferentemente da Krigagem Ordinária, não há condição de fechamento para os pesos atribuídos às amostras da vizinhança e, nesse sentido, uma parte do peso é atribuída à média estacionária (μ):
 
@@ -2122,14 +1975,13 @@ md"""
 FileIO.save("modelo_estimado_ok.gslib", estim_OK)
 
 # ╔═╡ Cell order:
-# ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
+# ╠═980f4910-96f3-11eb-0d4f-b71ad9888d73
 # ╟─14ac7b6e-9538-40a0-93d5-0379fa009872
 # ╟─20fff27a-4328-43ac-97df-a35b63a6fdd0
 # ╟─c544614a-3e5c-4d22-9340-592aabf84871
 # ╟─1a00e8d4-4115-4651-86a7-5237b239307f
-# ╟─c66d36e2-d6be-4d70-a3c3-a691d0b1064e
+# ╟─f443543c-c4f4-447b-996d-9ad00c67b1af
 # ╟─ff01a7d7-d491-4d49-b470-a2af6783c82b
-# ╟─ca724400-26a6-4332-bf19-2eb8ffe7d817
 # ╟─af1aca7e-bde2-4e14-a664-b7c71ff80ffe
 # ╟─65323392-5c7f-40af-9456-d199e90df8c2
 # ╠═444402c6-99a3-4829-9e66-c4962fb83612
@@ -2145,10 +1997,9 @@ FileIO.save("modelo_estimado_ok.gslib", estim_OK)
 # ╟─f9545a95-57c0-4de6-9ab7-3ac3728b3d27
 # ╠═4d5f2467-c7d5-4a82-9968-97f193090bd6
 # ╟─f4bd13d4-70d3-4167-84ff-9d3c7200e143
-# ╟─7a2899ab-496e-4919-a02e-e6ad8dd2b676
 # ╟─3e5efd3c-3d8a-4bf1-a0f1-b402ea4a6cd3
 # ╟─2a00e08c-5579-4320-b570-3b564d186fec
-# ╟─1f07ba56-2ebd-4b4b-b0e8-cabcfe102e0f
+# ╟─79dfd582-1b75-40b0-8feb-4ee92c1b4acc
 # ╟─41790d87-ce85-461f-a16d-04821a3624bb
 # ╟─7ea21049-5edd-4979-9782-8a20d4bb287b
 # ╟─d8ce39f1-8017-4df3-a55d-648bdd3dbc04
@@ -2162,37 +2013,27 @@ FileIO.save("modelo_estimado_ok.gslib", estim_OK)
 # ╟─b85a7c2f-37e2-48b0-a1db-984e2e719f29
 # ╟─59dfbb66-f188-49f1-87ba-4f7020c4c031
 # ╟─7a021fbd-83ac-4a36-bb8c-98519e6f8acb
-# ╟─439837bf-941d-4300-ba96-6f372b7e514f
 # ╟─f2be5f11-1923-4658-93cf-800ce57c32d3
 # ╟─c0604ed8-766e-4c5d-a628-b156615f8140
-# ╟─f855019a-27b0-42b5-a867-82fc25ef9e82
 # ╟─074bff0b-6b41-4bbc-9b5c-77fbf62c4dc6
 # ╟─8bb2f630-8234-4f7f-a05c-8206993bdd45
 # ╟─862dd0cf-69ae-48e7-92fb-ff433f62e67c
 # ╟─ea0968ca-a997-40c6-a085-34b3aa89807e
-# ╟─36fad6e9-038c-4ba2-a49c-badeda404356
 # ╟─ccbcf57e-d00b-43df-8555-eee8bf4f9e6f
-# ╟─7f3f9c03-097d-4dd1-a122-53cceef56cbd
-# ╟─462264f1-cad2-4ae6-abc2-5273f175569b
-# ╟─2e94b106-56cd-4034-b5d4-00dae5c02c57
+# ╟─cdf51f38-0e3d-47dd-8792-fdb5741db45b
+# ╟─e0bb58df-23d3-4d0f-82f9-bcb39782acd1
 # ╟─b95a6def-f3e6-4835-b15f-2a48577006f4
 # ╟─0808061f-4856-4b82-8560-46a59e669ac4
-# ╟─e752b573-9652-4d13-ab16-fde4137828ed
-# ╠═b635a9ad-90ab-4a28-8cc4-ad2285fe2f0e
-# ╟─1e7c1b35-980c-4bd5-8287-1c93bc82d80f
-# ╟─20e2519a-041a-4790-8160-fdddf86e1801
 # ╟─71b45351-7397-46e4-912a-c5e65fb6a1c8
-# ╟─85d1bce5-6d24-4b2a-83e3-d76c29677751
 # ╟─5bfa698a-4e29-47f8-96fe-3c533fbdb761
 # ╟─14beece5-6475-49a0-9f5c-cefb68328e24
 # ╟─201b805b-7241-441d-b2d9-5698b0da58ab
 # ╠═63b75ae2-8dca-40e3-afe0-68c6a639f54e
+# ╟─5699c563-d6cb-4bc2-8063-e1be00722a41
 # ╟─f74b8675-64e4-438d-aa8e-7c5792d25651
 # ╟─68e50bdd-b006-4abc-aeda-c4d67c30babb
-# ╠═c6710e72-400c-4e90-94e5-fd48b62b088a
+# ╟─c6710e72-400c-4e90-94e5-fd48b62b088a
 # ╟─32a075ee-e853-4bb3-8eff-44543b6db0d5
-# ╟─d3b6724c-bc28-4d21-93e9-4f63508b0c2b
-# ╟─162ce197-8d60-45dc-812f-91aa2f80fb95
 # ╟─b02263dc-280a-40b4-be1e-9c3b6873e153
 # ╟─c0dd02dd-9b27-4d10-9ffb-a06ceb4ee1fa
 # ╟─23609999-582e-4226-aa54-2d99ca1a931e
