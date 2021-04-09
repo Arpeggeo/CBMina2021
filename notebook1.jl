@@ -19,7 +19,7 @@ begin
     using CSV, DataFrames, Query
     using PlutoUI, Random
     using Statistics, StatsBase
-    using GeoStats, DrillHoles
+    using GeoStats, DrillHoles, GslibIO, FileIO
     using StatsPlots, Plots; gr(format="png")
 end;
 
@@ -111,7 +111,7 @@ html"""
 
     <a href="#exportacao">
 
-        <big>7. Exportação dos dados estimados</big>
+        <big>7. Exportação do modelo estimado</big>
 
     </a><br><br>
 
@@ -2085,6 +2085,42 @@ begin
 
 end
 
+# ╔═╡ 9aaadedf-2176-4559-ac19-b36c1dbd3984
+html"""
+
+    <div id="exportacao">
+        <h2>7. Exportação do modelo estimado</h2>
+    </div>
+
+"""
+
+# ╔═╡ 50300f8e-7e27-4c4d-9e26-ff4e2e66c291
+md"""
+
+Por fim, iremos exportar o modelo estimado para dois formatos distintos: `.gslib` e `.csv`.
+
+"""
+
+# ╔═╡ 5ad612f4-76e9-4867-b4c8-4c35540a5f47
+md"""
+
+#### Exportação para .csv
+
+"""
+
+# ╔═╡ 98b7e4bb-0e06-4538-a945-587ae904c965
+estim_OK |> DataFrame |> CSV.write("modelo_estimado_ok.csv")
+
+# ╔═╡ faacc571-561a-48ac-8c9f-4ddbaa7a736f
+md"""
+
+#### Exportação para .gslib
+
+"""
+
+# ╔═╡ b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
+FileIO.save("modelo_estimado_ok.gslib", estim_OK)
+
 # ╔═╡ Cell order:
 # ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
 # ╟─14ac7b6e-9538-40a0-93d5-0379fa009872
@@ -2226,3 +2262,9 @@ end
 # ╟─ed97c749-30b7-4c72-b790-fef5a8332548
 # ╟─263c1837-7474-462b-bd97-ee805baec458
 # ╟─193dde9b-1f4a-4313-a3a6-ba3c89600bcb
+# ╟─9aaadedf-2176-4559-ac19-b36c1dbd3984
+# ╟─50300f8e-7e27-4c4d-9e26-ff4e2e66c291
+# ╟─5ad612f4-76e9-4867-b4c8-4c35540a5f47
+# ╠═98b7e4bb-0e06-4538-a945-587ae904c965
+# ╟─faacc571-561a-48ac-8c9f-4ddbaa7a736f
+# ╠═b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
