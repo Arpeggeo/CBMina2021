@@ -1491,14 +1491,311 @@ begin
     plot!(model_dip, 0, 350, title="0$(azi)°/$(dip)°",
           ylims=(0, 0.3), color=:red, lw=2)
     
-    hline!([var(dh.CU)], color=:gray, ls=:dash, legend=false)
+    hline!([var(comps.CU)], color=:gray, ls=:dash, legend=false)
 
     vline!([a_dip2], color=:green, ls=:dash, legend=false)
 
 end
 
+# ╔═╡ 6c048b83-d12c-4ce8-9e9a-b89bf3ef7638
+md"""
+#### 4 - Variogramas secundário e terciário
+
+Sabe-se que, por definição, os três eixos principais do variograma são ortogonais entre si. Agora que encontramos a **direção de maior continuidade do variograma** (eixo primário), sabemos que os outros dois eixos (secundário e terciário) pertencem a um plano cuja normal é o próprio eixo primário!
+
+Portanto, nesta etapa, encontraremos os **alcances intermediário e menor** do modelo de variograma final, bem como a **terceira rotação do variograma**, ou seja, aquela em torno do **eixo Y**.
+
+Nesse sentido, como o eixo primário do variograma apresenta uma orientação **0$(azi)° / $(dip)°**, com o auxílio de um **estereograma**, podemos encontrar o plano que contém os eixos secundário e terciário. Ressalta-se ainda que **eixos secundário e terciário são ortogonais entre si**.
+
+A Figura 9 mostra um estereograma cujo eixo primário tem orientação 067°/22.5°. O **ponto vermelho** representa o **eixo primário (Y)**, enquanto os **pontos pretos** são candidatos a **eixos secundário e terciário**. O **grande círculo vermelho** representa o **plano XZ**, ou seja, aquele que contém os eixos secundário (X) e terciário (Z).
+
+Portanto, adotaremos a seguinte convenção:
+
+- Eixo primário (maior continuidade) = Y
+- Eixo secundário (continuidade intermediária) = X
+- Eixo terciário (menor continuidade) = Z
+
+"""
+
+# ╔═╡ 0e431ddb-45c1-4fb6-8469-8c5c10fcf13c
+html"""
+
+<p align="center">
+    <img src="" alt="Figura_09">
+</p>
+
+<p align="center">
+    <b>Figura 9</b>: Estereograma com o eixo primário e candidatos para os eixos secundário e terciário.
+</p>
+
+"""
+
+# ╔═╡ 512d0792-85fc-4d81-a939-076389a59f19
+md"""
+
+##### Cálculo dos variogramas secundário e terciário
+
+Para o cálculo dos variogramas experimentais secundário e terciário, podemos utilizar os pares de direções ortogonais representados pelos pontos pretos da Figura 9. Devemos escolher duas direções para serem eleitas as **direções primária e secundária** do modelo de variograma:
+
+"""
+
+# ╔═╡ 120f4a9c-2ca6-49f1-8abc-999bcc559149
+md"""
+
+Orientações: $(@bind orient Select(["config1" => "177.6°/41.1° e 317.4°/41.1°",
+                                    "config2" => "157.5°/00.0° e 247.5°/68.5°",
+                                    "config3" => "165.9°/20.4° e 295.3°/59.6°",
+                                    "config4" => "198.3°/58.9° e 328.7°/21.3°"]))
+
+№ passos: $(@bind nlags_int_min Slider(5:1:15, default=12, show_value=true))
+
+Largura de Banda: $(@bind bw_int_min Slider(10:10:100, default=70, show_value=true)) m
+
+"""
+
+# ╔═╡ 0def0326-55ef-45db-855e-a9a683b2a76d
+begin
+
+    Random.seed!(1234)
+
+    azi1, dip1 = 177.6, 41.1
+    azi2, dip2 = 317.4, 41.1
+
+    if orient == "config1"
+        azi1, dip1 = 177.6, 41.1
+        azi2, dip2 = 317.4, 41.1
+
+    elseif orient == "config2"
+        azi1, dip1 = 157.5, 0.0
+        azi2, dip2 = 247.5, 68.5
+
+    elseif orient == "config3"
+        azi1, dip1 = 165.9, 20.4
+        azi2, dip2 = 295.3, 59.6
+
+    elseif orient == "config4"
+        azi1, dip1 = 198.3, 58.9
+        azi2, dip2 = 328.7, 21.3
+    end
+
+    γ_int_min1 = DirectionalVariogram(polar2cart(azi1,dip1),
+                                      comps_georef, :CU,
+                                      dtol=bw_int_min, maxlag=250,
+                                      nlags=nlags_int_min)
+
+    γ_int_min2 = DirectionalVariogram(polar2cart(azi2,dip2),
+                                      comps_georef, :CU,
+                                      dtol=bw_int_min, maxlag=250,
+                                      nlags=nlags_int_min)
+	
+	plot(γ_int_min1, marker=5, ylims=(0, 0.4), xlims=(0,250),
+         label="$(azi1)°/$(dip1)°", color=:red)
+
+    plot!(γ_int_min2, marker=5, ylims=(0, 0.4), xlims=(0,250),
+          label="$(azi2)°/$(dip2)°", color=:deepskyblue,
+          legend=:topright)
+
+    hline!([var(comps.CU)], color="gray", ls=:dash, label=false)
+
+end
+
+# ╔═╡ 404622b6-bf67-4b97-9355-2c24592cc364
+md"""
+
+##### Modelagem do variograma secundário
+
+Agora que elegemos o variograma experimental representante do eixo secundário, podemos modelá-lo:
+
+"""
+
+# ╔═╡ 922d81f3-0836-4b14-aaf2-83be903c8642
+md"""
+
+Alcance 1ª Estrutura: $(@bind a_interm1 Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
+
+Alcance 2ª Estrutura: $(@bind a_interm2 Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
+
+"""
+
+# ╔═╡ a74b7c50-4d31-4bd3-a1ef-6869abf73185
+begin
+
+    model_interm0 = NuggetEffect(c₀)
+	
+    model_interm1 = SphericalVariogram(sill=Float64(c₁),
+                                    range=Float64(a_interm1))
+
+    model_interm2 = SphericalVariogram(sill=Float64(c₂),
+                                    range=Float64(a_interm2))
+
+    model_interm = model_interm0 + model_interm1 + model_interm2
+
+    plot(γ_int_min1, marker=5, color=:deepskyblue)
+
+    plot!(model_interm, 0, 200, title="$(azi1)°/$(dip1)°",
+          ylims=(0, 0.4), color=:red, lw=2)
+
+    hline!([var(comps.CU)], color="gray", ls=:dash, legend=false)
+
+    vline!([a_interm2], color="green", ls=:dash, legend=false)
+
+end
+
+# ╔═╡ 39838426-aeb3-424c-97b8-818b1326b771
+md"""
+
+##### Modelagem do variograma terciário
+
+Agora que elegemos o variograma experimental representante do eixo terciário, podemos modelá-lo:
+
+"""
+
+# ╔═╡ dacfe446-3c19-430d-8f5f-f276a022791f
+md"""
+
+Alcance 1ª Estrutura: $(@bind a_min1 Slider(10.0:2.0:82.0, default=48.0, show_value=true)) m
+
+Alcance 2ª Estrutura: $(@bind a_min2 Slider(10.0:2.0:110.0, default=64.0, show_value=true)) m
+
+"""
+
+
+# ╔═╡ 0927d78e-9b50-4aaf-a93c-69578608a4f8
+begin
+
+    model_min0 = NuggetEffect(c₀)
+
+    model_min1 = SphericalVariogram(sill=Float64(c₁),
+                                    range=Float64(a_min1))
+
+    model_min2 = SphericalVariogram(sill=Float64(c₂),
+                                    range=Float64(a_min2))
+
+    model_min = model_min0 + model_min1 + model_min2
+
+    plot(γ_int_min2, marker=5, color=:deepskyblue)
+
+    plot!(model_min, 0, 200, title="$(azi2)°/$(dip2)°",
+          ylims=(0, 0.4), color=:red, lw=2)
+
+    hline!([var(comps.CU)], color="gray", ls=:dash)
+
+    vline!([a_min2], color="green", ls=:dash, legend=false)
+
+end
+
+# ╔═╡ c9ac9fb4-5d03-43c9-833e-733e48565946
+begin
+
+    range_y = range(model_dip)
+    range_x = range(model_interm)
+    range_z = range(model_min)
+
+    plot(model_min, lw=2, label="Eixo primário ($(range_z) m)",
+         color=:blue, legend=:bottomright)
+
+    plot!(model_interm, lw=2, label="Eixo secundário ($(range_x) m)",
+		  color=:green)
+
+    plot!(model_dip, lw=2, label="Eixo terciário ($(range_y) m)",
+          color=:red, xlims=(0.0,350.0), ylims=(0.0,0.25))
+
+    vline!([range_y], ls=:dash, label=false, color=:red)
+    vline!([range_x], ls=:dash, label=false, color=:green)
+    vline!([range_z], ls=:dash, label=false, color=:blue)
+	hline!([var(comps.CU)], ls=:dash, label=false, color=:gray)
+
+end
+
+# ╔═╡ 483487c6-acf8-4551-8357-2e69e6ff44ff
+md"""
+
+#### Resumo
+
+Agora que temos as três direções principais do modelo de variograma, podemos sumarizar as informações obtidas nos itens anteriores:
+
+|Estrutura| Modelo | Alcance em X  | Alcance em Y | Alcance em Z | Variância |Efeito Pepita|
+|:-------:|:------:|:-------------:|:------------:|:------------:|:---------:|:-----:|
+|    0    |   EPP  |     -         | -            |          -   |     -     | $(c₀) |
+|    1    |Esférico|$(a_interm1) m | $(a_dip1) m  | $(a_min1) m  |   $(c₁)   | -     |
+|    2    |Esférico| $(range_x) m  | $(range_y) m | $(range_z) m |   $(c₂)   |   -   |
+
+
+"""
+
+# ╔═╡ 38d15817-f3f2-496b-9d83-7dc55f4276dc
+begin
+	
+	# Obtendo rotações do variograma
+    rot_z = azi
+    rot_x = -dip
+    if orient == "config1"
+        rot_y = -45.0
+    elseif orient == "config2"
+        rot_y = -0.0
+    elseif orient == "config3"
+        rot_y = -22.5
+    elseif orient == "config4"
+        rot_y = -67.5
+    end
+	
+	# Criação dos elipsoides de anisotropia por estrutura
+	aniso_elp_1 = aniso2distance([a_dip1, a_interm1, a_min1], 
+								 [rot_z, rot_x, rot_y],
+								 convention=GSLIB)
+
+    aniso_elp_2 = aniso2distance([range_y, range_x, range_z], 
+                            	 [rot_z, rot_x, rot_y],
+                            	 convention=GSLIB)
+	
+	# Criação do modelo de variograma final
+	γ₀ = NuggetEffect(nugget=c₀)
+
+    γ₁ = SphericalVariogram(sill=Float64(c₁),
+                            distance=aniso_elp_1)
+
+    γ₂ = SphericalVariogram(sill=Float64(c₂),
+                            distance=aniso_elp_2)
+
+    γ = γ₀ + γ₁ + γ₂
+	
+end
+
+# ╔═╡ d700e40b-dd7f-4630-a29f-f27773000597
+md"""
+
+#### Criação do modelo de variograma final
+
+Com as informações sumarizadas acima, podemos definir uma convenção de rotação a ser adotada e, finalmente, criar o modelo de variograma final que, por sua vez, será um objeto de entrada no sistema linear de krigagem.
+
+Nesse sentido, utilizando a **convenção de rotação do GSLIB**, as rotações do modelo de variograma serão:
+
+| Rotação | Eixo | Ângulo   |
+|:-------:|:----:|:--------:|
+|    1ª   |   Z  |$(rot_z)° |
+|    2ª   |   X  |$(rot_x)° |
+|    3ª   |   Y  |$(rot_y)° |
+
+"""
+
+# ╔═╡ 8ab2cdfe-8bd5-4270-a57e-89456c713b80
+html"""
+
+    <div id="estimativa_de_recursos">
+        <h2>6. Estimativa de recursos</h2>
+    </div>
+
+"""
+
+# ╔═╡ 9baefd13-4c16-404f-ba34-5982497e8da6
+md"""
+
+#### Introdução
+
+"""
+
 # ╔═╡ Cell order:
-# ╠═980f4910-96f3-11eb-0d4f-b71ad9888d73
+# ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
 # ╟─14ac7b6e-9538-40a0-93d5-0379fa009872
 # ╟─20fff27a-4328-43ac-97df-a35b63a6fdd0
 # ╟─c544614a-3e5c-4d22-9340-592aabf84871
@@ -1604,3 +1901,20 @@ end
 # ╟─eb9ebce2-7476-4f44-ad4f-10a1ca522143
 # ╟─fa93796d-7bc0-4391-89a7-eeb63e1a3838
 # ╟─92d11f3b-c8be-4701-8576-704b73d1b619
+# ╟─6c048b83-d12c-4ce8-9e9a-b89bf3ef7638
+# ╟─0e431ddb-45c1-4fb6-8469-8c5c10fcf13c
+# ╟─512d0792-85fc-4d81-a939-076389a59f19
+# ╟─0def0326-55ef-45db-855e-a9a683b2a76d
+# ╟─120f4a9c-2ca6-49f1-8abc-999bcc559149
+# ╟─404622b6-bf67-4b97-9355-2c24592cc364
+# ╟─a74b7c50-4d31-4bd3-a1ef-6869abf73185
+# ╟─922d81f3-0836-4b14-aaf2-83be903c8642
+# ╟─39838426-aeb3-424c-97b8-818b1326b771
+# ╟─0927d78e-9b50-4aaf-a93c-69578608a4f8
+# ╟─dacfe446-3c19-430d-8f5f-f276a022791f
+# ╟─483487c6-acf8-4551-8357-2e69e6ff44ff
+# ╟─c9ac9fb4-5d03-43c9-833e-733e48565946
+# ╟─d700e40b-dd7f-4630-a29f-f27773000597
+# ╠═38d15817-f3f2-496b-9d83-7dc55f4276dc
+# ╟─8ab2cdfe-8bd5-4270-a57e-89456c713b80
+# ╟─9baefd13-4c16-404f-ba34-5982497e8da6
