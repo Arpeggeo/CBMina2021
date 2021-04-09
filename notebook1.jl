@@ -15,12 +15,18 @@ end
 
 # ╔═╡ 980f4910-96f3-11eb-0d4f-b71ad9888d73
 begin
+	# instantiate environment
     using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
-    using CSV, DataFrames, Query
-    using PlutoUI, Random
-    using Statistics, StatsBase
-    using GeoStats, DrillHoles, GslibIO, FileIO
-    using StatsPlots, Plots; gr(format="png")
+	
+	# load packages used in this notebook
+	using GeoStats, DrillHoles
+	using CSV, DataFrames, Query
+    using Statistics, StatsBase, Random
+	using FileIO, PlutoUI
+    using Plots, StatsPlots
+	
+	# default plot settings
+	gr(format=:png)
 end;
 
 # ╔═╡ 14ac7b6e-9538-40a0-93d5-0379fa009872
@@ -1975,7 +1981,7 @@ md"""
 FileIO.save("modelo_estimado_ok.gslib", estim_OK)
 
 # ╔═╡ Cell order:
-# ╠═980f4910-96f3-11eb-0d4f-b71ad9888d73
+# ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
 # ╟─14ac7b6e-9538-40a0-93d5-0379fa009872
 # ╟─20fff27a-4328-43ac-97df-a35b63a6fdd0
 # ╟─c544614a-3e5c-4d22-9340-592aabf84871
