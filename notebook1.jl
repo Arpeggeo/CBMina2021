@@ -1792,7 +1792,298 @@ md"""
 
 #### Introdução
 
+Grande parte das estimativas realizadas na indústria são baseadas em **estimadores lineares ponderados**:
+
+- Esses estimadores são **lineares**, pelo fato serem construídos a partir de uma combinação linear entre valores de unidades amostrais Z(uᵢ) e seus respectivos pesos wᵢ.
+
+- Esses estimadores são **podenderados**, pelo fato de consistirem em uma média ponderada entre as amostras utilizadas para se estimar um determinado bloco.
+
+Dessa forma, a equação geral dos estimadores lineares ponderados é definida como:
+
+```math
+ẑ(uₒ) = \sum_{i=1}^{n} wᵢ.z(uᵢ) = w₁.z(u₁) + w₂.z(u₂) + w₃.z(u₃) + ... + wₙ.z(uₙ)
+```
+
+Neste notebook, estimaremos os teores de Cu a partir dos estimadores Krigagem Simples e Krigagem Ordinária.
+
+Na **Krigagem Simples (SK)**, a média populacional (μ) é assumida como conhecida e invariável em todo o domínio de estimativa. Em outras palavras, devemos definir uma média estacionária como entrada desse estimador que, no nosso contexto, será a média declusterizada. Diferentemente da Krigagem Ordinária, não há condição de fechamento para os pesos atribuídos às amostras da vizinhança e, nesse sentido, uma parte do peso é atribuída à média estacionária (μ):
+
+```math
+\sum_{i=1}^{n} wᵢ + w(μ) = 1
+```
+
+Por outro lado, a **Krigagem Ordinária (OK)** não assume o conhecimento da média populacional e, nesse sentido, a hipótese de estacionariedade para todo o domínio de estimativa não é tão rígida. Nesse caso há condição de fechamento, em que o somatório dos pesos atribuídos às amostras da vizinhança deve resultar em 1. Portanto, não há atribuição de uma parcela do peso de krigagem para a média estacionária.
+
+```math
+\sum_{i=1}^{n} wᵢ = 1
+```
+
 """
+
+# ╔═╡ bbe2e767-0601-436c-8b0e-b9dac8ef945b
+md"""
+
+#### Fluxograma de Estimativa no GeoStats.jl
+
+Abaixo encontra-se o *workflow* para a realização da estimativa via pacote [GeoStats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html): 
+
+**1.**  Definição do domínio de estimativa (modelo de blocos):
+
+> **BM = RegularGrid(origin, finish, dims=blocksizes)**
+
+**2.** Definição do problema de estimativa:
+
+> **problem = EstimationProblem(sample, BM, :variable)**
+
+**3.** Criação do *solver*:
+
+> **solver = Kriging(:variable => (variogram = vg_model))**
+
+**4.** Solução do problema:
+
+> **solution = solve(problem, solver)**
+
+"""
+
+# ╔═╡ a7a59395-59ec-442a-b4b6-7db55d150d53
+md"""
+
+##### 1. Criação do modelo de blocos
+
+Nesta primeira etapa, definimos o **domínio de estimativa**, ou seja, o modelo de blocos dentro do qual realizaremos a estimativa.
+
+Para tal, devemos definir três parâmetros:
+
+- Ponto de origem do modelo de blocos
+- Ponto de fim do modelo de blocos
+- Número de blocos nas direções X, Y e Z
+
+"""
+
+# ╔═╡ 12d79d77-358c-4098-993a-d5be538929a2
+md"""
+
+Rotação em Z: $(@bind ψ₁ Slider(0:5:90, default=45, show_value=true))°
+
+Rotação em X: $(@bind ψ₂ Slider(0:5:90, default=45, show_value=true))°
+
+"""
+
+# ╔═╡ f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+begin
+
+    Xmin, Xmax = minimum(comps.X), maximum(comps.X)
+    Ymin, Ymax = minimum(comps.Y), maximum(comps.Y)
+    Zmin, Zmax = minimum(comps.Z), maximum(comps.Z)
+	
+	# Tamanho dos blocos em X, Y e Z
+	Xsize = Int(ceil((Xmax - Xmin) / 20))
+	Ysize = Int(ceil((Ymax - Ymin) / 20))
+	Zsize = Int(ceil((Zmax - Zmin) / 10))
+
+    origem = ((Xmin - Xsize), (Ymin - Ysize), (Zmin - Zsize))
+    final = ((Xmax + Xsize), (Ymax + Ysize), (Zmax + Zsize))
+
+    BM = CartesianGrid(origem, final, dims=(Xsize, Ysize, Zsize))
+
+    plot(BM, camera=(ψ₁,ψ₂), xlabel="X", ylabel="Y", zlabel="Z")
+
+end
+
+# ╔═╡ a8adf478-620d-4744-aae5-99d0891fe6b0
+md"""
+
+##### 2. Definição do problema de estimativa
+
+Para definirmos o problema de estimativa, devemos passar como parâmetros:
+
+- Furos georreferenciados
+- Modelo de blocos
+- Variável de interesse
+
+"""
+
+# ╔═╡ affacc76-18e5-49b2-8e7f-77499d2503b9
+problem = EstimationProblem(comps_georef, BM, :CU)
+
+# ╔═╡ 31cd3d10-a1e8-4ad8-958f-51de08d0fa54
+md"""
+
+##### 3. Criação dos solvers
+
+Um **solver** nada mais é do que o estimador que utilizaremos para realizar a estimativa. No nosso contexto, criaremos dois solvers:
+
+- Krigagem Simples (SK)
+- Krigagem Ordinária (OK)
+
+"""
+
+# ╔═╡ 9c61271d-4afe-4f7c-a521-8f799b6981ed
+md"""
+
+№ mínimo de amostras: $(@bind s_min Slider(2:1:6, default=4, show_value=true))
+
+№ máximo de amostras: $(@bind s_max Slider(6:1:20, default=8, show_value=true))
+
+"""
+
+# ╔═╡ 2a76c2b9-953e-4e4b-a98e-8e992943f60c
+begin
+	
+	# Média estacionária
+    μ = mean(comps_georef, :CU)
+
+	# SK
+    SK = Kriging(
+                 :CU => (variogram=γ,
+                         mean=μ,
+                         minneighbors=s_min,
+                         maxneighbors=s_max)
+                )
+
+	# OK
+    OK = Kriging(
+                 :CU => (variogram=γ,
+                         minneighbors=s_min,
+                         maxneighbors=s_max)
+                )
+
+end
+
+# ╔═╡ 9b3fe534-78fa-48db-a101-e2a43f2478d6
+md"""
+
+##### 4. Solução do problema de estimativa
+
+Para finalmente estimarmos os teores de Cu, devemos passar como argumentos de entrada:
+
+- Problema de estimativa
+- Solver que será utilizado para resolvê-lo
+
+"""
+
+# ╔═╡ 86ae2f3e-6291-4107-b201-5cbd51fde73b
+begin
+
+    estim_SK = solve(problem, SK)
+
+    estim_OK = solve(problem, OK)
+
+end;
+
+# ╔═╡ 4f05c05d-c92a-460d-b3e0-d392111ef57a
+md"""
+
+#### Validação da estimativa
+
+Uma etapa crucial do fluxograma de estimativa de recursos é a **validação da estimativa**. Dentre as diversas formas existentes, realizaremos as seguintes validações:
+
+- Validação global da estimativa
+
+- Q-Q Plot entre teores amostrais e teores estimados
+
+"""
+
+# ╔═╡ 64a8cd06-6020-434a-a1e2-115e17c51d29
+md"""
+
+##### Validação global da estimativa
+
+Nesta validação, nos atentaremos para a comparação entre os seguintes sumários estatísticos das seguintes variáveis:
+
+- Cu amostral
+- Cu declusterizado
+- Cu estimado por SK
+- Cu estimado por OK
+
+É importante ressaltar dois pontos acerca dos estimadores da família da krigagem:
+
+- Como a krigagem leva em consideração a redundância amostral, é mais conveniente compararmos a média krigada com a a média declusterizada
+
+- Em geral estimativas por krigagem tendem a não honrar a real heterogeneidade do depósito. Em outras palavras, o histograma dos teores estimados por krigagem tende a ser mais suavizado do que o histograma dos teores amostrais
+
+"""
+
+# ╔═╡ c6b0f335-19cb-4fbe-a47b-2ba3fd664832
+begin
+
+	# Teores estimados
+	estimado_SK = values(estim_SK).CU
+    estimado_OK = values(estim_OK).CU
+	
+	# Quantis dos teores estimados
+    q_SK = quantile(estimado_SK, [0.1,0.5,0.9])
+    q_OK = quantile(estimado_OK, [0.1,0.5,0.9])
+
+    sum_SK = DataFrame(
+                            Variável = :CU_SK,
+                            X̅ = round(mean(estimado_SK), digits=2),
+                            S² = round(var(estimado_SK), digits=2),
+                            S = round(std(estimado_SK), digits=2),
+                            P10 = round(q_SK[1], digits=2),
+                            P50 = round(q_SK[2], digits=2),
+                            P90 = round(q_SK[3], digits=2)
+                       )
+
+	
+    sum_OK = DataFrame(
+                            Variável = :CU_OK,
+                            X̅ = round(mean(estimado_OK), digits=2),
+                            S² = round(var(estimado_OK), digits=2),
+                            S = round(std(estimado_OK), digits=2),
+                            P10 = round(q_OK[1], digits=2),
+                            P50 = round(q_OK[2], digits=2),
+                            P90 = round(q_OK[3], digits=2)
+                      )
+
+    vcat(sum_cu_clus, sum_cu_declus, sum_SK, sum_OK)
+
+end
+
+# ╔═╡ ed97c749-30b7-4c72-b790-fef5a8332548
+md"""
+A partir da comparação entre as estatísticas acima, nota-se que:
+
+- As duas médias estimadas são muito próximas da média declusterizada
+
+- Houve uma redução significativa da dispersão dos teores estimados pelos dois métodos quando comparados com os teores amostrais. OK apresentou estimativas menos suavizadas do que as estimativas de SK.
+
+
+"""
+
+# ╔═╡ 263c1837-7474-462b-bd97-ee805baec458
+md"""
+
+##### Q-Q plot
+
+O Q-Q plot entre os teores amostrais (reais) e os teores estimados pode ser utilizado para realizar uma comparação entre as distribuições de Cu amostral e Cu estimado. Em outras palavras, podemos analisar (qualitativamente) o grau de suavização da estimativa por krigagem.
+
+Nesse sentido, quanto mais os pontos se aproximam da reta X=Y, menor é o efeito de suavização.
+
+Por outro lado, quanto mais os pontos tendem a se horizontalizar, maior é o grau de suavização da estimativa por krigagem.
+
+"""
+
+# ╔═╡ 193dde9b-1f4a-4313-a3a6-ba3c89600bcb
+begin
+
+    qq_SK = qqplot(
+				   comps.CU, estimado_SK,
+                   xlabel="Cu(%)", ylabel="Cu-SK(%)",
+                   color=:red,legend=:false,
+                   title="Amostral x Estimado-SK"
+                   )
+ 
+    qq_OK = qqplot(
+				   comps.CU, estimado_OK,
+                   xlabel="Cu(%)", ylabel="Cu-OK(%)",
+                   color=:green,
+                   title="Amostral x Estimado-OK"
+				  )
+
+    plot(qq_SK, qq_OK)
+
+end
 
 # ╔═╡ Cell order:
 # ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
@@ -1918,3 +2209,20 @@ md"""
 # ╠═38d15817-f3f2-496b-9d83-7dc55f4276dc
 # ╟─8ab2cdfe-8bd5-4270-a57e-89456c713b80
 # ╟─9baefd13-4c16-404f-ba34-5982497e8da6
+# ╟─bbe2e767-0601-436c-8b0e-b9dac8ef945b
+# ╟─a7a59395-59ec-442a-b4b6-7db55d150d53
+# ╟─f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+# ╟─12d79d77-358c-4098-993a-d5be538929a2
+# ╟─a8adf478-620d-4744-aae5-99d0891fe6b0
+# ╠═affacc76-18e5-49b2-8e7f-77499d2503b9
+# ╟─31cd3d10-a1e8-4ad8-958f-51de08d0fa54
+# ╠═2a76c2b9-953e-4e4b-a98e-8e992943f60c
+# ╟─9c61271d-4afe-4f7c-a521-8f799b6981ed
+# ╟─9b3fe534-78fa-48db-a101-e2a43f2478d6
+# ╠═86ae2f3e-6291-4107-b201-5cbd51fde73b
+# ╟─4f05c05d-c92a-460d-b3e0-d392111ef57a
+# ╟─64a8cd06-6020-434a-a1e2-115e17c51d29
+# ╠═c6b0f335-19cb-4fbe-a47b-2ba3fd664832
+# ╟─ed97c749-30b7-4c72-b790-fef5a8332548
+# ╟─263c1837-7474-462b-bd97-ee805baec458
+# ╟─193dde9b-1f4a-4313-a3a6-ba3c89600bcb
