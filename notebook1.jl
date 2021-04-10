@@ -1202,7 +1202,7 @@ Calcularemos diversos variogramas experimentais ortogonais entre si e escolherem
 md"""
 Azimute: $(@bind azi Slider(0.0:22.5:67.5, default=67.5, show_value=true)) °
 
-№ passos: $(@bind nlagsazi Slider(5:1:12, default=9, show_value=true))
+Número de passos: $(@bind nlagsazi Slider(5:1:12, default=9, show_value=true))
 
 Largura de banda: $(@bind dtolazi Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1260,9 +1260,9 @@ begin
     γaziₐ  = γaziₒ + γazi₁ + γazi₂
 
     plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ,
-		 legend = :bottomright, label = "Experimental", title = "$azi °")
+		 legend = :bottomright, label = "empírico", title = "$azi °")
 
-    plot!(γaziₐ, 0, 350, color = coloraziₐ)
+    plot!(γaziₐ, 0, 350, color = coloraziₐ, label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1345,9 +1345,9 @@ begin
     γpri  = γpriₒ + γpri₁ + γpri₂
 
     plot(gpri, ylims = (0, σ²+0.05), color = colorpri,
-	     legend = :bottomright, label = "Experimental", title = "$azi °/ $dip °")
+	     legend = :bottomright, label = "empírico", title = "$azi °/ $dip °")
 
-    plot!(γpri, 0, 350, color = colorpri)
+    plot!(γpri, 0, 350, color = colorpri, label = "teórico")
 		
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1403,7 +1403,7 @@ md"""
 
 Ângulo stereonet: $(@bind θ Slider(range(0, stop=180-180/8, step=180/8), show_value=true))°
 
-№ passos: $(@bind nlagssec Slider(5:1:15, default=12, show_value=true))
+Número de passos: $(@bind nlagssec Slider(5:1:15, default=12, show_value=true))
 
 Largura de banda: $(@bind tolsec Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1471,9 +1471,9 @@ begin
     γsec  = γsecₒ + γsec₁ + γsec₂
 
     plot(gsec, ylims = (0, σ²+0.05), color = colorsec,
-	     label = "Experimental", legend = :bottomright)
+	     label = "empírico", legend = :bottomright)
 
-    plot!(γsec, 0, 250, color = colorsec)
+    plot!(γsec, 0, 250, color = colorsec, label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1511,9 +1511,10 @@ begin
 
     γter  = γterₒ + γter₁ + γter₂
 
-    plot(gter, color = colorter)
+    plot(gter, color = colorter, label = "empírico",
+	     legend = :bottomright)
 
-    plot!(γter, 0, 250, color = colorter)
+    plot!(γter, 0, 250, color = colorter, label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1540,11 +1541,7 @@ Agora que temos as três direções principais do modelo de variograma, podemos 
 # ╔═╡ c9ac9fb4-5d03-43c9-833e-733e48565946
 begin
 
-    range_y = range(γpri)
-    range_x = range(γsec)
-    range_z = range(γter)
-
-    plot(γpri, color = colorpri, label = "Eixo primário")
+    plot(γpri, color = colorpri, label = "Eixo primário", legend = :bottomright)
 
     plot!(γsec, color = colorsec, label="Eixo secundário")
 
@@ -2020,7 +2017,7 @@ end;
 # ╟─d07a57c3-0a7a-49c2-a840-568e72d50545
 # ╟─17b21a63-9fa6-4975-9302-5465cdd3d2fa
 # ╟─9389a6f4-8710-44c3-8a56-804017b6239b
-# ╠═e3b98c8b-878d-475b-bd4b-823d00c6141b
+# ╟─e3b98c8b-878d-475b-bd4b-823d00c6141b
 # ╟─78b45d90-c850-4a7e-96b8-535dd23bd1a7
 # ╟─294ac892-8952-49bc-a063-3d290c375ea5
 # ╟─3859448f-265a-4929-bfa4-1809036da3dd
