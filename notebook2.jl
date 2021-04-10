@@ -17,12 +17,12 @@ end
 begin
 	# instantiate environment
 	using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
-	
+
 	# load packages used in this notebook
 	using GeoStats, Query, Statistics
 	using CSV, DataFrames, PlutoUI
 	using Plots, StatsPlots
-	
+
 	# default plot settings
 	gr(format=:png)
 end;
@@ -38,7 +38,7 @@ md"""
 
 # Geostatística moderna
 
-Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini]()
+Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](https://github.com/fnaghetini)
 """
 
 # ╔═╡ f2a77ee0-3ee1-11eb-1ce3-213bfda427c6
@@ -344,7 +344,7 @@ samples |> @groupby(_.geo) |> @map({geo = key(_), μAu = mean(_.Au), σ²Au = st
 
 # ╔═╡ 1e8bd0a3-3a4a-4681-a994-53d6185eca97
 md"""
-A função `key(_)` retorna o valor da variável utilizada no agrupamento. Neste caso, a geologia pode assumir os valores `C1` ou `C2` como ilustrado na tabela. 
+A função `key(_)` retorna o valor da variável utilizada no agrupamento. Neste caso, a geologia pode assumir os valores `C1` ou `C2` como ilustrado na tabela.
 """
 
 # ╔═╡ 4cf756d2-98e6-47f0-9952-17c47bab8210
