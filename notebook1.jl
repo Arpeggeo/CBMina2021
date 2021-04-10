@@ -896,16 +896,15 @@ md"""
 
 ### 5. Variografia
 
-#### Função variograma/semivariograma
+Na etapa de variografia encontramos uma função que descreve o comportamento espacial da nossa variável de interesse (Cu). É importante ressaltar que, no nosso contexto, essa função é **anisotrópica**, sendo sensível à direção, mas insensível ao sentido. A **função variograma** é a função utilizada na Krigagem:
 
-A **função variograma** é uma função matemática que mapeia o comportamento espacial de uma variável regionalizada. No nosso caso, essa variável é o Cu.
 
 ```math
-γ(h) = \frac{1}{2n} \sum_{i=1}^{n} [Z(xᵢ) - Z(xᵢ + h)]^2
+\gamma(h) = \frac{1}{2n} \sum_{i=1}^{n} [Z(x_i) - Z(x_i + h)]^2
 
 ```
 
-Nesse sentido, o objetivo desta etapa consiste em encontrar uma função matemática que descreve o comportamento espacial da nossa variável de interesse (Cu). É importante ressaltar que, no nosso contexto, essa função é **anisotrópica**, sendo sensível à direção, mas insensível ao sentido.
+onde no nosso caso específico, a variável de interesse $Z$ é o teor de Cu.
 
 Para encontrarmos essa função, devemos realizar duas etapas principais:
 
@@ -913,7 +912,7 @@ Para encontrarmos essa função, devemos realizar duas etapas principais:
 
 - Modelagem dos variogramas experimentais
 
-Ao final, teremos em mãos um modelo de variograma representativo da continuidade espacial do Cu e que será utilizado como entrada na estimativa por krigagem.
+Ao final, teremos em mãos um modelo de variograma representativo da continuidade espacial do Cu e que será utilizado como entrada na estimativa por Krigagem.
 
 """
 
@@ -979,15 +978,15 @@ Os modelos teóricos mais utilizados na indústria são:
 
 - Modelo Exponencial
 
-Os modelos teóricos de variograma apresentam basicamente quatro propriedades (Figura 7):
+Os modelos teóricos de variograma apresentam basicamente quatro parâmetros (Figura 7):
 
-- Efeito Pepita (C₀)
+- Efeito Pepita ($c_o$)
 
-- Variância Espacial (Cᵢ)
+- Contribuição ($c_i$)
 
-- Patamar (C₀+Cᵢ)
+- Patamar ($c_o + c_i$)
 
-- Alcance (aᵢ)
+- Alcance ($a_i$)
 
 """
 
@@ -1071,7 +1070,9 @@ end
 # ╔═╡ a717d5d3-9f4e-4a2d-8e32-f0605bbd742f
 md"""
 
-Agora que sabemos a orientação média dos furos (150°/55°), podemos calcular o variograma experimental down hole:
+#### Variograma down hole
+
+Agora que sabemos a orientação média dos furos ($(round(μazi,digits=2))°/ $(round(-μdip,digits=2))°), podemos calcular o variograma experimental down hole.
 
 """
 
@@ -1138,15 +1139,15 @@ Agora que o variograma down hole foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 0585add6-1320-4a31-a318-0c40b7a444fa
 md"""
 
-Efeito Pepita: $(@bind c₀ Slider(0.00:0.005:0.06, default=0.02, show_value=true))
+Efeito pepita: $(@bind c₀ Slider(0.00:0.005:0.06, default=0.02, show_value=true))
 
-Variância Espacial 1ª Estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.06, show_value=true))
+Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.06, show_value=true))
 
-Variância Espacial 2ª Estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.075, show_value=true))
+Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.075, show_value=true))
 
-Alcance 1ª Estrutura: $(@bind a_dh1 Slider(10.0:2.0:80.0, default=80.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind a_dh1 Slider(10.0:2.0:80.0, default=80.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_dh2 Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind a_dh2 Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
 
 """
 
@@ -1205,7 +1206,7 @@ Azimute: $(@bind azi Slider(0.0:22.5:67.5, default=67.5, show_value=true)) °
 
 № passos: $(@bind nlags_azi Slider(5:1:12, default=9, show_value=true))
 
-Largura de Banda: $(@bind bw_azi Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind bw_azi Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1243,9 +1244,9 @@ Agora que o variograma azimute foi calculado, podemos ajustá-lo com um modelo t
 # ╔═╡ 78b45d90-c850-4a7e-96b8-535dd23bd1a7
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_azi1 Slider(10.0:2.0:100.0, default=60.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind a_azi1 Slider(10.0:2.0:100.0, default=60.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_azi2 Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind a_azi2 Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
 
 """
 
@@ -1288,7 +1289,7 @@ Nesta etapa, encontraremos o **maior alcance** do modelo de variograma final, al
 md"""
 ##### Variogram experimental primário
 
-Para o cálculo deste variograma experimental, devemos fixar o azimute de maior continuidade já encontrado (0$(azi)°) e variar o dip. A orientação (azi/dip) que fornecer o maior alcance, será eleita a **direção de maior continuidade**:
+Para o cálculo deste variograma experimental, devemos fixar o azimute de maior continuidade já encontrado ($(azi)°) e variar o dip. A orientação (azi/dip) que fornecer o maior alcance, será eleita a **direção de maior continuidade**:
 
 """
 
@@ -1329,9 +1330,9 @@ Agora que o variograma primário foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 92d11f3b-c8be-4701-8576-704b73d1b619
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_dip1 Slider(10.0:2.0:120.0, default=84.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind a_dip1 Slider(10.0:2.0:120.0, default=84.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_dip2 Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind a_dip2 Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
 
 """
 
@@ -1368,9 +1369,9 @@ Sabe-se que, por definição, os três eixos principais do variograma são ortog
 
 Portanto, nesta etapa, encontraremos os **alcances intermediário e menor** do modelo de variograma final, bem como a **terceira rotação do variograma**, ou seja, aquela em torno do **eixo Y**.
 
-Nesse sentido, como o eixo primário do variograma apresenta uma orientação 0$(azi)° / $(dip)°, com o auxílio de um **estereograma**, podemos encontrar o plano que contém os eixos secundário e terciário. Ressalta-se ainda que **eixos secundário e terciário são ortogonais entre si**.
+Nesse sentido, como o eixo primário do variograma apresenta uma orientação $(azi)° / $(dip)°, com o auxílio de um **estereograma**, podemos encontrar o plano que contém os eixos secundário e terciário. Ressalta-se ainda que **eixos secundário e terciário são ortogonais entre si**.
 
-A Figura 9 mostra um estereograma cujo eixo primário tem orientação 067°/22.5°. O **ponto vermelho** representa o **eixo primário (Y)**, enquanto os **pontos pretos** são candidatos a **eixos secundário e terciário**. O **grande círculo vermelho** representa o **plano XZ**, ou seja, aquele que contém os eixos secundário (X) e terciário (Z).
+A Figura 9 mostra um estereograma cujo eixo primário tem orientação 67°/22.5°. O **ponto vermelho** representa o **eixo primário (Y)**, enquanto os **pontos pretos** são candidatos a **eixos secundário e terciário**. O **grande círculo vermelho** representa o **plano XZ**, ou seja, aquele que contém os eixos secundário (X) e terciário (Z).
 
 Portanto, adotaremos a seguinte convenção:
 
@@ -1409,7 +1410,7 @@ md"""
 
 № passos: $(@bind nlags_int_min Slider(5:1:15, default=12, show_value=true))
 
-Largura de Banda: $(@bind bw_int_min Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind bw_int_min Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1450,16 +1451,16 @@ md"""
 
 ##### Modelagem do variograma secundário
 
-Agora que elegemos o variograma experimental representante do eixo secundário, podemos modelá-lo:
+Agora que elegemos o variograma experimental representante do eixo secundário, podemos modelá-lo com duas estruturas esféricas:
 
 """
 
 # ╔═╡ 922d81f3-0836-4b14-aaf2-83be903c8642
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_interm1 Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind a_interm1 Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_interm2 Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind a_interm2 Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
 
 """
 
@@ -1492,7 +1493,7 @@ md"""
 
 ##### Modelagem do variograma terciário
 
-Agora que elegemos o variograma experimental representante do eixo terciário, podemos modelá-lo:
+Fazemos o mesmo para o variograma terciário:
 
 """
 
@@ -1621,31 +1622,17 @@ md"""
 
 ### 6. Krigagem
 
-Grande parte das estimativas realizadas na indústria são baseadas em **estimadores lineares ponderados**:
-
-- Esses estimadores são **lineares**, pelo fato serem construídos a partir de uma combinação linear entre valores de unidades amostrais Z(uᵢ) e seus respectivos pesos wᵢ.
-
-- Esses estimadores são **podenderados**, pelo fato de consistirem em uma média ponderada entre as amostras utilizadas para se estimar um determinado bloco.
-
-Dessa forma, a equação geral dos estimadores lineares ponderados é definida como:
+Grande parte das estimativas realizadas na indústria são baseadas em estimadores lineares:
 
 ```math
-ẑ(uₒ) = \sum_{i=1}^{n} wᵢ.z(uᵢ) = w₁.z(u₁) + w₂.z(u₂) + w₃.z(u₃) + ... + wₙ.z(uₙ)
+\hat{z}(x_o) = \sum_{i=1}^{n} w_i \cdot z(x_i) = w_1 \cdot z(x_1) + w_2 \cdot z(x_2) + \cdots + w_n \cdot z(x_n)
 ```
 
-Neste módulo, estimaremos os teores de Cu a partir dos estimadores Krigagem Simples e Krigagem Ordinária.
+Neste módulo, estimaremos os teores de Cu a partir dos estimadores lineares conhecidos como Krigagem Simples e Krigagem Ordinária.
 
-Na **Krigagem Simples (SK)**, a média populacional (μ) é assumida como conhecida e invariável em todo o domínio de estimativa. Em outras palavras, devemos definir uma média estacionária como entrada desse estimador que, no nosso contexto, será a média declusterizada. Diferentemente da Krigagem Ordinária, não há condição de fechamento para os pesos atribuídos às amostras da vizinhança e, nesse sentido, uma parte do peso é atribuída à média estacionária (μ):
+Na **Krigagem Simples (SK)**, a média populacional é assumida como conhecida e constante em todo o domínio de estimativa. Devemos portanto definir esse parâmetro como entrada desse estimador que, no nosso contexto, será a média declusterizada. Diferentemente da Krigagem Ordinária, não há condição de fechamento para os pesos atribuídos às amostras da vizinhança e, nesse sentido, uma parte do peso é atribuída à média especificada.
 
-```math
-\sum_{i=1}^{n} wᵢ + w(μ) = 1
-```
-
-Por outro lado, a **Krigagem Ordinária (OK)** não assume o conhecimento da média populacional e, nesse sentido, a hipótese de estacionariedade para todo o domínio de estimativa não é tão rígida. Nesse caso há condição de fechamento, em que o somatório dos pesos atribuídos às amostras da vizinhança deve resultar em 1. Portanto, não há atribuição de uma parcela do peso de krigagem para a média estacionária.
-
-```math
-\sum_{i=1}^{n} wᵢ = 1
-```
+Por outro lado, a **Krigagem Ordinária (OK)** não assume o conhecimento da média populacional. Nesse caso há condição de fechamento, em que o somatório dos pesos atribuídos às amostras da vizinhança deve resultar na unidade.
 
 """
 
@@ -1751,18 +1738,21 @@ md"""
 
 ##### Solução do problema
 
-Para gerar o modelo de teores de Cu, resolvemos o problema definido com qualquer um dos solvers:
+Para gerar o modelo de teores de Cu, resolvemos o problema definido com qualquer um dos solvers. Como o notebook que estamos trabalhando reage a qualquer alteração dos parâmetros, nós adicionamos um checkbox para apenas executar a Krigagem sob demanda.
+
+Marque o checkbox $(@bind run CheckBox()) para executar a Krigagem.
 
 """
 
-# ╔═╡ 86ae2f3e-6291-4107-b201-5cbd51fde73b
-begin
+# ╔═╡ 78117ae8-d77c-4508-9793-3e7e9dfbb913
+if run
+	sol_SK = solve(problem, SK)
+end
 
-    sol_SK = solve(problem, SK)
-
-    sol_OK = solve(problem, OK)
-
-end;
+# ╔═╡ 5e86ee34-60fe-43e4-851c-2f08072f836e
+if run
+	sol_OK = solve(problem, OK)
+end
 
 # ╔═╡ 4f05c05d-c92a-460d-b3e0-d392111ef57a
 md"""
@@ -1798,7 +1788,7 @@ Nesta validação, nos atentaremos para a comparação entre os seguintes sumár
 """
 
 # ╔═╡ c6b0f335-19cb-4fbe-a47b-2ba3fd664832
-begin
+if run
 	
 	stats_SK = DataFrame(Variable = "Cu (Krigagem simples)",
                          X̄   = mean(sol_SK[:CU]),
@@ -1823,6 +1813,7 @@ begin
 end
 
 # ╔═╡ ed97c749-30b7-4c72-b790-fef5a8332548
+if run
 md"""
 A partir da comparação entre as estatísticas acima, nota-se que:
 
@@ -1832,6 +1823,7 @@ A partir da comparação entre as estatísticas acima, nota-se que:
 
 
 """
+end
 
 # ╔═╡ 263c1837-7474-462b-bd97-ee805baec458
 md"""
@@ -1845,7 +1837,7 @@ Quanto mais distantes forem os pontos do plot da função identidade (X=Y), mais
 """
 
 # ╔═╡ 193dde9b-1f4a-4313-a3a6-ba3c89600bcb
-begin
+if run
 
     qq_SK = qqplot(
 				   samples[:CU], sol_SK[:CU],
@@ -1865,6 +1857,18 @@ begin
 
 end
 
+# ╔═╡ 2181506b-76f5-4a57-adba-e90679b2b21b
+md"""
+
+#### Resumo
+
+- A Krigagem ordinária é superior a Krigagem simples como ilustrado no Q-Q plot.
+
+- Métodos de Krigagem são conhecidos por suavizar **inadequadamente** a distribuição de teores.
+
+- Amanhã aprenderemos uma alternativa a Krigagem no módulo **simulação Gaussiana**.
+"""
+
 # ╔═╡ 5ad612f4-76e9-4867-b4c8-4c35540a5f47
 md"""
 
@@ -1875,7 +1879,9 @@ md"""
 """
 
 # ╔═╡ b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
-save("output/grademodel.gslib", sol_OK)
+if run
+	save("output/grademodel.gslib", sol_OK)
+end
 
 # ╔═╡ 83b9ba41-4ada-496a-bf0f-32b37fde1027
 md"""
@@ -1902,7 +1908,9 @@ function csvtable(solution, variable)
 end;
 
 # ╔═╡ 245c7304-1cc0-408a-97ec-867ac0cc81b0
-csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
+if run
+	csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv")
+end;
 
 # ╔═╡ Cell order:
 # ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
@@ -2024,13 +2032,15 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╠═2a76c2b9-953e-4e4b-a98e-8e992943f60c
 # ╟─9c61271d-4afe-4f7c-a521-8f799b6981ed
 # ╟─9b3fe534-78fa-48db-a101-e2a43f2478d6
-# ╠═86ae2f3e-6291-4107-b201-5cbd51fde73b
+# ╠═78117ae8-d77c-4508-9793-3e7e9dfbb913
+# ╠═5e86ee34-60fe-43e4-851c-2f08072f836e
 # ╟─4f05c05d-c92a-460d-b3e0-d392111ef57a
 # ╟─64a8cd06-6020-434a-a1e2-115e17c51d29
 # ╟─c6b0f335-19cb-4fbe-a47b-2ba3fd664832
 # ╟─ed97c749-30b7-4c72-b790-fef5a8332548
 # ╟─263c1837-7474-462b-bd97-ee805baec458
 # ╟─193dde9b-1f4a-4313-a3a6-ba3c89600bcb
+# ╟─2181506b-76f5-4a57-adba-e90679b2b21b
 # ╟─5ad612f4-76e9-4867-b4c8-4c35540a5f47
 # ╠═b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
 # ╟─83b9ba41-4ada-496a-bf0f-32b37fde1027
