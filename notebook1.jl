@@ -978,13 +978,11 @@ Os modelos teóricos mais utilizados na indústria são:
 
 - Modelo Exponencial
 
-Os modelos teóricos de variograma apresentam basicamente quatro parâmetros (Figura 7):
+Os modelos teóricos de variograma apresentam basicamente três parâmetros (Figura 7):
 
 - Efeito Pepita ($c_o$)
 
 - Contribuição ($c_i$)
-
-- Patamar ($c_o + c_i$)
 
 - Alcance ($a_i$)
 
@@ -1298,7 +1296,7 @@ md"""
 
 Dip: $(@bind dip Slider(0.0:22.5:90.0, default=22.5, show_value=true))°
 
-№ passos: $(@bind nlags_dip Slider(5:1:12, default=10, show_value=true))
+Número de passos: $(@bind nlags_dip Slider(5:1:12, default=10, show_value=true))
 
 Largura de banda: $(@bind bw_dip Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1787,7 +1785,7 @@ if viz
 	sol_OK |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
 	@map({CU = _.CU, X = _.COORDS[1], Y = _.COORDS[2], Z = _.COORDS[3]}) |>
 	@filter(_.X < x && _.Y < y && _.Z < z) |>
-	@df scatter(:X, :Y, :Z, marker_z = :CU, marker = (:square, 4),
+	@df scatter(:X, :Y, :Z, marker_z = :CU, color = :berlin, marker = (:square, 4),
 	            xlabel = "X", ylabel = "Y", zlabel = "Z",
 		        xlims = (xm, xM), ylims = (ym, yM), zlims = (zm, zM),
 	            label = "Modelo de teores de Cu (%)", camera = (ϕ₁, ϕ₂))
