@@ -138,7 +138,7 @@ begin
 					holeid = :HOLEID, x = :X, y = :Y, z = :Z)
 
 	# Importação da tabela Survey
-	survey = Survey(file = "data/survey.csv",
+	survey = Survey(file = "data/survey.csv", invertdip = false,
 					holeid = :HOLEID, at = :AT, azm = :AZM, dip = :DIP)
 
 	# Importação da tabela Assay
@@ -725,16 +725,16 @@ begin
     cp |> @df histogram(:CU,
 		                bins   = 30,
 		 				label  = false,
-		                color  = :darkgoldenrod1,
-		                alpha  = 0.7,
+		                color  = :gray90,
+		                alpha  = 0.75,
 		                xlabel = "Cu (%)",
             			ylabel = "Frequência Absoluta")
 
     # Linha vertical contínua vermelha (média)
-    vline!([Cu_comp.X̄], color = :blue, label = "X̄")
+    vline!([Cu_comp.X̄], label = "X̄")
 
     # Linha vertical contínua verde (mediana)
-    vline!([Cu_comp.P50], color = :green, label = "P50")
+    vline!([Cu_comp.P50], label = "P50")
 	
 	# Linha vertical tracejada cinza (P10)
     vline!([Cu_comp.P10, Cu_comp.P90], color = :gray,
@@ -873,7 +873,7 @@ begin
     plot(Statistics.normalize(hist_clus),
 		 seriestype = :step,
 		 normed     = true,
-         color      = :darkgoldenrod1,
+         color      = :brown,
 		 label      = "Clusterizado",
 	     xlabel     = "Cu (%)",
 	     ylabel     = "PDF")
@@ -1050,10 +1050,10 @@ begin
 	
 	# Sumário estatístico da variável "DIP"
 	dipdf = DataFrame(Variable = "Dip",
-                      Mean     = -mean(composites.trace.DIP),
-					  Median   = -median(composites.trace.DIP),
-					  Min      = -minimum(composites.trace.DIP),
-					  Max      = -maximum(composites.trace.DIP))
+                      Mean     = mean(composites.trace.DIP),
+					  Median   = median(composites.trace.DIP),
+					  Min      = minimum(composites.trace.DIP),
+					  Max      = maximum(composites.trace.DIP))
 	
 	# Azimute e Dip médios
 	μazi = round(azmdf.Mean[], digits=2)
@@ -1120,8 +1120,8 @@ begin
 	σ² = var(samples[:CU])
 	
 	# Plotagem do variograma experimental downhole
-    plot(gdh, ylims = (0, σ²+0.05), color = colordh, legend = :bottomright,
-		 label = "empírico", title = "$μazi °/ $μdip °")
+    plot(gdh, ylims = (0, σ²+0.05), color = colordh, ms = 5,
+		 legend = :bottomright, label = "empírico", title = "$μazi °/ $μdip °")
 	
 	# Linha horizontal tracejada cinza (variância à priori)
     hline!([σ²], color = :gray, ls = :dash, primary = false)
@@ -1168,11 +1168,11 @@ begin
     γdh  = γdhₒ + γdh₁ + γdh₂
 
     # Plotagem do variograma experimental downhole
-    plot(gdh, ylims = (0, σ²+0.05), color = colordh,
+    plot(gdh, ylims = (0, σ²+0.05), color = colordh, ms = 5,
 		 legend = :bottomright, label = "empírico", title = "$μazi °/ $μdip °")
 
     # Plotagem do modelo de variograma aninhado
-    plot!(γdh, 0, 150, color = colordh, label = "teórico")
+    plot!(γdh, 0, 150, color = colordh, lw = 2, label = "teórico")
     
     # Linha horizontal tracejada cinza (variância à priori)
     hline!([σ²], color = :gray, ls = :dash, primary = false)
@@ -1222,10 +1222,10 @@ begin
     gaziᵦ = DirectionalVariogram(sph2cart((azi+90), 0), samples, :CU,
 		                         maxlag = 350, nlags = nlagsazi, dtol = dtolazi)
 	
-	plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ,
-		 legend = :bottomright, label="Azimute $azi °")
+	plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ, ms = 5,
+		 legend = :bottomright, label="azimute $azi °")
 
-    plot!(gaziᵦ, color = coloraziᵦ, label="Azimute $(azi+90) °")
+    plot!(gaziᵦ, color = coloraziᵦ, ms = 5, label="azimute $(azi+90) °")
 
     hline!([σ²], color=:gray, ls=:dash, primary = false)
 
@@ -1259,10 +1259,10 @@ begin
 
     γaziₐ  = γaziₒ + γazi₁ + γazi₂
 
-    plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ,
+    plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ, ms = 5,
 		 legend = :bottomright, label = "empírico", title = "$azi °")
 
-    plot!(γaziₐ, 0, 350, color = coloraziₐ, label = "teórico")
+    plot!(γaziₐ, 0, 350, color = coloraziₐ, lw = 2, label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1289,6 +1289,10 @@ Para o cálculo deste variograma experimental, devemos fixar o azimute de maior 
 
 """
 
+# ╔═╡ 99baafe5-6249-4eda-845f-d7f6219d5726
+# Cores dos variograms principais
+colorpri, colorsec, colorter = cgrad(:Purples)[[9,7,5]];
+
 # ╔═╡ 97670210-2c91-4be7-a607-0da83cb16f44
 md"""
 
@@ -1304,13 +1308,11 @@ Largura de banda: $(@bind tolpri Slider(10:10:100, default=70, show_value=true))
 begin
 	
     Random.seed!(1234)
-	
-	colorpri = :red
 
     gpri = DirectionalVariogram(sph2cart(azi, dip), samples, :CU,
                                 maxlag = 350, nlags = nlagspri, dtol = tolpri)
 
-	plot(gpri, ylims=(0, σ²+0.05), color = colorpri,
+	plot(gpri, ylims=(0, σ²+0.05), color = colorpri, ms = 5,
 		 legend = :bottomright, label = "empírico", title = "$azi ° / $dip °")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
@@ -1344,10 +1346,10 @@ begin
 
     γpri  = γpriₒ + γpri₁ + γpri₂
 
-    plot(gpri, ylims = (0, σ²+0.05), color = colorpri,
-	     legend = :bottomright, label = "empírico", title = "$azi °/ $dip °")
+    plot(gpri, ylims = (0, σ²+0.05), color = colorpri, ms = 5,
+	     legend = :bottomright, label = "primário", title = "$azi °/ $dip °")
 
-    plot!(γpri, 0, 350, color = colorpri, label = "teórico")
+    plot!(γpri, 0, 350, color = colorpri, lw = 2, label = "teórico")
 		
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1364,28 +1366,13 @@ Sabe-se que, por definição, os três eixos principais do variograma são ortog
 
 Portanto, nesta etapa, encontraremos os **alcances intermediário e menor** do modelo de variograma final, bem como a **terceira rotação do variograma**, ou seja, aquela em torno do **eixo Y**.
 
-Nesse sentido, como o eixo primário do variograma apresenta uma orientação $(azi)° / $(dip)°, com o auxílio de um **estereograma**, podemos encontrar o plano que contém os eixos secundário e terciário. Ressalta-se ainda que **eixos secundário e terciário são ortogonais entre si**.
+Nesse sentido, como o eixo primário do variograma apresenta uma orientação $(azi) ° / $(dip) °, podemos encontrar o plano que contém os eixos secundário e terciário. Ressalta-se ainda que **eixos secundário e terciário são ortogonais entre si**.
 
-A Figura 9 mostra um estereograma cujo eixo primário tem orientação 67°/22.5°. O **ponto vermelho** representa o **eixo primário (Y)**, enquanto os **pontos pretos** são candidatos a **eixos secundário e terciário**. O **grande círculo vermelho** representa o **plano XZ**, ou seja, aquele que contém os eixos secundário (X) e terciário (Z).
-
-Portanto, adotaremos a seguinte convenção:
+Adotaremos a seguinte convenção:
 
 - Eixo primário (maior continuidade) = Y
 - Eixo secundário (continuidade intermediária) = X
 - Eixo terciário (menor continuidade) = Z
-
-"""
-
-# ╔═╡ 0e431ddb-45c1-4fb6-8469-8c5c10fcf13c
-html"""
-
-<p align="center">
-    <img src="" alt="Figura_09">
-</p>
-
-<p align="center">
-    <b>Figura 9</b>: Estereograma com o eixo primário e candidatos para os eixos secundário e terciário.
-</p>
 
 """
 
@@ -1401,7 +1388,7 @@ Para o cálculo dos variogramas experimentais secundário e terciário, podemos 
 # ╔═╡ 120f4a9c-2ca6-49f1-8abc-999bcc559149
 md"""
 
-Ângulo stereonet: $(@bind θ Slider(range(0, stop=180-180/8, step=180/8), show_value=true))°
+Ângulo de rotação: $(@bind θ Slider(range(0, stop=180-180/8, step=180/8), show_value=true))°
 
 Número de passos: $(@bind nlagssec Slider(5:1:15, default=12, show_value=true))
 
@@ -1420,9 +1407,6 @@ begin
 	# Giro no plano perpendicular gerado por u e v
 	dirsec = cos(deg2rad(θ)) .* u .+ sin(deg2rad(θ)) .* v
 	dirter = cos(deg2rad(θ+90)) .* u .+ sin(deg2rad(θ+90)) .* v
-	
-	colorsec = :orange
-	colorter = :yellow
 
 	# Variograma secundário
     gsec = DirectionalVariogram(dirsec, samples, :CU,
@@ -1432,10 +1416,10 @@ begin
     gter = DirectionalVariogram(dirter, samples, :CU,
 								maxlag = 250, nlags = nlagssec, dtol = tolsec)
 	
-	plot(gsec, ylims=(0, σ²+0.05), color = colorsec,
+	plot(gsec, ylims=(0, σ²+0.05), color = colorsec, ms = 5,
 		 legend = :bottomright, label = "secundário")
 
-    plot!(gter, color = colorter, label = "terciário")
+    plot!(gter, color = colorter, ms = 5, label = "terciário")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1470,10 +1454,10 @@ begin
 
     γsec  = γsecₒ + γsec₁ + γsec₂
 
-    plot(gsec, ylims = (0, σ²+0.05), color = colorsec,
-	     label = "empírico", legend = :bottomright)
+    plot(gsec, ylims = (0, σ²+0.05), color = colorsec, ms = 5,
+	     label = "secundário", legend = :bottomright)
 
-    plot!(γsec, 0, 250, color = colorsec, label = "teórico")
+    plot!(γsec, 0, 250, color = colorsec, lw = 2, label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1511,10 +1495,10 @@ begin
 
     γter  = γterₒ + γter₁ + γter₂
 
-    plot(gter, color = colorter, label = "empírico",
+    plot(gter, color = colorter, ms = 5, label = "terciário",
 	     legend = :bottomright)
 
-    plot!(γter, 0, 250, color = colorter, label = "teórico")
+    plot!(γter, 0, 250, color = colorter, lw = 2, label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1541,11 +1525,16 @@ Agora que temos as três direções principais do modelo de variograma, podemos 
 # ╔═╡ c9ac9fb4-5d03-43c9-833e-733e48565946
 begin
 
-    plot(γpri, color = colorpri, label = "Eixo primário", legend = :bottomright)
+    plot(γpri, color = colorpri, lw = 2, label = "primário",
+		 legend = :bottomright, title = "Modelo de variograma 3D")
 
-    plot!(γsec, color = colorsec, label="Eixo secundário")
+    plot!(γsec, color = colorsec, lw = 2, label = "secundário")
 
-    plot!(γter, color = colorter, label="Eixo terciário")
+    plot!(γter, color = colorter, lw = 2, label = "terciário",
+		  ylims = (0, σ²+0.05))
+	
+	hline!([σ²], color = :gray, ls = :dash, primary = false)
+	vline!(range.([γpri,γsec,γter]), color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -2021,13 +2010,13 @@ end;
 # ╟─78b45d90-c850-4a7e-96b8-535dd23bd1a7
 # ╟─294ac892-8952-49bc-a063-3d290c375ea5
 # ╟─3859448f-265a-4929-bfa4-1809036da3dd
+# ╟─99baafe5-6249-4eda-845f-d7f6219d5726
 # ╟─668da8c2-2db6-4812-90ce-86b17b289cc6
 # ╟─97670210-2c91-4be7-a607-0da83cb16f44
 # ╟─eb9ebce2-7476-4f44-ad4f-10a1ca522143
 # ╟─fa93796d-7bc0-4391-89a7-eeb63e1a3838
 # ╟─92d11f3b-c8be-4701-8576-704b73d1b619
 # ╟─6c048b83-d12c-4ce8-9e9a-b89bf3ef7638
-# ╟─0e431ddb-45c1-4fb6-8469-8c5c10fcf13c
 # ╟─512d0792-85fc-4d81-a939-076389a59f19
 # ╟─0def0326-55ef-45db-855e-a9a683b2a76d
 # ╟─120f4a9c-2ca6-49f1-8abc-999bcc559149

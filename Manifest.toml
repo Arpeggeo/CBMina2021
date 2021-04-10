@@ -264,9 +264,9 @@ uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 
 [[DrillHoles]]
 deps = ["CSV", "DataFrames", "StatsBase"]
-git-tree-sha1 = "3b6b2a45aaee8c111668219b29ea7eca60f635bf"
+git-tree-sha1 = "04af13de863635b3aa4550cfac680cb9b2acb554"
 uuid = "9d36f3b5-8124-4f7e-bcda-df733105c718"
-version = "0.1.1"
+version = "0.1.2"
 
 [[EarCut_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
