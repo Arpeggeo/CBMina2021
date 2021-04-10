@@ -1886,13 +1886,6 @@ begin
 
 end
 
-# ╔═╡ 50300f8e-7e27-4c4d-9e26-ff4e2e66c291
-md"""
-
-Por fim, iremos exportar o modelo estimado para dois formatos distintos: `.gslib` e `.csv`.
-
-"""
-
 # ╔═╡ 5ad612f4-76e9-4867-b4c8-4c35540a5f47
 md"""
 
@@ -2059,7 +2052,6 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╟─ed97c749-30b7-4c72-b790-fef5a8332548
 # ╟─263c1837-7474-462b-bd97-ee805baec458
 # ╟─193dde9b-1f4a-4313-a3a6-ba3c89600bcb
-# ╟─50300f8e-7e27-4c4d-9e26-ff4e2e66c291
 # ╟─5ad612f4-76e9-4867-b4c8-4c35540a5f47
 # ╠═b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
 # ╟─83b9ba41-4ada-496a-bf0f-32b37fde1027
