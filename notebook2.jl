@@ -19,8 +19,8 @@ begin
 	using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
 
 	# load packages used in this notebook
-	using GeoStats, Query, Statistics
-	using CSV, DataFrames, PlutoUI
+	using CSV, DataFrames, Query
+	using Statistics, PlutoUI
 	using Plots, StatsPlots
 
 	# default plot settings
@@ -60,7 +60,9 @@ A demanda por profissionais com essas habilidades só tende a crescer na indúst
 md"""
 ### Primeiros passos em Julia
 
-Hoje vamos dar nossos primeiros passos em [Julia](https://julialang.org), uma linguagem de programação moderna com as características necessárias para geoestatística de alta-performance. A linguagem é *simples de usar* como Python e *rápida* como C. 🚀
+Hoje vamos dar nossos primeiros passos em [Julia](https://julialang.org), uma linguagem de programação moderna com as características necessárias para geoestatística de **alta-performance** e geociência de dados.
+
+A linguagem é *simples de usar* como Python e *rápida* como C. 🚀
 """
 
 # ╔═╡ 1623916e-41fc-11eb-19ce-91716fd0f8ea
@@ -246,7 +248,7 @@ Investigaremos os dados `Bonnie` disponibilizados sob a seguinte licença:
 The Bonnie Project Example is under copyright of Transmin Metallurgical Consultants, 2019. It is issued under the Creative Commons Attribution-ShareAlike 4.0 International Public License.
 ```
 
-Os dados estão no formato CSV no arquivo `data/bonnie.csv`. Para carregar o arquivo no notebook, utilizaremos os pacotes `CSV.jl` e `DataFrames.jl`.
+Os dados estão no formato CSV no arquivo `data/bonnie.csv`. Para carregar o arquivo no notebook, utilizaremos os pacotes [CSV.jl](https://github.com/JuliaData/CSV.jl) e [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl).
 
 Especificamos o caminho do arquivo e redirecionamos o resultado para uma tabela `DataFrame` utilizando o operador `|>`, conhecido como operador "pipe" em Julia:
 """
@@ -271,7 +273,7 @@ Notamos que cada coluna tem um tipo de elemento `eltype` e que a coluna `:CODE` 
 md"""
 #### Limpeza de dados
 
-O primeiro passo na geociência de dados é a limpeza e preparação dos dados. Usaremos o pacote `Query.jl` para manipular tabelas de uma forma sucinta e poderosa. O pacote introduz um conjunto de operações que podem ser facilmente concatenadas para produzir novas tabelas:
+O primeiro passo na geociência de dados é a limpeza e preparação dos dados. Usaremos o pacote [Query.jl](https://github.com/queryverse/Query.jl) para manipular tabelas de uma forma sucinta e poderosa. O pacote introduz um conjunto de operações que podem ser facilmente concatenadas para produzir novas tabelas:
 
 ```julia
 table |> @filter(...) |> @select(...)
@@ -290,7 +292,7 @@ samples = table |> @dropna() |> @rename(:EAST=>:X, :NORTH=>:Y, :RL=>:Z,
 md"""
 ##### Exercício
 
-Utilizando a [documentação](http://www.queryverse.org/Query.jl/stable/standalonequerycommands/#The-@replacena-command-1) do `Query.jl`, escreva uma query que troca todos os valores faltantes da tabela `table` pelo valor `0` e salva o resultado na variável `q1`:
+Utilizando a [documentação](http://www.queryverse.org/Query.jl/stable/standalonequerycommands/#The-@replacena-command-1) do Query.jl, escreva uma query que troca todos os valores faltantes da tabela `table` pelo valor `0` e salva o resultado na variável `q1`:
 """
 
 # ╔═╡ 741cdeca-45ff-40df-b45b-96ba97cefa83
@@ -506,7 +508,10 @@ md"""
 
 Se chegou até aqui, parabéns por esta conquista! 👏🏻 Esperamos que esteja gostando do minicurso! Está muito difícil? Muito fácil? O que podemos fazer para melhorar o material? Compartilhe conosco e tentaremos melhorar numa próxima versão.
 
-Compartilhe visualizações com seus colegas de minicurso no fórum. Tem uma outra tabela de dados interessante pra compartilhar? Queremos aprender também!
+#### O que veremos amanhã?
+
+- **Simulacão Gaussiana** como uma alternativa à Krigagem
+- A nova área de **Aprendizado Geoestatístico** ([Hoffimann 2021](https://arxiv.org/abs/2102.08791))
 """
 
 # ╔═╡ 200257ea-3ef2-11eb-0f63-2fed43dabcaf
