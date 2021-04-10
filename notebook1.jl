@@ -52,26 +52,9 @@ md"""
 
 Este módulo objetiva demonstrar um fluxo de trabalho completo de estimativa (tradicional) de recursos por Krigagem realizado com a linguagem [Julia](https://docs.julialang.org/en/v1/) e o pacote [GeoStats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html).
 
-Nesse sentido, cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a estimativa dos recursos num modelo de blocos 3D (Figura 1).
+Nesse sentido, cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a estimativa dos recursos num modelo de blocos 3D.
 
 Portanto, o **produto final** é um **modelo de blocos estimado** por Krigagem ordinária.
-
-"""
-
-# ╔═╡ 1a00e8d4-4115-4651-86a7-5237b239307f
-html"""
-
-<p align="center">
-
-    <img src="" alt="Figura_01">
-
-</p>
-
-<p align="center">
-
-    <b>Figura 1</b>: Fluxo de trabalho simplificado de estimativa de recursos.
-
-</p>
 
 """
 
@@ -95,7 +78,7 @@ md"""
 
 ### 1. Importação e geração de furos
 
-É comum que os dados de sondagem sejam apresentados por meio de um conjunto de três (ou mais) tabelas distintas, relacionadas entre si por um campo-chave (Figura 2).
+É comum que os dados de sondagem sejam apresentados por meio de um conjunto de três (ou mais) tabelas distintas, relacionadas entre si por um campo-chave (Figura 1).
 
 Esse campo-chave que interliga as três tabelas é o identificador dos furos (comumente chamado de `BHID` ou `HOLEID`).
 
@@ -114,13 +97,13 @@ html"""
 
 <p align="center">
 
-    <img src="" alt="Figura_02">
+    <img src="https://i.postimg.cc/52Qz4t7Z/tables.jpg">
 
 </p>
 
 <p align="center">
 
-    <b>Figura 2</b>: Tabelas Collar, Survey, Assay e Litho. Note que elas se relacionam entre si pelo campo-chave HOLEID.
+    <b>Figura 1</b>: Tabelas Collar, Survey, Assay e Litho relacionadas entre si pelo campo-chave HOLEID.
 
 </p>
 
@@ -389,7 +372,7 @@ Portanto, um procedimento denominado **compositagem** deve ser conduzido, visand
 
 - Aumentar o suporte amostral (suporte x variância = k).
 
-- Adequar o comprimento das amostras à escala de trabalho (Figura 3).
+- Adequar o comprimento das amostras à escala de trabalho (Figura 2).
 
 Quando a compositagem é realizada, os teores originais são recalculados, a partir de uma média dos teores amostrais ponderada pelo comprimento amostral. Os teores resultantes são denominados **teores compostos (Tc)**:
 
@@ -404,13 +387,13 @@ html"""
 
 <p align="center">
 
-    <img src="" alt="Figura_03">
+    <img src="https://i.postimg.cc/PfcrtQg5/compositing.png">
 
 </p>
 
 <p align="center">
 
-    <b>Figura 3</b>: Exemplo de compositagem por bancadas de 10 m de um furo vertical (Yamamoto, 2001). .
+    <b>Figura 2</b>: Exemplo de compositagem por bancadas de 10 m de um furo vertical (Yamamoto, 2001).
 
 </p>
 
@@ -777,7 +760,7 @@ md"""
 md"""
 ### 4. Declusterização
 
-É muito comum, na mineração, que regiões "mais ricas" de um depósito sejam mais amostradas do que suas porções "mais pobres" (Figura 4). Essa situação se justifica pelo fato de a sondagem ser um procedimento de elevado custo e, nesse sentido, é mais coerente que amostremos mais as regiões mais promissoras do depósito.
+É muito comum, na mineração, que regiões "mais ricas" de um depósito sejam mais amostradas do que suas porções "mais pobres". Essa situação se justifica pelo fato de a sondagem ser um procedimento de elevado custo e, nesse sentido, é mais coerente que amostremos mais as regiões mais promissoras do depósito.
 
 A **Teoria da Amostragem** deixa claro que a amostragem de um fenômeno (*e.g.* mineralização de Cu) deve ser representativa. Em outras palavras:
 
@@ -786,19 +769,6 @@ A **Teoria da Amostragem** deixa claro que a amostragem de um fenômeno (*e.g.* 
 Nesse sentido, como frequentemente há um agrupamento amostral preferencial nas porções ricas dos depósitos, podemos dizer que a amostragem de depósitos minerais não é representativa. Dessa maneira, como temos uma amostragem sistematicamente não representativa, teremos uma estimativa sistematicamente não fiel à realidade do depósito.
 
 Uma forma de mitigar esse viés amostral intrínseco à indústria da mineração é a utilização de técnicas de **declusterização**.
-
-"""
-
-# ╔═╡ 14beece5-6475-49a0-9f5c-cefb68328e24
-html"""
-
-<p align="center">
-    <img src="" alt="Figura_04">
-</p>
-
-<p align="center">
-    <b>Figura 4</b>: Exemplo de agrupamento amostral preferencial nas porções "mais ricas".
-</p>
 
 """
 
@@ -920,7 +890,7 @@ Ao final, teremos em mãos um modelo de variograma representativo da continuidad
 md"""
 ##### Cálculo de variogramas experimentais
 
-Podemos calcular variogramas experimentais (direcionais) para diversas direções no espaço. Para o cálculo de um variograma experimental direcional, devemos definir alguns parâmetros (Figura 5):
+Podemos calcular variogramas experimentais (direcionais) para diversas direções no espaço. Para o cálculo de um variograma experimental direcional, devemos definir alguns parâmetros (Figura 3):
 
 - Direção (azimute/mergulho)
 
@@ -934,11 +904,11 @@ Podemos calcular variogramas experimentais (direcionais) para diversas direçõe
 html"""
 
 <p align="center">
-    <img src="" alt="Figura_05">
+    <img src="https://i.postimg.cc/Y02gMfZ3/lags.png">
 </p>
 
 <p align="center">
-    <b>Figura 5</b>: Parâmetros para o cálculo de um variograma experimental direcional.
+    <b>Figura 3</b>: Parâmetros para o cálculo de um variograma experimental direcional.
 
 </p>
 
@@ -948,7 +918,7 @@ html"""
 md"""
 ##### Modelagem de variogramas experimentais
 
-Como os variogramas experimentais só são calculados para distâncias (ou lags) específicos, é necessário o ajuste de um **modelo matemático contínuo** (Figura 6), de modo que saberemos o valor do variograma (γ) para qualquer distância entre pares de amostras (h).
+Como os variogramas experimentais só são calculados para distâncias (ou lags) específicos, é necessário o ajuste de um **modelo matemático contínuo** (Figura 4), de modo que saberemos o valor do variograma (γ) para qualquer distância entre pares de amostras (h).
 
 """
 
@@ -956,11 +926,11 @@ Como os variogramas experimentais só são calculados para distâncias (ou lags)
 html"""
 
 <p align="center">
-    <img src="" alt="Figura_06">
+    <img src="https://i.postimg.cc/C5jFPWmr/variofit.jpg">
 </p>
 
 <p align="center">
-    <b>Figura 6</b>: Exemplo de um variograma experimental (esquerda) ajustado por um modelo teórico (direita).
+    <b>Figura 4</b>: Exemplo de um variograma experimental (esquerda) ajustado por um modelo teórico (direita).
 
 
 </p>
@@ -992,7 +962,7 @@ Os modelos teóricos de variograma apresentam basicamente três parâmetros (Fig
 html"""
 
 <p align="center">
-    <img src="" alt="Figura_07">
+    <img src="https://i.postimg.cc/dtYQkVVb/varioparams.png" alt="Figura_07">
 </p>
 
 <p align="center">
@@ -1003,22 +973,25 @@ html"""
 
 # ╔═╡ c3a0dfb3-27e5-4d9a-82e5-f722a513b788
 md"""
+
 #### Fluxo da variografia 3D
 
-A Figura 8 ilustra o fluxo de trabalho que realizaremos para a obtenção do modelo de variograma que mapeia a continuidade espacial do Cu.
+Em seguida ilustramos o fluxo de trabalho para a obtenção do modelo de variograma 3D de Cu. Em cada etapa, listamos os principais parâmetros encontrados.
 
-"""
-
-# ╔═╡ 91700370-f8fe-40c9-88fb-946063ae9084
-html"""
-
-<p align="center">
-    <img src="" alt="Figura_08">
-</p>
-
-<p align="center">
-    <b>Figura 8</b>: Fluxo da variografia 3D.
-</p>
+1. **Variograma down hole** (ao longo do furo)
+    - Efeito pepita e as contribuições das estruturas
+2. **Variograma azimute**
+    - Azimute de maior continuidade
+    - Primeira rotação do variograma (eixo Z)
+3. **Variograma primário**
+    - Dip de maior continuidade, fixando-se o azimute
+    - Segunda rotação do variograma (eixo X)
+    - Alcance da direção (azimute + dip) de maior continuidade (Y)
+4. **Variograma secundário**
+    - Terceira rotação do variograma (eixo Y)
+    - Alcance da direção de continuidade intermediária (X)
+5. **Variograma terciário**
+    - Alcance da direção de menor continuidade (Z)
 
 """
 
@@ -1924,7 +1897,6 @@ end;
 # ╟─14ac7b6e-9538-40a0-93d5-0379fa009872
 # ╟─20fff27a-4328-43ac-97df-a35b63a6fdd0
 # ╟─c544614a-3e5c-4d22-9340-592aabf84871
-# ╟─1a00e8d4-4115-4651-86a7-5237b239307f
 # ╟─f443543c-c4f4-447b-996d-9ad00c67b1af
 # ╟─ff01a7d7-d491-4d49-b470-a2af6783c82b
 # ╟─af1aca7e-bde2-4e14-a664-b7c71ff80ffe
@@ -1972,7 +1944,6 @@ end;
 # ╟─0808061f-4856-4b82-8560-46a59e669ac4
 # ╟─71b45351-7397-46e4-912a-c5e65fb6a1c8
 # ╟─5bfa698a-4e29-47f8-96fe-3c533fbdb761
-# ╟─14beece5-6475-49a0-9f5c-cefb68328e24
 # ╟─201b805b-7241-441d-b2d9-5698b0da58ab
 # ╠═63b75ae2-8dca-40e3-afe0-68c6a639f54e
 # ╟─5699c563-d6cb-4bc2-8063-e1be00722a41
@@ -1989,7 +1960,6 @@ end;
 # ╟─d9c9b259-e09a-4571-85bf-844a881e8251
 # ╟─c2af3d54-377f-4d52-98f9-cfae89769950
 # ╟─c3a0dfb3-27e5-4d9a-82e5-f722a513b788
-# ╟─91700370-f8fe-40c9-88fb-946063ae9084
 # ╟─6d520cfe-aa7b-4083-b2bf-b34f840c0a75
 # ╟─289865a9-906f-46f4-9faa-f62feebbc92a
 # ╟─1db51803-8dc4-4db6-80a1-35a489b6fb9e
