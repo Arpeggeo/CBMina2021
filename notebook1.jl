@@ -831,8 +831,13 @@ md"""
 
 Com os furos georreferenciados, podemos agora calcular **estatísticas declusterizadas** para o Cu. As estatísticas declusterizadas serão utilizadas na etapa de validação da estimativa por Krigagem.
 
-A tabela abaixo mostra uma comparação estatística entre os teores de Cu antes e depois da declusterização das amostras:
+A tabela abaixo mostra uma comparação estatística entre os teores de Cu antes e depois da declusterização das amostras. As estatísticas declusterizadas são função de um tamanho de bloco especificado.
 
+"""
+
+# ╔═╡ 91bbc52e-412f-46eb-b342-0d202e965934
+md"""
+Tamanho de bloco: $(@bind s Slider(50.:10.:250., show_value=true)) m
 """
 
 # ╔═╡ 68e50bdd-b006-4abc-aeda-c4d67c30babb
@@ -842,11 +847,11 @@ begin
 	
 	# Sumário estatístico do Cu declusterizado
 	Cu_decl = DataFrame(Variable = "Cu (declusterizado)",
-						X̄        = mean(samples, :CU),
-						S²       = var(samples, :CU),
-						P10      = quantile(samples, :CU, 0.1),
-						P50      = quantile(samples, :CU, 0.5),
-						P90      = quantile(samples, :CU, 0.9))
+						X̄        = mean(samples, :CU, s),
+						S²       = var(samples, :CU, s),
+						P10      = quantile(samples, :CU, 0.1, s),
+						P50      = quantile(samples, :CU, 0.5, s),
+						P90      = quantile(samples, :CU, 0.9, s))
 	
 	# Razão das médias (%)
 	Xᵣ = (Cu_decl.X̄ / Cu_clus.X̄)[] * 100
@@ -862,7 +867,7 @@ begin
 	hist_clus = fit(Histogram, samples[:CU], nbins = 30)
 
     # Cálculo do histograma declusterizado de Cu
-    hist_decl = EmpiricalHistogram(samples, :CU, nbins = 30)
+    hist_decl = EmpiricalHistogram(samples, :CU, s, nbins = 30)
 
     # Visualização dos histogramas
     plot(Statistics.normalize(hist_clus),
@@ -1053,6 +1058,10 @@ begin
 					  Min      = minimum(composites.trace.DIP),
 					  Max      = maximum(composites.trace.DIP))
 	
+	# Azimute e Dip médios
+	μazi = azmdf.Mean[]
+	μdip = dipdf.Mean[]
+	
 	# Concatenação vertical dos sumários
 	[azmdf
 	 dipdf]
@@ -1091,21 +1100,26 @@ begin
     	dip_rad = deg2rad(dip)
     	x = sin(azi_rad) * cos(dip_rad)
     	y = cos(azi_rad) * cos(dip_rad)
-    	z = (sin(dip_rad)) * -1
+    	z = -sin(dip_rad)
 
-    	return (x, y, z)
+    	(x, y, z)
 	end
+	
+	# Direcão ao longo dos drillholes
+	normal = polar2cart(μazi, -μdip)
+	maxlag = 150.0
 
 	# Cálculo variograma down hole para a variável Cu
-	γ_dh = DirectionalVariogram(polar2cart(150,55), samples, :CU,
-								dtol = bw_dh, maxlag = 150, nlags = nlags_dh)
+	γ_dh = DirectionalVariogram(normal, samples, :CU,
+								dtol = bw_dh, maxlag = maxlag, nlags = nlags_dh)
 	
 	# Variância a priori
 	σ²_dh = var(samples[:CU])
 	
 	# Plotagem do variograma experimental downhole
     plot(γ_dh, marker = 5, ylims = (0, σ²_dh+0.05),
-		 color = :deepskyblue, title = "150°/55°")
+		 color = :deepskyblue,
+		 title = "$(round(μazi,digits=2))°/$(round(-μdip,digits=2))°")
 	
 	# Linha horizontal tracejada cinza (variância à priori)
     hline!([σ²_dh], color = :gray, ls = :dash, legend = false)
@@ -1152,13 +1166,13 @@ begin
     model_dh = model_dh0 + model_dh1 + model_dh2
 
     # Plotagem do variograma experimental downhole
-    plot(γ_dh, ylims = (0, 0.3), marker = 5, color = :deepskyblue)
+    plot(γ_dh, ylims = (0, σ²_dh + 0.05), marker = 5, color = :deepskyblue)
 
     # Plotagem do modelo de variograma aninhado
-    plot!(model_dh, 0, 150,
+    plot!(model_dh, 0, maxlag,
 		  lw = 2, color = :red,
 		  legend = :right,
-          title = "150°/55°",
+          title = "$(round(μazi,digits=2))°/$(round(-μdip,digits=2))°",
           ylims = (0, σ²_dh + 0.05))
     
     # Linha horizontal tracejada cinza (variância à priori)
@@ -1207,11 +1221,11 @@ begin
 
     γ_azi_2 = DirectionalVariogram(polar2cart((azi+90.0),0.0),
                                    samples, :CU, dtol = bw_azi,
-                                   maxlag=350, nlags = nlags_azi)
+                                   maxlag = 350, nlags = nlags_azi)
 	
-	plot(γ_azi_1, marker=5, ylims=(0, 0.4), label="0$(azi)°", color=:red)
+	plot(γ_azi_1, marker=5, ylims=(0, σ²_dh + 0.1), label="$(azi)°", color=:red)
 
-    plot!(γ_azi_2, marker=5, ylims=(0, 0.4), label="$(azi+90)°",
+    plot!(γ_azi_2, marker=5, ylims=(0, σ²_dh + 0.1), label="$(azi+90)°",
 		  color = :deepskyblue, legend = :topright)
 
     hline!([σ²_dh], color=:gray, ls=:dash, label=false)
@@ -1250,8 +1264,8 @@ begin
 
     plot(γ_azi_1, marker=5, color=:deepskyblue)
 
-    plot!(model_azi, 0, 350, title="0$(azi)°",
-          ylims=(0, 0.3), color=:red, lw=2)
+    plot!(model_azi, 0, 350, title="$(azi)°",
+          ylims=(0, σ²_dh + 0.05), color=:red, lw=2)
 
     hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
 
@@ -1285,7 +1299,7 @@ Dip: $(@bind dip Slider(0.0:22.5:90.0, default=22.5, show_value=true))°
 
 № passos: $(@bind nlags_dip Slider(5:1:12, default=10, show_value=true))
 
-Largura de Banda: $(@bind bw_dip Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind bw_dip Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1298,8 +1312,8 @@ begin
                                  :CU, dtol=bw_dip, maxlag=350,
                                  nlags=nlags_dip)
 
-	plot(γ_dip, marker=5, ylims=(0, 0.3), color=:deepskyblue,
-         title="0$(azi)°/$(dip)°")
+	plot(γ_dip, marker=5, ylims=(0, σ²_dh + 0.05), color=:deepskyblue,
+         title="$(azi)°/$(dip)°")
 
     hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
 end
@@ -1336,7 +1350,7 @@ begin
 
     plot(γ_dip, marker=5, color=:deepskyblue)
 
-    plot!(model_dip, 0, 350, title="0$(azi)°/$(dip)°",
+    plot!(model_dip, 0, 350, title="$(azi)°/$(dip)°",
           ylims=(0, 0.3), color=:red, lw=2)
     
     hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
@@ -1391,10 +1405,7 @@ Para o cálculo dos variogramas experimentais secundário e terciário, podemos 
 # ╔═╡ 120f4a9c-2ca6-49f1-8abc-999bcc559149
 md"""
 
-Orientações: $(@bind orient Select(["config1" => "177.6°/41.1° e 317.4°/41.1°",
-                                    "config2" => "157.5°/00.0° e 247.5°/68.5°",
-                                    "config3" => "165.9°/20.4° e 295.3°/59.6°",
-                                    "config4" => "198.3°/58.9° e 328.7°/21.3°"]))
+Ângulo stereonet: $(@bind θ Slider(range(0, stop=180-180/8, step=180/8), show_value=true))°
 
 № passos: $(@bind nlags_int_min Slider(5:1:15, default=12, show_value=true))
 
@@ -1407,41 +1418,27 @@ begin
 
     Random.seed!(1234)
 
-    azi1, dip1 = 177.6, 41.1
-    azi2, dip2 = 317.4, 41.1
+	# Encontra vetores u e v perpendiculares entre si e perpendiculares a normal
+    u, v = Variography.planebasis(Vec(normal))
+	
+	# Giro no plano perpendicular gerado por u e v
+	dir1 = cos(deg2rad(θ)) .* u .+ sin(deg2rad(θ)) .* v
+	dir2 = cos(deg2rad(θ+90)) .* u .+ sin(deg2rad(θ+90)) .* v
+	
 
-    if orient == "config1"
-        azi1, dip1 = 177.6, 41.1
-        azi2, dip2 = 317.4, 41.1
-
-    elseif orient == "config2"
-        azi1, dip1 = 157.5, 0.0
-        azi2, dip2 = 247.5, 68.5
-
-    elseif orient == "config3"
-        azi1, dip1 = 165.9, 20.4
-        azi2, dip2 = 295.3, 59.6
-
-    elseif orient == "config4"
-        azi1, dip1 = 198.3, 58.9
-        azi2, dip2 = 328.7, 21.3
-    end
-
-    γ_int_min1 = DirectionalVariogram(polar2cart(azi1,dip1),
+    γ_int_min1 = DirectionalVariogram(dir1,
                                       samples, :CU,
                                       dtol=bw_int_min, maxlag=250,
                                       nlags=nlags_int_min)
 
-    γ_int_min2 = DirectionalVariogram(polar2cart(azi2,dip2),
+    γ_int_min2 = DirectionalVariogram(dir2,
                                       samples, :CU,
                                       dtol=bw_int_min, maxlag=250,
                                       nlags=nlags_int_min)
 	
-	plot(γ_int_min1, marker=5, ylims=(0, 0.4), xlims=(0,250),
-         label="$(azi1)°/$(dip1)°", color=:red)
+	plot(γ_int_min1, marker=5, ylims=(0, 0.4), xlims=(0,250), color=:red)
 
-    plot!(γ_int_min2, marker=5, ylims=(0, 0.4), xlims=(0,250),
-          label="$(azi2)°/$(dip2)°", color=:deepskyblue,
+    plot!(γ_int_min2, marker=5, ylims=(0, 0.4), xlims=(0,250), color=:deepskyblue,
           legend=:topright)
 
     hline!([σ²_dh], color="gray", ls=:dash, label=false)
@@ -1472,16 +1469,16 @@ begin
     model_interm0 = NuggetEffect(c₀)
 	
     model_interm1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_interm1))
+                                       range=Float64(a_interm1))
 
     model_interm2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_interm2))
+                                       range=Float64(a_interm2))
 
     model_interm = model_interm0 + model_interm1 + model_interm2
 
     plot(γ_int_min1, marker=5, color=:deepskyblue)
 
-    plot!(model_interm, 0, 200, title="$(azi1)°/$(dip1)°",
+    plot!(model_interm, 0, 200,
           ylims=(0, 0.4), color=:red, lw=2)
 
     hline!([σ²_dh], color="gray", ls=:dash, legend=false)
@@ -1524,7 +1521,7 @@ begin
 
     plot(γ_int_min2, marker=5, color=:deepskyblue)
 
-    plot!(model_min, 0, 200, title="$(azi2)°/$(dip2)°",
+    plot!(model_min, 0, 200,
           ylims=(0, 0.4), color=:red, lw=2)
 
     hline!([σ²_dh], color="gray", ls=:dash)
@@ -1578,15 +1575,7 @@ begin
 	# Obtendo rotações do variograma
     rot_z = azi
     rot_x = -dip
-    if orient == "config1"
-        rot_y = -45.0
-    elseif orient == "config2"
-        rot_y = -0.0
-    elseif orient == "config3"
-        rot_y = -22.5
-    elseif orient == "config4"
-        rot_y = -67.5
-    end
+	rot_y = -45.0
 	
 	# Criação dos elipsoides de anisotropia por estrutura
 	aniso_elp_1 = aniso2distance([a_dip1, a_interm1, a_min1], 
@@ -1658,16 +1647,6 @@ Por outro lado, a **Krigagem Ordinária (OK)** não assume o conhecimento da mé
 \sum_{i=1}^{n} wᵢ = 1
 ```
 
-"""
-
-# ╔═╡ c8fa42f3-22f2-44ae-83ec-b47bce486bb4
-md"""
-#### Fluxograma de estimação GeoStats.jl
-
-- Criação do modelo de blocos
-- Definição do problema
-- Definição do solver
-- Solução do problema
 """
 
 # ╔═╡ a7a59395-59ec-442a-b4b6-7db55d150d53
@@ -1983,6 +1962,7 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╠═63b75ae2-8dca-40e3-afe0-68c6a639f54e
 # ╟─5699c563-d6cb-4bc2-8063-e1be00722a41
 # ╟─f74b8675-64e4-438d-aa8e-7c5792d25651
+# ╟─91bbc52e-412f-46eb-b342-0d202e965934
 # ╟─68e50bdd-b006-4abc-aeda-c4d67c30babb
 # ╟─c6710e72-400c-4e90-94e5-fd48b62b088a
 # ╟─32a075ee-e853-4bb3-8eff-44543b6db0d5
@@ -2035,7 +2015,6 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╟─d700e40b-dd7f-4630-a29f-f27773000597
 # ╟─38d15817-f3f2-496b-9d83-7dc55f4276dc
 # ╟─9baefd13-4c16-404f-ba34-5982497e8da6
-# ╟─c8fa42f3-22f2-44ae-83ec-b47bce486bb4
 # ╟─a7a59395-59ec-442a-b4b6-7db55d150d53
 # ╟─f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
 # ╟─12d79d77-358c-4098-993a-d5be538929a2
