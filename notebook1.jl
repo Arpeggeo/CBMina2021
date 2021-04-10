@@ -370,7 +370,7 @@ Como o objetivo deste módulo é a geração de um modelo de teores de Cu estima
 # ╔═╡ 4d5f2467-c7d5-4a82-9968-97f193090bd6
 begin
     # Remoção dos valores faltantes de CU e LITH do banco de dados
-    dropmissing!(dh, disallowmissing = true)
+    dropmissing!(dh)
 
     # Sumário estatístico do banco de dados após a exclusão dos valores faltantes
     describe(dh)
@@ -502,7 +502,7 @@ Nesse sentido, esses valores faltantes devem também ser removidos.
 
 # ╔═╡ 12d3d075-bfad-431e-bbdc-341bb01a89a2
 # Remoção dos valores faltantes de CU
-dropmissing!(cp, disallowmissing = true);
+dropmissing!(cp);
 
 # ╔═╡ b6712822-7c4d-4936-bcc2-21b48be99a66
 md"""
@@ -1042,22 +1042,22 @@ Como o variograma down hole é calculado ao longo da orientação dos furos, dev
 begin
 	
 	# Sumário estatístico da variável "AZM"
-	azmdf = DataFrame(Variable = :AZM,
+	azmdf = DataFrame(Variable = "Azimute",
                       Mean     = mean(composites.trace.AZM),
 					  Median   = median(composites.trace.AZM),
 					  Min      = minimum(composites.trace.AZM),
 					  Max      = maximum(composites.trace.AZM))
 	
 	# Sumário estatístico da variável "DIP"
-	dipdf = DataFrame(Variable = :DIP,
-                      Mean     = mean(composites.trace.DIP),
-					  Median   = median(composites.trace.DIP),
-					  Min      = minimum(composites.trace.DIP),
-					  Max      = maximum(composites.trace.DIP))
+	dipdf = DataFrame(Variable = "Dip",
+                      Mean     = -mean(composites.trace.DIP),
+					  Median   = -median(composites.trace.DIP),
+					  Min      = -minimum(composites.trace.DIP),
+					  Max      = -maximum(composites.trace.DIP))
 	
 	# Azimute e Dip médios
-	μazi = azmdf.Mean[]
-	μdip = dipdf.Mean[]
+	μazi = round(azmdf.Mean[], digits=2)
+	μdip = round(dipdf.Mean[], digits=2)
 	
 	# Concatenação vertical dos sumários
 	[azmdf
@@ -1065,12 +1065,28 @@ begin
 
 end
 
+# ╔═╡ e49b7b48-77d8-4abf-a5df-70e9c65e3667
+begin
+	# Converte coordenadas esféricas para Cartesianas
+	function sph2cart(azi, dip)
+		θ, ϕ = deg2rad(azi), deg2rad(dip)
+		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), -sin(ϕ)
+	end
+	
+	# Converte coordenadas Cartesianas para esféricas
+	function cart2sph(x, y, z)
+	end
+		
+	# Direcão ao longo dos drillholes
+	dirdh = sph2cart(μazi, μdip)
+end;
+
 # ╔═╡ a717d5d3-9f4e-4a2d-8e32-f0605bbd742f
 md"""
 
 #### Variograma down hole
 
-Agora que sabemos a orientação média dos furos ($(round(μazi,digits=2))°/ $(round(-μdip,digits=2))°), podemos calcular o variograma experimental down hole.
+Agora que sabemos a orientação média dos furos ($(round(μazi,digits=2))°/ $(round(μdip,digits=2))°), podemos calcular o variograma experimental down hole.
 
 """
 
@@ -1082,9 +1098,9 @@ md"""
 # ╔═╡ 1465f010-c6a7-4e72-9842-4504c6dda0be
 md"""
 
-№ passos: $(@bind nlags_dh Slider(10:1:25, default=12, show_value=true))
+Número de passos: $(@bind nlagsdh Slider(10:1:25, default=12, show_value=true))
 
-Largura da banda: $(@bind bw_dh Slider(10:5:50, default=45, show_value=true)) m
+Largura da banda: $(@bind toldh Slider(10:5:50, default=45, show_value=true)) m
 
 """
 
@@ -1093,35 +1109,22 @@ begin
 	# Definição de uma semente aleatória
 	Random.seed!(1234)
 	
-	# Converte coordenadas esféricas para Cartesianas
-	function polar2cart(azi, dip)
-    	azi_rad = deg2rad(azi)
-    	dip_rad = deg2rad(dip)
-    	x = sin(azi_rad) * cos(dip_rad)
-    	y = cos(azi_rad) * cos(dip_rad)
-    	z = -sin(dip_rad)
-
-    	(x, y, z)
-	end
-	
-	# Direcão ao longo dos drillholes
-	normal = polar2cart(μazi, -μdip)
-	maxlag = 150.0
+	# Cor para variogramas down hole
+	colordh = :brown
 
 	# Cálculo variograma down hole para a variável Cu
-	γ_dh = DirectionalVariogram(normal, samples, :CU,
-								dtol = bw_dh, maxlag = maxlag, nlags = nlags_dh)
+	gdh = DirectionalVariogram(dirdh, samples, :CU,
+		                       maxlag = 150, nlags = nlagsdh, dtol = toldh)
 	
 	# Variância a priori
-	σ²_dh = var(samples[:CU])
+	σ² = var(samples[:CU])
 	
 	# Plotagem do variograma experimental downhole
-    plot(γ_dh, marker = 5, ylims = (0, σ²_dh+0.05),
-		 color = :deepskyblue,
-		 title = "$(round(μazi,digits=2))°/$(round(-μdip,digits=2))°")
+    plot(gdh, ylims = (0, σ²+0.05), color = colordh, legend = :bottomright,
+		 label = "empírico", title = "$μazi °/ $μdip °")
 	
 	# Linha horizontal tracejada cinza (variância à priori)
-    hline!([σ²_dh], color = :gray, ls = :dash, legend = false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1137,15 +1140,15 @@ Agora que o variograma down hole foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 0585add6-1320-4a31-a318-0c40b7a444fa
 md"""
 
-Efeito pepita: $(@bind c₀ Slider(0.00:0.005:0.06, default=0.02, show_value=true))
+Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.02, show_value=true))
 
 Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.06, show_value=true))
 
 Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.075, show_value=true))
 
-Alcance 1ª estrutura: $(@bind a_dh1 Slider(10.0:2.0:80.0, default=80.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:80.0, default=80.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind a_dh2 Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
 
 """
 
@@ -1153,32 +1156,29 @@ Alcance 2ª estrutura: $(@bind a_dh2 Slider(10.0:2.0:140.0, default=118.0, show_
 begin
 
     # Criação da primeira estrutura do modelo de variograma (efeito pepita)
-    model_dh0 = NuggetEffect(nugget = c₀)
+    γdhₒ = NuggetEffect(nugget = Float64(cₒ))
 
     # Criação da segunda estrutura do modelo de variograma (1ª contribuição ao sill)
-    model_dh1 = SphericalVariogram(sill = Float64(c₁), range = Float64(a_dh1))
+    γdh₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rdh₁))
 
     # Criação da terceira estrutura do modelo de variograma (2ª contribuição ao sill)
-    model_dh2 = SphericalVariogram(sill = Float64(c₂), range = Float64(a_dh2))
+    γdh₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rdh₂))
 
     # Aninhamento das três estruturas
-    model_dh = model_dh0 + model_dh1 + model_dh2
+    γdh  = γdhₒ + γdh₁ + γdh₂
 
     # Plotagem do variograma experimental downhole
-    plot(γ_dh, ylims = (0, σ²_dh + 0.05), marker = 5, color = :deepskyblue)
+    plot(gdh, ylims = (0, σ²+0.05), color = colordh,
+		 legend = :bottomright, label = "empírico", title = "$μazi °/ $μdip °")
 
     # Plotagem do modelo de variograma aninhado
-    plot!(model_dh, 0, maxlag,
-		  lw = 2, color = :red,
-		  legend = :right,
-          title = "$(round(μazi,digits=2))°/$(round(-μdip,digits=2))°",
-          ylims = (0, σ²_dh + 0.05))
+    plot!(γdh, 0, 150, color = colordh, label = "teórico")
     
     # Linha horizontal tracejada cinza (variância à priori)
-    hline!([σ²_dh], color="gray", ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
     
-    # Linha vertical tracejada verde (alcance)
-    vline!([a_dh2], color="green", ls=:dash, legend=false)
+    # Linha vertical tracejada cinza (alcance)
+    vline!([range(γdh)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1202,9 +1202,9 @@ Calcularemos diversos variogramas experimentais ortogonais entre si e escolherem
 md"""
 Azimute: $(@bind azi Slider(0.0:22.5:67.5, default=67.5, show_value=true)) °
 
-№ passos: $(@bind nlags_azi Slider(5:1:12, default=9, show_value=true))
+№ passos: $(@bind nlagsazi Slider(5:1:12, default=9, show_value=true))
 
-Largura de banda: $(@bind bw_azi Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind dtolazi Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1212,22 +1212,22 @@ Largura de banda: $(@bind bw_azi Slider(10:10:100, default=70, show_value=true))
 begin
 
     Random.seed!(1234)
-
-    γ_azi_1 = DirectionalVariogram(polar2cart(azi,0.0),
-                                   samples, :CU,
-                                   dtol = bw_azi, maxlag = 350,
-                                   nlags = nlags_azi)
-
-    γ_azi_2 = DirectionalVariogram(polar2cart((azi+90.0),0.0),
-                                   samples, :CU, dtol = bw_azi,
-                                   maxlag = 350, nlags = nlags_azi)
 	
-	plot(γ_azi_1, marker=5, ylims=(0, σ²_dh + 0.1), label="$(azi)°", color=:red)
+	coloraziₐ = :green
+	coloraziᵦ = :purple
 
-    plot!(γ_azi_2, marker=5, ylims=(0, σ²_dh + 0.1), label="$(azi+90)°",
-		  color = :deepskyblue, legend = :topright)
+    gaziₐ = DirectionalVariogram(sph2cart(azi, 0), samples, :CU,
+                                 maxlag = 350, nlags = nlagsazi, dtol = dtolazi)
 
-    hline!([σ²_dh], color=:gray, ls=:dash, label=false)
+    gaziᵦ = DirectionalVariogram(sph2cart((azi+90), 0), samples, :CU,
+		                         maxlag = 350, nlags = nlagsazi, dtol = dtolazi)
+	
+	plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ,
+		 legend = :bottomright, label="Azimute $azi °")
+
+    plot!(gaziᵦ, color = coloraziᵦ, label="Azimute $(azi+90) °")
+
+    hline!([σ²], color=:gray, ls=:dash, primary = false)
 
 end
 
@@ -1242,33 +1242,31 @@ Agora que o variograma azimute foi calculado, podemos ajustá-lo com um modelo t
 # ╔═╡ 78b45d90-c850-4a7e-96b8-535dd23bd1a7
 md"""
 
-Alcance 1ª estrutura: $(@bind a_azi1 Slider(10.0:2.0:100.0, default=60.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:100.0, default=60.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind a_azi2 Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind razi₂ Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
 
 """
 
 # ╔═╡ e3b98c8b-878d-475b-bd4b-823d00c6141b
 begin
 
-    model_azi0 = NuggetEffect(nugget=c₀)
+    γaziₒ = NuggetEffect(nugget = Float64(cₒ))
 
-    model_azi1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_azi1))
+    γazi₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(razi₁))
 
-    model_azi2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_azi2))
+    γazi₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(razi₂))
 
-    model_azi = model_azi0 + model_azi1 + model_azi2
+    γaziₐ  = γaziₒ + γazi₁ + γazi₂
 
-    plot(γ_azi_1, marker=5, color=:deepskyblue)
+    plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ,
+		 legend = :bottomright, label = "Experimental", title = "$azi °")
 
-    plot!(model_azi, 0, 350, title="$(azi)°",
-          ylims=(0, σ²_dh + 0.05), color=:red, lw=2)
+    plot!(γaziₐ, 0, 350, color = coloraziₐ)
 
-    hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_azi2], color=:green, ls=:dash, legend=false)
+    vline!([range(γaziₐ)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1287,7 +1285,7 @@ Nesta etapa, encontraremos o **maior alcance** do modelo de variograma final, al
 md"""
 ##### Variogram experimental primário
 
-Para o cálculo deste variograma experimental, devemos fixar o azimute de maior continuidade já encontrado ($(azi)°) e variar o dip. A orientação (azi/dip) que fornecer o maior alcance, será eleita a **direção de maior continuidade**:
+Para o cálculo deste variograma experimental, devemos fixar o azimute de maior continuidade já encontrado ($azi °) e variar o dip. A orientação (azi/dip) que fornecer o maior alcance, será eleita a **direção de maior continuidade**:
 
 """
 
@@ -1296,9 +1294,9 @@ md"""
 
 Dip: $(@bind dip Slider(0.0:22.5:90.0, default=22.5, show_value=true))°
 
-Número de passos: $(@bind nlags_dip Slider(5:1:12, default=10, show_value=true))
+Número de passos: $(@bind nlagspri Slider(5:1:12, default=10, show_value=true))
 
-Largura de banda: $(@bind bw_dip Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind tolpri Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1306,15 +1304,16 @@ Largura de banda: $(@bind bw_dip Slider(10:10:100, default=70, show_value=true))
 begin
 	
     Random.seed!(1234)
+	
+	colorpri = :red
 
-    γ_dip = DirectionalVariogram(polar2cart(azi,dip), samples,
-                                 :CU, dtol=bw_dip, maxlag=350,
-                                 nlags=nlags_dip)
+    gpri = DirectionalVariogram(sph2cart(azi, dip), samples, :CU,
+                                maxlag = 350, nlags = nlagspri, dtol = tolpri)
 
-	plot(γ_dip, marker=5, ylims=(0, σ²_dh + 0.05), color=:deepskyblue,
-         title="$(azi)°/$(dip)°")
+	plot(gpri, ylims=(0, σ²+0.05), color = colorpri,
+		 legend = :bottomright, label = "empírico", title = "$azi ° / $dip °")
 
-    hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 end
 
 # ╔═╡ eb9ebce2-7476-4f44-ad4f-10a1ca522143
@@ -1328,33 +1327,31 @@ Agora que o variograma primário foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 92d11f3b-c8be-4701-8576-704b73d1b619
 md"""
 
-Alcance 1ª estrutura: $(@bind a_dip1 Slider(10.0:2.0:120.0, default=84.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:120.0, default=84.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind a_dip2 Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rpri₂ Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
 
 """
 
 # ╔═╡ fa93796d-7bc0-4391-89a7-eeb63e1a3838
 begin
 
-    model_dip0 = NuggetEffect(nugget=c₀)
+    γpriₒ = NuggetEffect(nugget = Float64(cₒ))
 
-    model_dip1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_dip1))
+    γpri₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rpri₁))
 
-    model_dip2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_dip2))
+    γpri₂ = SphericalVariogram(sill=Float64(c₂), range = Float64(rpri₂))
 
-    model_dip = model_dip0 + model_dip1 + model_dip2
+    γpri  = γpriₒ + γpri₁ + γpri₂
 
-    plot(γ_dip, marker=5, color=:deepskyblue)
+    plot(gpri, ylims = (0, σ²+0.05), color = colorpri,
+	     legend = :bottomright, label = "Experimental", title = "$azi °/ $dip °")
 
-    plot!(model_dip, 0, 350, title="$(azi)°/$(dip)°",
-          ylims=(0, 0.3), color=:red, lw=2)
-    
-    hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
+    plot!(γpri, 0, 350, color = colorpri)
+		
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_dip2], color=:green, ls=:dash, legend=false)
+    vline!([range(γpri)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1406,9 +1403,9 @@ md"""
 
 Ângulo stereonet: $(@bind θ Slider(range(0, stop=180-180/8, step=180/8), show_value=true))°
 
-№ passos: $(@bind nlags_int_min Slider(5:1:15, default=12, show_value=true))
+№ passos: $(@bind nlagssec Slider(5:1:15, default=12, show_value=true))
 
-Largura de banda: $(@bind bw_int_min Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind tolsec Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1418,29 +1415,29 @@ begin
     Random.seed!(1234)
 
 	# Encontra vetores u e v perpendiculares entre si e perpendiculares a normal
-    u, v = Variography.planebasis(Vec(normal))
+    u, v = Variography.planebasis(Vec(dirdh))
 	
 	# Giro no plano perpendicular gerado por u e v
-	dir1 = cos(deg2rad(θ)) .* u .+ sin(deg2rad(θ)) .* v
-	dir2 = cos(deg2rad(θ+90)) .* u .+ sin(deg2rad(θ+90)) .* v
+	dirsec = cos(deg2rad(θ)) .* u .+ sin(deg2rad(θ)) .* v
+	dirter = cos(deg2rad(θ+90)) .* u .+ sin(deg2rad(θ+90)) .* v
 	
+	colorsec = :orange
+	colorter = :yellow
 
-    γ_int_min1 = DirectionalVariogram(dir1,
-                                      samples, :CU,
-                                      dtol=bw_int_min, maxlag=250,
-                                      nlags=nlags_int_min)
+	# Variograma secundário
+    gsec = DirectionalVariogram(dirsec, samples, :CU,
+		                        maxlag = 250, nlags = nlagssec, dtol = tolsec)
 
-    γ_int_min2 = DirectionalVariogram(dir2,
-                                      samples, :CU,
-                                      dtol=bw_int_min, maxlag=250,
-                                      nlags=nlags_int_min)
+	# Variograma terciário
+    gter = DirectionalVariogram(dirter, samples, :CU,
+								maxlag = 250, nlags = nlagssec, dtol = tolsec)
 	
-	plot(γ_int_min1, marker=5, ylims=(0, 0.4), xlims=(0,250), color=:red)
+	plot(gsec, ylims=(0, σ²+0.05), color = colorsec,
+		 legend = :bottomright, label = "secundário")
 
-    plot!(γ_int_min2, marker=5, ylims=(0, 0.4), xlims=(0,250), color=:deepskyblue,
-          legend=:topright)
+    plot!(gter, color = colorter, label = "terciário")
 
-    hline!([σ²_dh], color="gray", ls=:dash, label=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1456,33 +1453,31 @@ Agora que elegemos o variograma experimental representante do eixo secundário, 
 # ╔═╡ 922d81f3-0836-4b14-aaf2-83be903c8642
 md"""
 
-Alcance 1ª estrutura: $(@bind a_interm1 Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind a_interm2 Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
 
 """
 
 # ╔═╡ a74b7c50-4d31-4bd3-a1ef-6869abf73185
 begin
 
-    model_interm0 = NuggetEffect(c₀)
+    γsecₒ = NuggetEffect(Float64(cₒ))
 	
-    model_interm1 = SphericalVariogram(sill=Float64(c₁),
-                                       range=Float64(a_interm1))
+    γsec₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rsec₁))
 
-    model_interm2 = SphericalVariogram(sill=Float64(c₂),
-                                       range=Float64(a_interm2))
+    γsec₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rsec₂))
 
-    model_interm = model_interm0 + model_interm1 + model_interm2
+    γsec  = γsecₒ + γsec₁ + γsec₂
 
-    plot(γ_int_min1, marker=5, color=:deepskyblue)
+    plot(gsec, ylims = (0, σ²+0.05), color = colorsec,
+	     label = "Experimental", legend = :bottomright)
 
-    plot!(model_interm, 0, 200,
-          ylims=(0, 0.4), color=:red, lw=2)
+    plot!(γsec, 0, 250, color = colorsec)
 
-    hline!([σ²_dh], color="gray", ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_interm2], color="green", ls=:dash, legend=false)
+    vline!([range(γsec)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1498,9 +1493,9 @@ Fazemos o mesmo para o variograma terciário:
 # ╔═╡ dacfe446-3c19-430d-8f5f-f276a022791f
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_min1 Slider(10.0:2.0:82.0, default=48.0, show_value=true)) m
+Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:82.0, default=48.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_min2 Slider(10.0:2.0:110.0, default=64.0, show_value=true)) m
+Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:110.0, default=64.0, show_value=true)) m
 
 """
 
@@ -1508,47 +1503,21 @@ Alcance 2ª Estrutura: $(@bind a_min2 Slider(10.0:2.0:110.0, default=64.0, show_
 # ╔═╡ 0927d78e-9b50-4aaf-a93c-69578608a4f8
 begin
 
-    model_min0 = NuggetEffect(c₀)
+    γterₒ = NuggetEffect(Float64(cₒ))
 
-    model_min1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_min1))
+    γter₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rter₁))
 
-    model_min2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_min2))
+    γter₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rter₂))
 
-    model_min = model_min0 + model_min1 + model_min2
+    γter  = γterₒ + γter₁ + γter₂
 
-    plot(γ_int_min2, marker=5, color=:deepskyblue)
+    plot(gter, color = colorter)
 
-    plot!(model_min, 0, 200,
-          ylims=(0, 0.4), color=:red, lw=2)
+    plot!(γter, 0, 250, color = colorter)
 
-    hline!([σ²_dh], color="gray", ls=:dash)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_min2], color="green", ls=:dash, legend=false)
-
-end
-
-# ╔═╡ c9ac9fb4-5d03-43c9-833e-733e48565946
-begin
-
-    range_y = range(model_dip)
-    range_x = range(model_interm)
-    range_z = range(model_min)
-
-    plot(model_min, lw=2, label="Eixo primário ($(range_z) m)",
-         color=:blue, legend=:bottomright)
-
-    plot!(model_interm, lw=2, label="Eixo secundário ($(range_x) m)",
-		  color=:green)
-
-    plot!(model_dip, lw=2, label="Eixo terciário ($(range_y) m)",
-          color=:red, xlims=(0.0,350.0), ylims=(0.0,0.25))
-
-    vline!([range_y], ls=:dash, label=false, color=:red)
-    vline!([range_x], ls=:dash, label=false, color=:green)
-    vline!([range_z], ls=:dash, label=false, color=:blue)
-	hline!([σ²_dh], ls=:dash, label=false, color=:gray)
+    vline!([range(γter)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1559,14 +1528,29 @@ md"""
 
 Agora que temos as três direções principais do modelo de variograma, podemos sumarizar as informações obtidas nos itens anteriores:
 
-|Estrutura| Modelo | Alcance em X  | Alcance em Y | Alcance em Z | Variância |Efeito Pepita|
-|:-------:|:------:|:-------------:|:------------:|:------------:|:---------:|:-----:|
-|    0    |   EPP  |     -         | -            |          -   |     -     | $(c₀) |
-|    1    |Esférico|$(a_interm1) m | $(a_dip1) m  | $(a_min1) m  |   $(c₁)   | -     |
-|    2    |Esférico| $(range_x) m  | $(range_y) m | $(range_z) m |   $(c₂)   |   -   |
+| Estrutura | Modelo | Alcance em X | Alcance em Y | Alcance em Z | Contribuição | Efeito Pepita |
+|:---:|:--------:|:---:|:---:|:---:|:---:|:---:|
+|  0  |    EPP   |  -  |  -  |  -  |  -  | $cₒ |
+|  1  | Esférico |  x  |  y  |  z  | $c₁ |  -  |
+|  2  | Esférico |  x  |  y  |  z  | $c₂ |  -  |
 
 
 """
+
+# ╔═╡ c9ac9fb4-5d03-43c9-833e-733e48565946
+begin
+
+    range_y = range(γpri)
+    range_x = range(γsec)
+    range_z = range(γter)
+
+    plot(γpri, color = colorpri, label = "Eixo primário")
+
+    plot!(γsec, color = colorsec, label="Eixo secundário")
+
+    plot!(γter, color = colorter, label="Eixo terciário")
+
+end
 
 # ╔═╡ 38d15817-f3f2-496b-9d83-7dc55f4276dc
 begin
@@ -2023,6 +2007,7 @@ end;
 # ╟─6d520cfe-aa7b-4083-b2bf-b34f840c0a75
 # ╟─289865a9-906f-46f4-9faa-f62feebbc92a
 # ╟─1db51803-8dc4-4db6-80a1-35a489b6fb9e
+# ╟─e49b7b48-77d8-4abf-a5df-70e9c65e3667
 # ╟─a717d5d3-9f4e-4a2d-8e32-f0605bbd742f
 # ╟─8162f98b-bda1-4475-aa03-e4e379b80b17
 # ╟─ffe3700c-262f-4949-b910-53cbe1dd597b
@@ -2035,7 +2020,7 @@ end;
 # ╟─d07a57c3-0a7a-49c2-a840-568e72d50545
 # ╟─17b21a63-9fa6-4975-9302-5465cdd3d2fa
 # ╟─9389a6f4-8710-44c3-8a56-804017b6239b
-# ╟─e3b98c8b-878d-475b-bd4b-823d00c6141b
+# ╠═e3b98c8b-878d-475b-bd4b-823d00c6141b
 # ╟─78b45d90-c850-4a7e-96b8-535dd23bd1a7
 # ╟─294ac892-8952-49bc-a063-3d290c375ea5
 # ╟─3859448f-265a-4929-bfa4-1809036da3dd
