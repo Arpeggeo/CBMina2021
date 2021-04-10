@@ -1754,6 +1754,45 @@ if run
 	sol_OK = solve(problem, OK)
 end
 
+# ╔═╡ 50650d2f-350b-446d-8c4b-6aa19e18c148
+md"""
+Marque o checkbox $(@bind viz CheckBox()) para visualizar o modelo de teores.
+
+**Alerta:** A visualização pode demorar a aparecer por conta da biblioteca Plots.jl utilizada neste notebook. Aconselhamos a biblioteca [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D.
+"""
+
+# ╔═╡ 63d5db73-1073-4b8d-bfab-93577579571f
+if viz
+	cmin, cmax = coordinates.(extrema(grid))
+		
+	xm, ym, zm = cmin
+	xM, yM, zM = cmax
+	
+	md"""
+
+	Rotação em Z: $(@bind ϕ₁ Slider(0:5:90, default=45, show_value=true))°
+
+	Rotação em X: $(@bind ϕ₂ Slider(0:5:90, default=45, show_value=true))°
+
+	X: $(@bind x Slider(xm:xM, show_value=true, default=(xm+xM)/2)) m
+	
+	Y: $(@bind y Slider(ym:yM, show_value=true, default=(ym+yM)/2)) m
+	
+	Z: $(@bind z Slider(zm:zM, show_value=true, default=(zm+zM)/2)) m
+	"""
+end
+
+# ╔═╡ b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
+if viz
+	sol_OK |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
+	@map({CU = _.CU, X = _.COORDS[1], Y = _.COORDS[2], Z = _.COORDS[3]}) |>
+	@filter(_.X < x && _.Y < y && _.Z < z) |>
+	@df scatter(:X, :Y, :Z, marker_z = :CU, marker = (:square, 4),
+	            xlabel = "X", ylabel = "Y", zlabel = "Z",
+		        xlims = (xm, xM), ylims = (ym, yM), zlims = (zm, zM),
+	            label = "Modelo de teores de Cu (%)", camera = (ϕ₁, ϕ₂))
+end
+
 # ╔═╡ 4f05c05d-c92a-460d-b3e0-d392111ef57a
 md"""
 
@@ -2034,6 +2073,9 @@ end;
 # ╟─9b3fe534-78fa-48db-a101-e2a43f2478d6
 # ╠═78117ae8-d77c-4508-9793-3e7e9dfbb913
 # ╠═5e86ee34-60fe-43e4-851c-2f08072f836e
+# ╟─50650d2f-350b-446d-8c4b-6aa19e18c148
+# ╟─b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
+# ╟─63d5db73-1073-4b8d-bfab-93577579571f
 # ╟─4f05c05d-c92a-460d-b3e0-d392111ef57a
 # ╟─64a8cd06-6020-434a-a1e2-115e17c51d29
 # ╟─c6b0f335-19cb-4fbe-a47b-2ba3fd664832
