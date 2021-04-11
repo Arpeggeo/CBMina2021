@@ -121,7 +121,7 @@ begin
 					holeid = :HOLEID, x = :X, y = :Y, z = :Z)
 
 	# Importação da tabela Survey
-	survey = Survey(file = "data/survey.csv", invertdip = false,
+	survey = Survey(file = "data/survey.csv",
 					holeid = :HOLEID, at = :AT, azm = :AZM, dip = :DIP)
 
 	# Importação da tabela Assay
@@ -1315,7 +1315,7 @@ begin
 
     γpri₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rpri₁))
 
-    γpri₂ = SphericalVariogram(sill=Float64(c₂), range = Float64(rpri₂))
+    γpri₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rpri₂))
 
     γpri  = γpriₒ + γpri₁ + γpri₂
 
@@ -1484,13 +1484,13 @@ md"""
 
 #### Resumo
 
-Agora que temos as três direções principais do modelo de variograma, podemos sumarizar as informações obtidas nos itens anteriores:
+Agora que temos as três direções principais do modelo de variograma, podemos sumarizar as informações obtidas nos passos anteriores:
 
 | Estrutura | Modelo | Alcance em X | Alcance em Y | Alcance em Z | Contribuição | Efeito Pepita |
-|:---:|:--------:|:---:|:---:|:---:|:---:|:---:|
-|  0  |    EPP   |  -  |  -  |  -  |  -  | $cₒ |
-|  1  | Esférico |  x  |  y  |  z  | $c₁ |  -  |
-|  2  | Esférico |  x  |  y  |  z  | $c₂ |  -  |
+|:---:|:--------:|:--------:|:--------:|:--------:|:---:|:---:|
+|  0  |    EPP   |    -     |    -     |    -     |  -  | $cₒ |
+|  1  | Esférico |  $rpri₁  |  $rsec₁  |  $rter₁  | $c₁ |  -  |
+|  2  | Esférico |  $rpri₂  |  $rsec₂  |  $rter₂  | $c₂ |  -  |
 
 
 """
@@ -1511,36 +1511,6 @@ begin
 
 end
 
-# ╔═╡ 38d15817-f3f2-496b-9d83-7dc55f4276dc
-begin
-	
-	# Obtendo rotações do variograma
-    rot_z = azi
-    rot_x = -dip
-	rot_y = -45.0
-	
-	# Criação dos elipsoides de anisotropia por estrutura
-	aniso_elp_1 = aniso2distance([a_dip1, a_interm1, a_min1], 
-								 [rot_z, rot_x, rot_y],
-								 convention=GSLIB)
-
-    aniso_elp_2 = aniso2distance([range_y, range_x, range_z], 
-                            	 [rot_z, rot_x, rot_y],
-                            	 convention=GSLIB)
-	
-	# Criação do modelo de variograma final
-	γ₀ = NuggetEffect(nugget=c₀)
-
-    γ₁ = SphericalVariogram(sill=Float64(c₁),
-                            distance=aniso_elp_1)
-
-    γ₂ = SphericalVariogram(sill=Float64(c₂),
-                            distance=aniso_elp_2)
-
-    γ = γ₀ + γ₁ + γ₂
-	
-end
-
 # ╔═╡ d700e40b-dd7f-4630-a29f-f27773000597
 md"""
 
@@ -1550,13 +1520,33 @@ Com as informações acima, podemos utilizar uma convenção de rotação, e def
 
 Nesse sentido, utilizando a **convenção de rotação do GSLIB**, as rotações do modelo de variograma serão:
 
-| Rotação | Eixo | Ângulo   |
-|:-------:|:----:|:--------:|
-|    1ª   |   Z  |$(rot_z)° |
-|    2ª   |   X  |$(rot_x)° |
-|    3ª   |   Y  |$(rot_y)° |
+| Rotação | Eixo | Ângulo  |
+|:-------:|:----:|:-------:|
+|    1ª   |   Z  |  $azi ° |
+|    2ª   |   X  |  $dip ° |
+|    3ª   |   Y  |  $θ   °  |
 
 """
+
+# ╔═╡ 38d15817-f3f2-496b-9d83-7dc55f4276dc
+begin
+	
+	# Elipsoides de anisotropia
+	ellipsoid₁ = Ellipsoid([rpri₁, rsec₁, rter₁], [dip, azi, θ], convention = GSLIB)
+
+    ellipsoid₂ = Ellipsoid([rpri₂, rsec₂, rter₂], [dip, azi, θ], convention = GSLIB)
+
+	# Estruturas do variograma final
+	γₒ = NuggetEffect(nugget = Float64(cₒ))
+
+    γ₁ = SphericalVariogram(sill = Float64(c₁), distance = metric(ellipsoid₁))
+
+    γ₂ = SphericalVariogram(sill = Float64(c₂), distance = metric(ellipsoid₂))
+
+	# Variograma final
+    γ = γₒ + γ₁ + γ₂
+	
+end;
 
 # ╔═╡ 9baefd13-4c16-404f-ba34-5982497e8da6
 md"""
@@ -1590,6 +1580,26 @@ Nesta primeira etapa, definimos o **modelo de blocos**, ou seja, o domínio onde
 
 """
 
+# ╔═╡ f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+begin
+
+	# Caixa delimitadora das amostras
+    bbox = boundingbox(samples)
+	
+	# Lados da caixa delimitadora
+	extent = maximum(bbox) - minimum(bbox)
+	
+	# Tamanho dos blocos em cada direção (metros)
+	blocksizes = (20., 20., 10.)
+	
+	# Número de blocos em cada direção
+	nblocks = ceil.(Int, extent ./ blocksizes)
+
+	# Modelo de blocos para realização de estimativas
+    grid = CartesianGrid(minimum(bbox), maximum(bbox), dims = Tuple(nblocks))
+
+end
+
 # ╔═╡ 12d79d77-358c-4098-993a-d5be538929a2
 md"""
 
@@ -1599,25 +1609,8 @@ Rotação em X: $(@bind ψ₂ Slider(0:5:90, default=45, show_value=true))°
 
 """
 
-# ╔═╡ f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
-begin
-
-	# Caixa delimitadora das amostras
-    bbox = boundingbox(samples)
-	
-	# Tamanho dos blocos em cada direção (metros)
-	bsizes  = (20., 20., 10.)
-	
-	# Número de blocos em cada direção
-	nblocks = Tuple(maximum(bbox) - minimum(bbox)) ./ bsizes
-
-	# Modelo de blocos para realização de estimativas
-    grid = CartesianGrid(minimum(bbox), maximum(bbox),
-		                 dims = ceil.(Int, nblocks))
-
-    plot(grid, camera=(ψ₁,ψ₂), xlabel="X", ylabel="Y", zlabel="Z")
-
-end
+# ╔═╡ 6f7663ed-c672-4d29-8b06-415dcdc8fbff
+plot(grid, camera = (ψ₁,ψ₂), xlabel = "X", ylabel = "Y", zlabel = "Z")
 
 # ╔═╡ a8adf478-620d-4744-aae5-99d0891fe6b0
 md"""
@@ -1650,9 +1643,9 @@ Um **solver** nada mais é do que o estimador que utilizaremos para realizar a e
 # ╔═╡ 9c61271d-4afe-4f7c-a521-8f799b6981ed
 md"""
 
-№ mínimo de amostras: $(@bind s_min Slider(2:1:6, default=4, show_value=true))
+Número mínimo de amostras: $(@bind nmin Slider(2:1:6, default=4, show_value=true))
 
-№ máximo de amostras: $(@bind s_max Slider(6:1:20, default=8, show_value=true))
+Número máximo de amostras: $(@bind nmax Slider(6:1:20, default=8, show_value=true))
 
 """
 
@@ -1663,14 +1656,14 @@ begin
     μ = mean(samples, :CU)
 
 	# Krigagem simples
-    SK = Kriging(:CU => (variogram = γ, mean = μ,
-			             minneighbors = s_min,
-			             maxneighbors = s_max))
+    SK = Kriging(
+		:CU => (variogram = γ, mean = μ, minneighbors = nmin, maxneighbors = nmax)
+	)
 
 	# Krigagem ordinária
-    OK = Kriging(:CU => (variogram = γ,
-			             minneighbors = s_min,
-			             maxneighbors = s_max))
+    OK = Kriging(
+		:CU => (variogram = γ, minneighbors = nmin, maxneighbors = nmax)
+	)
 
 end;
 
@@ -1999,10 +1992,11 @@ end;
 # ╟─483487c6-acf8-4551-8357-2e69e6ff44ff
 # ╟─c9ac9fb4-5d03-43c9-833e-733e48565946
 # ╟─d700e40b-dd7f-4630-a29f-f27773000597
-# ╟─38d15817-f3f2-496b-9d83-7dc55f4276dc
+# ╠═38d15817-f3f2-496b-9d83-7dc55f4276dc
 # ╟─9baefd13-4c16-404f-ba34-5982497e8da6
 # ╟─a7a59395-59ec-442a-b4b6-7db55d150d53
-# ╟─f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+# ╠═f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+# ╟─6f7663ed-c672-4d29-8b06-415dcdc8fbff
 # ╟─12d79d77-358c-4098-993a-d5be538929a2
 # ╟─a8adf478-620d-4744-aae5-99d0891fe6b0
 # ╠═affacc76-18e5-49b2-8e7f-77499d2503b9
