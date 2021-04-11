@@ -1048,6 +1048,8 @@ begin
 	
 	# Converte coordenadas Cartesianas para esféricas
 	function cart2sph(x, y, z)
+		θ, ϕ = atan(√(x^2 + y^2) / z), atan(y / x)
+		rad2deg(θ), rad2deg(ϕ)
 	end
 		
 	# Direcão ao longo dos drillholes
