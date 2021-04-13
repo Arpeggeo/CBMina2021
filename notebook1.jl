@@ -1644,8 +1644,9 @@ md"""
 
 ##### Definição do solver
 
-Um **solver** nada mais é do que o estimador que utilizaremos para realizar a estimativa. No nosso contexto, criaremos dois solvers:
+Um **solver** nada mais é do que o estimador que utilizaremos para realizar a estimativa. No nosso contexto, criaremos três solvers:
 
+- Inverso da distância (IDW)
 - Krigagem Simples (SK)
 - Krigagem Ordinária (OK)
 
@@ -1686,9 +1687,9 @@ md"""
 
 ##### Solução do problema
 
-Para gerar o modelo de teores de Cu, resolvemos o problema definido com qualquer um dos solvers. Como o notebook que estamos trabalhando reage a qualquer alteração dos parâmetros, nós adicionamos um checkbox para apenas executar a Krigagem sob demanda.
+Para gerar o modelo de teores de Cu, resolvemos o problema definido com qualquer um dos solvers. Como o notebook que estamos trabalhando reage a qualquer alteração dos parâmetros, nós adicionamos um checkbox para apenas executar os solvers sob demanda.
 
-Marque o checkbox $(@bind run CheckBox()) para executar a Krigagem.
+Marque o checkbox $(@bind run CheckBox()) para executar os solvers.
 
 """
 
@@ -1714,6 +1715,20 @@ Marque o checkbox $(@bind viz CheckBox()) para visualizar o modelo de teores.
 **Alerta:** A visualização pode demorar a aparecer por conta da biblioteca Plots.jl utilizada neste notebook. Aconselhamos a biblioteca [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D.
 """
 
+# ╔═╡ bce98bc9-c676-4a2e-bdac-10a74a9cdeae
+md"""
+Solução: $(@bind selection Select(["IDW", "SK", "OK"]))
+"""
+
+# ╔═╡ 97b41da9-979a-4785-9ee4-19f43d912c49
+if selection == "IDW"
+	sol = sol_idw
+elseif selection == "SK"
+	sol = sol_SK
+elseif selection == "OK"
+	sol = sol_OK
+end;
+
 # ╔═╡ 63d5db73-1073-4b8d-bfab-93577579571f
 if run && viz
 	cmin, cmax = coordinates.(extrema(grid))
@@ -1737,7 +1752,7 @@ end
 
 # ╔═╡ b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
 if run && viz
-	sol_OK |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
+	sol |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
 	@map({CU = _.CU, X = _.COORDS[1], Y = _.COORDS[2], Z = _.COORDS[3]}) |>
 	@filter(_.X < x && _.Y < y && _.Z < z) |>
 	@df scatter(:X, :Y, :Z, marker_z = :CU, color = :berlin, marker = (:square, 4),
@@ -1768,14 +1783,15 @@ Nesta validação, nos atentaremos para a comparação entre os seguintes sumár
 
 - Cu amostral
 - Cu declusterizado
+- Cu estimado por IDW
 - Cu estimado por SK
 - Cu estimado por OK
 
-É importante ressaltar dois pontos acerca dos estimadores da família da krigagem:
+É importante ressaltar dois pontos acerca dos estimadores da família da Krigagem:
 
-- Como a krigagem leva em consideração a redundância amostral, é mais conveniente compararmos a média krigada com a a média declusterizada
+- Como a Krigagem leva em consideração a redundância amostral, é mais conveniente compararmos a média Krigada com a a média declusterizada
 
-- Em geral estimativas por krigagem tendem a não honrar a real heterogeneidade do depósito. Em outras palavras, o histograma dos teores estimados por krigagem tende a ser mais suavizado do que o histograma dos teores amostrais
+- Em geral estimativas por Krigagem tendem a não honrar a real variabilidade do depósito. Em outras palavras, o histograma dos teores estimados por Krigagem tende a ser mais suavizado do que o histograma dos teores amostrais
 
 """
 
@@ -1817,9 +1833,9 @@ if run
 md"""
 A partir da comparação entre as estatísticas acima, nota-se que:
 
-- As duas médias estimadas são muito próximas da média declusterizada
+- As médias estimadas são muito próximas da média declusterizada
 
-- Houve uma redução significativa da dispersão dos teores estimados pelos dois métodos quando comparados com os teores amostrais. OK apresentou estimativas menos suavizadas do que as estimativas de SK.
+- OK apresentou estimativas menos suavizadas do que as estimativas de SK.
 
 
 """
@@ -1830,7 +1846,7 @@ md"""
 
 ##### Q-Q plot
 
-O Q-Q plot entre os teores amostrais (reais) e os teores estimados pode ser utilizado para realizar uma comparação entre as distribuições de Cu amostral e Cu estimado. Podemos analisar visualmente o grau de suavização da estimativa por Krigagem.
+O Q-Q plot entre os teores amostrais (reais) e os teores estimados pode ser utilizado para realizar uma comparação entre as distribuições de Cu amostral e Cu estimado. Podemos analisar visualmente o grau de suavização dos diferentes solvers.
 
 Quanto mais distantes forem os pontos do plot da função identidade (X=Y), mais suaves são as estimativas em relação a distribuicão amostral.
 
@@ -2050,6 +2066,8 @@ end;
 # ╠═5e86ee34-60fe-43e4-851c-2f08072f836e
 # ╟─50650d2f-350b-446d-8c4b-6aa19e18c148
 # ╟─b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
+# ╟─97b41da9-979a-4785-9ee4-19f43d912c49
+# ╟─bce98bc9-c676-4a2e-bdac-10a74a9cdeae
 # ╟─63d5db73-1073-4b8d-bfab-93577579571f
 # ╟─4f05c05d-c92a-460d-b3e0-d392111ef57a
 # ╟─64a8cd06-6020-434a-a1e2-115e17c51d29
