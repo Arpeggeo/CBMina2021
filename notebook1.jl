@@ -21,7 +21,8 @@ begin
 	# load packages used in this notebook
 	using GeoStats, DrillHoles
 	using CSV, DataFrames, Query
-    using Statistics, StatsBase, Random
+    using Statistics, StatsBase
+	using LinearAlgebra, Random
 	using FileIO, PlutoUI
     using Plots, StatsPlots
 	
@@ -52,26 +53,9 @@ md"""
 
 Este módulo objetiva demonstrar um fluxo de trabalho completo de estimativa (tradicional) de recursos por Krigagem realizado com a linguagem [Julia](https://docs.julialang.org/en/v1/) e o pacote [GeoStats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html).
 
-Nesse sentido, cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a estimativa dos recursos num modelo de blocos 3D (Figura 1).
+Nesse sentido, cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a estimativa dos recursos num modelo de blocos 3D.
 
 Portanto, o **produto final** é um **modelo de blocos estimado** por Krigagem ordinária.
-
-"""
-
-# ╔═╡ 1a00e8d4-4115-4651-86a7-5237b239307f
-html"""
-
-<p align="center">
-
-    <img src="" alt="Figura_01">
-
-</p>
-
-<p align="center">
-
-    <b>Figura 1</b>: Fluxo de trabalho simplificado de estimativa de recursos.
-
-</p>
 
 """
 
@@ -95,7 +79,7 @@ md"""
 
 ### 1. Importação e geração de furos
 
-É comum que os dados de sondagem sejam apresentados por meio de um conjunto de três (ou mais) tabelas distintas, relacionadas entre si por um campo-chave (Figura 2).
+É comum que os dados de sondagem sejam apresentados por meio de um conjunto de três (ou mais) tabelas distintas, relacionadas entre si por um campo-chave (Figura 1).
 
 Esse campo-chave que interliga as três tabelas é o identificador dos furos (comumente chamado de `BHID` ou `HOLEID`).
 
@@ -114,13 +98,13 @@ html"""
 
 <p align="center">
 
-    <img src="" alt="Figura_02">
+    <img src="https://i.postimg.cc/52Qz4t7Z/tables.jpg">
 
 </p>
 
 <p align="center">
 
-    <b>Figura 2</b>: Tabelas Collar, Survey, Assay e Litho. Note que elas se relacionam entre si pelo campo-chave HOLEID.
+    <b>Figura 1</b>: Tabelas Collar, Survey, Assay e Litho relacionadas entre si pelo campo-chave HOLEID.
 
 </p>
 
@@ -138,7 +122,7 @@ begin
 					holeid = :HOLEID, x = :X, y = :Y, z = :Z)
 
 	# Importação da tabela Survey
-	survey = Survey(file = "data/survey.csv",
+	survey = Survey(file = "data/survey.csv", invertdip = true,
 					holeid = :HOLEID, at = :AT, azm = :AZM, dip = :DIP)
 
 	# Importação da tabela Assay
@@ -370,7 +354,7 @@ Como o objetivo deste módulo é a geração de um modelo de teores de Cu estima
 # ╔═╡ 4d5f2467-c7d5-4a82-9968-97f193090bd6
 begin
     # Remoção dos valores faltantes de CU e LITH do banco de dados
-    dropmissing!(dh, disallowmissing = true)
+    dropmissing!(dh)
 
     # Sumário estatístico do banco de dados após a exclusão dos valores faltantes
     describe(dh)
@@ -389,7 +373,7 @@ Portanto, um procedimento denominado **compositagem** deve ser conduzido, visand
 
 - Aumentar o suporte amostral (suporte x variância = k).
 
-- Adequar o comprimento das amostras à escala de trabalho (Figura 3).
+- Adequar o comprimento das amostras à escala de trabalho (Figura 2).
 
 Quando a compositagem é realizada, os teores originais são recalculados, a partir de uma média dos teores amostrais ponderada pelo comprimento amostral. Os teores resultantes são denominados **teores compostos (Tc)**:
 
@@ -404,13 +388,13 @@ html"""
 
 <p align="center">
 
-    <img src="" alt="Figura_03">
+    <img src="https://i.postimg.cc/PfcrtQg5/compositing.png">
 
 </p>
 
 <p align="center">
 
-    <b>Figura 3</b>: Exemplo de compositagem por bancadas de 10 m de um furo vertical (Yamamoto, 2001). .
+    <b>Figura 2</b>: Exemplo de compositagem por bancadas de 10 m de um furo vertical (Yamamoto, 2001).
 
 </p>
 
@@ -502,7 +486,7 @@ Nesse sentido, esses valores faltantes devem também ser removidos.
 
 # ╔═╡ 12d3d075-bfad-431e-bbdc-341bb01a89a2
 # Remoção dos valores faltantes de CU
-dropmissing!(cp, disallowmissing = true);
+dropmissing!(cp);
 
 # ╔═╡ b6712822-7c4d-4936-bcc2-21b48be99a66
 md"""
@@ -725,20 +709,22 @@ begin
     cp |> @df histogram(:CU,
 		                bins   = 30,
 		 				label  = false,
-		                color  = :darkgoldenrod1,
-		                alpha  = 0.7,
+		                color  = :gray90,
+		                alpha  = 0.75,
 		                xlabel = "Cu (%)",
             			ylabel = "Frequência Absoluta")
 
     # Linha vertical contínua vermelha (média)
-    vline!([Cu_comp.X̄], color = :blue, label = "X̄")
+    vline!([Cu_comp.X̄], label = "X̄")
 
     # Linha vertical contínua verde (mediana)
-    vline!([Cu_comp.P50], color = :green, label = "P50")
+    vline!([Cu_comp.P50], label = "P50")
 	
-	# Linha vertical tracejada cinza (P10)
-    vline!([Cu_comp.P10, Cu_comp.P90], color = :gray,
-		    linestyle = :dashdot, primary = false)
+	# Linha vertical tracejada cinza (P10-P90)
+	vline!([Cu_comp.P10], color = :gray,
+		    linestyle = :dashdot, label = "P10")
+    vline!([Cu_comp.P90], color = :gray,
+		    linestyle = :dashdot, label = "P90")
 
 end
 
@@ -777,7 +763,7 @@ md"""
 md"""
 ### 4. Declusterização
 
-É muito comum, na mineração, que regiões "mais ricas" de um depósito sejam mais amostradas do que suas porções "mais pobres" (Figura 4). Essa situação se justifica pelo fato de a sondagem ser um procedimento de elevado custo e, nesse sentido, é mais coerente que amostremos mais as regiões mais promissoras do depósito.
+É muito comum, na mineração, que regiões "mais ricas" de um depósito sejam mais amostradas do que suas porções "mais pobres". Essa situação se justifica pelo fato de a sondagem ser um procedimento de elevado custo e, nesse sentido, é mais coerente que amostremos mais as regiões mais promissoras do depósito.
 
 A **Teoria da Amostragem** deixa claro que a amostragem de um fenômeno (*e.g.* mineralização de Cu) deve ser representativa. Em outras palavras:
 
@@ -786,19 +772,6 @@ A **Teoria da Amostragem** deixa claro que a amostragem de um fenômeno (*e.g.* 
 Nesse sentido, como frequentemente há um agrupamento amostral preferencial nas porções ricas dos depósitos, podemos dizer que a amostragem de depósitos minerais não é representativa. Dessa maneira, como temos uma amostragem sistematicamente não representativa, teremos uma estimativa sistematicamente não fiel à realidade do depósito.
 
 Uma forma de mitigar esse viés amostral intrínseco à indústria da mineração é a utilização de técnicas de **declusterização**.
-
-"""
-
-# ╔═╡ 14beece5-6475-49a0-9f5c-cefb68328e24
-html"""
-
-<p align="center">
-    <img src="" alt="Figura_04">
-</p>
-
-<p align="center">
-    <b>Figura 4</b>: Exemplo de agrupamento amostral preferencial nas porções "mais ricas".
-</p>
 
 """
 
@@ -831,8 +804,13 @@ md"""
 
 Com os furos georreferenciados, podemos agora calcular **estatísticas declusterizadas** para o Cu. As estatísticas declusterizadas serão utilizadas na etapa de validação da estimativa por Krigagem.
 
-A tabela abaixo mostra uma comparação estatística entre os teores de Cu antes e depois da declusterização das amostras:
+A tabela abaixo mostra uma comparação estatística entre os teores de Cu antes e depois da declusterização das amostras. As estatísticas declusterizadas são função de um tamanho de bloco especificado.
 
+"""
+
+# ╔═╡ 91bbc52e-412f-46eb-b342-0d202e965934
+md"""
+Tamanho de bloco: $(@bind s Slider(50.:10.:250., default=250., show_value=true)) m
 """
 
 # ╔═╡ 68e50bdd-b006-4abc-aeda-c4d67c30babb
@@ -842,11 +820,11 @@ begin
 	
 	# Sumário estatístico do Cu declusterizado
 	Cu_decl = DataFrame(Variable = "Cu (declusterizado)",
-						X̄        = mean(samples, :CU),
-						S²       = var(samples, :CU),
-						P10      = quantile(samples, :CU, 0.1),
-						P50      = quantile(samples, :CU, 0.5),
-						P90      = quantile(samples, :CU, 0.9))
+						X̄        = mean(samples, :CU, s),
+						S²       = var(samples, :CU, s),
+						P10      = quantile(samples, :CU, 0.1, s),
+						P50      = quantile(samples, :CU, 0.5, s),
+						P90      = quantile(samples, :CU, 0.9, s))
 	
 	# Razão das médias (%)
 	Xᵣ = (Cu_decl.X̄ / Cu_clus.X̄)[] * 100
@@ -862,13 +840,13 @@ begin
 	hist_clus = fit(Histogram, samples[:CU], nbins = 30)
 
     # Cálculo do histograma declusterizado de Cu
-    hist_decl = EmpiricalHistogram(samples, :CU, nbins = 30)
+    hist_decl = EmpiricalHistogram(samples, :CU, s, nbins = 30)
 
     # Visualização dos histogramas
     plot(Statistics.normalize(hist_clus),
 		 seriestype = :step,
 		 normed     = true,
-         color      = :darkgoldenrod1,
+         color      = :brown,
 		 label      = "Clusterizado",
 	     xlabel     = "Cu (%)",
 	     ylabel     = "PDF")
@@ -891,16 +869,15 @@ md"""
 
 ### 5. Variografia
 
-#### Função variograma/semivariograma
+Na etapa de variografia encontramos uma função que descreve o comportamento espacial da nossa variável de interesse (Cu). É importante ressaltar que, no nosso contexto, essa função é **anisotrópica**, sendo sensível à direção, mas insensível ao sentido. A **função variograma** é a função utilizada na Krigagem:
 
-A **função variograma** é uma função matemática que mapeia o comportamento espacial de uma variável regionalizada. No nosso caso, essa variável é o Cu.
 
 ```math
-γ(h) = \frac{1}{2n} \sum_{i=1}^{n} [Z(xᵢ) - Z(xᵢ + h)]^2
+\gamma(h) = \frac{1}{2n} \sum_{i=1}^{n} [Z(x_i) - Z(x_i + h)]^2
 
 ```
 
-Nesse sentido, o objetivo desta etapa consiste em encontrar uma função matemática que descreve o comportamento espacial da nossa variável de interesse (Cu). É importante ressaltar que, no nosso contexto, essa função é **anisotrópica**, sendo sensível à direção, mas insensível ao sentido.
+onde no nosso caso específico, a variável de interesse $Z$ é o teor de Cu.
 
 Para encontrarmos essa função, devemos realizar duas etapas principais:
 
@@ -908,7 +885,7 @@ Para encontrarmos essa função, devemos realizar duas etapas principais:
 
 - Modelagem dos variogramas experimentais
 
-Ao final, teremos em mãos um modelo de variograma representativo da continuidade espacial do Cu e que será utilizado como entrada na estimativa por krigagem.
+Ao final, teremos em mãos um modelo de variograma representativo da continuidade espacial do Cu e que será utilizado como entrada na estimativa por Krigagem.
 
 """
 
@@ -916,7 +893,7 @@ Ao final, teremos em mãos um modelo de variograma representativo da continuidad
 md"""
 ##### Cálculo de variogramas experimentais
 
-Podemos calcular variogramas experimentais (direcionais) para diversas direções no espaço. Para o cálculo de um variograma experimental direcional, devemos definir alguns parâmetros (Figura 5):
+Podemos calcular variogramas experimentais (direcionais) para diversas direções no espaço. Para o cálculo de um variograma experimental direcional, devemos definir alguns parâmetros (Figura 3):
 
 - Direção (azimute/mergulho)
 
@@ -930,11 +907,11 @@ Podemos calcular variogramas experimentais (direcionais) para diversas direçõe
 html"""
 
 <p align="center">
-    <img src="" alt="Figura_05">
+    <img src="https://i.postimg.cc/Y02gMfZ3/lags.png">
 </p>
 
 <p align="center">
-    <b>Figura 5</b>: Parâmetros para o cálculo de um variograma experimental direcional.
+    <b>Figura 3</b>: Parâmetros para o cálculo de um variograma experimental direcional.
 
 </p>
 
@@ -944,7 +921,7 @@ html"""
 md"""
 ##### Modelagem de variogramas experimentais
 
-Como os variogramas experimentais só são calculados para distâncias (ou lags) específicos, é necessário o ajuste de um **modelo matemático contínuo** (Figura 6), de modo que saberemos o valor do variograma (γ) para qualquer distância entre pares de amostras (h).
+Como os variogramas experimentais só são calculados para distâncias (ou lags) específicos, é necessário o ajuste de um **modelo matemático contínuo** (Figura 4), de modo que saberemos o valor do variograma (γ) para qualquer distância entre pares de amostras (h).
 
 """
 
@@ -952,11 +929,11 @@ Como os variogramas experimentais só são calculados para distâncias (ou lags)
 html"""
 
 <p align="center">
-    <img src="" alt="Figura_06">
+    <img src="https://i.postimg.cc/C5jFPWmr/variofit.jpg">
 </p>
 
 <p align="center">
-    <b>Figura 6</b>: Exemplo de um variograma experimental (esquerda) ajustado por um modelo teórico (direita).
+    <b>Figura 4</b>: Exemplo de um variograma experimental (esquerda) ajustado por um modelo teórico (direita).
 
 
 </p>
@@ -974,15 +951,13 @@ Os modelos teóricos mais utilizados na indústria são:
 
 - Modelo Exponencial
 
-Os modelos teóricos de variograma apresentam basicamente quatro propriedades (Figura 7):
+Os modelos teóricos de variograma apresentam basicamente três parâmetros (Figura 7):
 
-- Efeito Pepita (C₀)
+- Efeito Pepita ($c_o$)
 
-- Variância Espacial (Cᵢ)
+- Contribuição ($c_i$)
 
-- Patamar (C₀+Cᵢ)
-
-- Alcance (aᵢ)
+- Alcance ($a_i$)
 
 """
 
@@ -990,7 +965,7 @@ Os modelos teóricos de variograma apresentam basicamente quatro propriedades (F
 html"""
 
 <p align="center">
-    <img src="" alt="Figura_07">
+    <img src="https://i.postimg.cc/dtYQkVVb/varioparams.png" alt="Figura_07">
 </p>
 
 <p align="center">
@@ -1001,22 +976,25 @@ html"""
 
 # ╔═╡ c3a0dfb3-27e5-4d9a-82e5-f722a513b788
 md"""
+
 #### Fluxo da variografia 3D
 
-A Figura 8 ilustra o fluxo de trabalho que realizaremos para a obtenção do modelo de variograma que mapeia a continuidade espacial do Cu.
+Em seguida ilustramos o fluxo de trabalho para a obtenção do modelo de variograma 3D de Cu. Em cada etapa, listamos os principais parâmetros encontrados.
 
-"""
-
-# ╔═╡ 91700370-f8fe-40c9-88fb-946063ae9084
-html"""
-
-<p align="center">
-    <img src="" alt="Figura_08">
-</p>
-
-<p align="center">
-    <b>Figura 8</b>: Fluxo da variografia 3D.
-</p>
+1. **Variograma down hole** (ao longo do furo)
+    - Efeito pepita e as contribuições das estruturas
+2. **Variograma azimute**
+    - Azimute de maior continuidade
+    - Primeira rotação do variograma (eixo Z)
+3. **Variograma primário**
+    - Dip de maior continuidade, fixando-se o azimute
+    - Segunda rotação do variograma (eixo X)
+    - Alcance da direção (azimute + dip) de maior continuidade (Y)
+4. **Variograma secundário**
+    - Terceira rotação do variograma (eixo Y)
+    - Alcance da direção de continuidade intermediária (X)
+5. **Variograma terciário**
+    - Alcance da direção de menor continuidade (Z)
 
 """
 
@@ -1040,18 +1018,22 @@ Como o variograma down hole é calculado ao longo da orientação dos furos, dev
 begin
 	
 	# Sumário estatístico da variável "AZM"
-	azmdf = DataFrame(Variable = :AZM,
+	azmdf = DataFrame(Variable = "Azimute",
                       Mean     = mean(composites.trace.AZM),
 					  Median   = median(composites.trace.AZM),
 					  Min      = minimum(composites.trace.AZM),
 					  Max      = maximum(composites.trace.AZM))
 	
 	# Sumário estatístico da variável "DIP"
-	dipdf = DataFrame(Variable = :DIP,
+	dipdf = DataFrame(Variable = "Dip",
                       Mean     = mean(composites.trace.DIP),
 					  Median   = median(composites.trace.DIP),
 					  Min      = minimum(composites.trace.DIP),
 					  Max      = maximum(composites.trace.DIP))
+	
+	# Azimute e Dip médios
+	μazi = round(azmdf.Mean[], digits=2)
+	μdip = round(dipdf.Mean[], digits=2)
 	
 	# Concatenação vertical dos sumários
 	[azmdf
@@ -1059,10 +1041,30 @@ begin
 
 end
 
+# ╔═╡ e49b7b48-77d8-4abf-a5df-70e9c65e3667
+begin
+	# Converte coordenadas esféricas para Cartesianas
+	function sph2cart(azi, dip)
+		θ, ϕ = deg2rad(azi), deg2rad(dip)
+		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), sin(ϕ)
+	end
+	
+	# Converte coordenadas Cartesianas para esféricas
+	function cart2sph(x, y, z)
+		θ, ϕ = atan(x, y), atan(z, √(x^2 + y^2))
+		rad2deg(θ), rad2deg(ϕ)
+	end
+		
+	# Direcão ao longo dos drillholes
+	dirdh = sph2cart(μazi, μdip)
+end;
+
 # ╔═╡ a717d5d3-9f4e-4a2d-8e32-f0605bbd742f
 md"""
 
-Agora que sabemos a orientação média dos furos (150°/55°), podemos calcular o variograma experimental down hole:
+#### Variograma down hole
+
+Agora que sabemos a orientação média dos furos ($(round(μazi,digits=2))°/ $(round(μdip,digits=2))°), podemos calcular o variograma experimental down hole.
 
 """
 
@@ -1074,9 +1076,9 @@ md"""
 # ╔═╡ 1465f010-c6a7-4e72-9842-4504c6dda0be
 md"""
 
-№ passos: $(@bind nlags_dh Slider(10:1:25, default=12, show_value=true))
+Número de passos: $(@bind nlagsdh Slider(10:1:25, default=12, show_value=true))
 
-Largura da banda: $(@bind bw_dh Slider(10:5:50, default=45, show_value=true)) m
+Largura da banda: $(@bind toldh Slider(10:5:50, default=45, show_value=true)) m
 
 """
 
@@ -1085,30 +1087,22 @@ begin
 	# Definição de uma semente aleatória
 	Random.seed!(1234)
 	
-	# Converte coordenadas esféricas para Cartesianas
-	function polar2cart(azi, dip)
-    	azi_rad = deg2rad(azi)
-    	dip_rad = deg2rad(dip)
-    	x = sin(azi_rad) * cos(dip_rad)
-    	y = cos(azi_rad) * cos(dip_rad)
-    	z = (sin(dip_rad)) * -1
-
-    	return (x, y, z)
-	end
+	# Cor para variogramas down hole
+	colordh = :brown
 
 	# Cálculo variograma down hole para a variável Cu
-	γ_dh = DirectionalVariogram(polar2cart(150,55), samples, :CU,
-								dtol = bw_dh, maxlag = 150, nlags = nlags_dh)
+	gdh = DirectionalVariogram(dirdh, samples, :CU,
+		                       maxlag = 150, nlags = nlagsdh, dtol = toldh)
 	
 	# Variância a priori
-	σ²_dh = var(samples[:CU])
+	σ² = var(samples[:CU])
 	
 	# Plotagem do variograma experimental downhole
-    plot(γ_dh, marker = 5, ylims = (0, σ²_dh+0.05),
-		 color = :deepskyblue, title = "150°/55°")
+    plot(gdh, ylims = (0, σ²+0.05), color = colordh, ms = 5,
+		 legend = :bottomright, label = "empírico", title = "$μazi °/ $μdip °")
 	
 	# Linha horizontal tracejada cinza (variância à priori)
-    hline!([σ²_dh], color = :gray, ls = :dash, legend = false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1124,15 +1118,15 @@ Agora que o variograma down hole foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 0585add6-1320-4a31-a318-0c40b7a444fa
 md"""
 
-Efeito Pepita: $(@bind c₀ Slider(0.00:0.005:0.06, default=0.02, show_value=true))
+Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.02, show_value=true))
 
-Variância Espacial 1ª Estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.06, show_value=true))
+Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.06, show_value=true))
 
-Variância Espacial 2ª Estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.075, show_value=true))
+Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.075, show_value=true))
 
-Alcance 1ª Estrutura: $(@bind a_dh1 Slider(10.0:2.0:80.0, default=80.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:80.0, default=80.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_dh2 Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
 
 """
 
@@ -1140,32 +1134,30 @@ Alcance 2ª Estrutura: $(@bind a_dh2 Slider(10.0:2.0:140.0, default=118.0, show_
 begin
 
     # Criação da primeira estrutura do modelo de variograma (efeito pepita)
-    model_dh0 = NuggetEffect(nugget = c₀)
+    γdhₒ = NuggetEffect(nugget = Float64(cₒ))
 
     # Criação da segunda estrutura do modelo de variograma (1ª contribuição ao sill)
-    model_dh1 = SphericalVariogram(sill = Float64(c₁), range = Float64(a_dh1))
+    γdh₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rdh₁))
 
     # Criação da terceira estrutura do modelo de variograma (2ª contribuição ao sill)
-    model_dh2 = SphericalVariogram(sill = Float64(c₂), range = Float64(a_dh2))
+    γdh₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rdh₂))
 
     # Aninhamento das três estruturas
-    model_dh = model_dh0 + model_dh1 + model_dh2
+    γdh  = γdhₒ + γdh₁ + γdh₂
 
     # Plotagem do variograma experimental downhole
-    plot(γ_dh, ylims = (0, 0.3), marker = 5, color = :deepskyblue)
+    plot(gdh, color = colordh, ms = 5,
+		 legend = :bottomright, label = "empírico", title = "$μazi °/ $μdip °")
 
     # Plotagem do modelo de variograma aninhado
-    plot!(model_dh, 0, 150,
-		  lw = 2, color = :red,
-		  legend = :right,
-          title = "150°/55°",
-          ylims = (0, σ²_dh + 0.05))
+    plot!(γdh, 0, 150, ylims = (0, σ²+0.05), color = colordh,
+		  lw = 2, label = "teórico")
     
     # Linha horizontal tracejada cinza (variância à priori)
-    hline!([σ²_dh], color="gray", ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
     
-    # Linha vertical tracejada verde (alcance)
-    vline!([a_dh2], color="green", ls=:dash, legend=false)
+    # Linha vertical tracejada cinza (alcance)
+    vline!([range(γdh)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1189,9 +1181,9 @@ Calcularemos diversos variogramas experimentais ortogonais entre si e escolherem
 md"""
 Azimute: $(@bind azi Slider(0.0:22.5:67.5, default=67.5, show_value=true)) °
 
-№ passos: $(@bind nlags_azi Slider(5:1:12, default=9, show_value=true))
+Número de passos: $(@bind nlagsazi Slider(5:1:12, default=9, show_value=true))
 
-Largura de Banda: $(@bind bw_azi Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind dtolazi Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1199,22 +1191,22 @@ Largura de Banda: $(@bind bw_azi Slider(10:10:100, default=70, show_value=true))
 begin
 
     Random.seed!(1234)
-
-    γ_azi_1 = DirectionalVariogram(polar2cart(azi,0.0),
-                                   samples, :CU,
-                                   dtol = bw_azi, maxlag = 350,
-                                   nlags = nlags_azi)
-
-    γ_azi_2 = DirectionalVariogram(polar2cart((azi+90.0),0.0),
-                                   samples, :CU, dtol = bw_azi,
-                                   maxlag=350, nlags = nlags_azi)
 	
-	plot(γ_azi_1, marker=5, ylims=(0, 0.4), label="0$(azi)°", color=:red)
+	coloraziₐ = :green
+	coloraziᵦ = :purple
 
-    plot!(γ_azi_2, marker=5, ylims=(0, 0.4), label="$(azi+90)°",
-		  color = :deepskyblue, legend = :topright)
+    gaziₐ = DirectionalVariogram(sph2cart(azi, 0), samples, :CU,
+                                 maxlag = 350, nlags = nlagsazi, dtol = dtolazi)
 
-    hline!([σ²_dh], color=:gray, ls=:dash, label=false)
+    gaziᵦ = DirectionalVariogram(sph2cart((azi+90), 0), samples, :CU,
+		                         maxlag = 350, nlags = nlagsazi, dtol = dtolazi)
+	
+	plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ, ms = 5,
+		 legend = :bottomright, label="azimute $azi °")
+
+    plot!(gaziᵦ, color = coloraziᵦ, ms = 5, label="azimute $(azi+90) °")
+
+    hline!([σ²], color=:gray, ls=:dash, primary = false)
 
 end
 
@@ -1229,33 +1221,31 @@ Agora que o variograma azimute foi calculado, podemos ajustá-lo com um modelo t
 # ╔═╡ 78b45d90-c850-4a7e-96b8-535dd23bd1a7
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_azi1 Slider(10.0:2.0:100.0, default=60.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:100.0, default=60.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_azi2 Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind razi₂ Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
 
 """
 
 # ╔═╡ e3b98c8b-878d-475b-bd4b-823d00c6141b
 begin
 
-    model_azi0 = NuggetEffect(nugget=c₀)
+    γaziₒ = NuggetEffect(nugget = Float64(cₒ))
 
-    model_azi1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_azi1))
+    γazi₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(razi₁))
 
-    model_azi2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_azi2))
+    γazi₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(razi₂))
 
-    model_azi = model_azi0 + model_azi1 + model_azi2
+    γaziₐ  = γaziₒ + γazi₁ + γazi₂
 
-    plot(γ_azi_1, marker=5, color=:deepskyblue)
+    plot(gaziₐ, color = coloraziₐ, ms = 5,
+		 legend = :bottomright, label = "empírico", title = "$azi °")
 
-    plot!(model_azi, 0, 350, title="0$(azi)°",
-          ylims=(0, 0.3), color=:red, lw=2)
+    plot!(γaziₐ, 0, 350, ylims=(0, σ²+0.05), color = coloraziₐ, lw = 2, label = "teórico")
 
-    hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_azi2], color=:green, ls=:dash, legend=false)
+    vline!([range(γaziₐ)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1274,18 +1264,22 @@ Nesta etapa, encontraremos o **maior alcance** do modelo de variograma final, al
 md"""
 ##### Variogram experimental primário
 
-Para o cálculo deste variograma experimental, devemos fixar o azimute de maior continuidade já encontrado (0$(azi)°) e variar o dip. A orientação (azi/dip) que fornecer o maior alcance, será eleita a **direção de maior continuidade**:
+Para o cálculo deste variograma experimental, devemos fixar o azimute de maior continuidade já encontrado ($azi °) e variar o dip. A orientação (azi/dip) que fornecer o maior alcance, será eleita a **direção de maior continuidade**:
 
 """
+
+# ╔═╡ 99baafe5-6249-4eda-845f-d7f6219d5726
+# Cores dos variograms principais
+colorpri, colorsec, colorter = cgrad(:Purples)[[9,7,5]];
 
 # ╔═╡ 97670210-2c91-4be7-a607-0da83cb16f44
 md"""
 
-Dip: $(@bind dip Slider(0.0:22.5:90.0, default=22.5, show_value=true))°
+Dip: $(@bind dip Slider(-90.0:22.5:0.0, default=-22.5, show_value=true))°
 
-№ passos: $(@bind nlags_dip Slider(5:1:12, default=10, show_value=true))
+Número de passos: $(@bind nlagspri Slider(5:1:12, default=10, show_value=true))
 
-Largura de Banda: $(@bind bw_dip Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind tolpri Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1294,14 +1288,13 @@ begin
 	
     Random.seed!(1234)
 
-    γ_dip = DirectionalVariogram(polar2cart(azi,dip), samples,
-                                 :CU, dtol=bw_dip, maxlag=350,
-                                 nlags=nlags_dip)
+    gpri = DirectionalVariogram(sph2cart(azi, dip), samples, :CU,
+                                maxlag = 350, nlags = nlagspri, dtol = tolpri)
 
-	plot(γ_dip, marker=5, ylims=(0, 0.3), color=:deepskyblue,
-         title="0$(azi)°/$(dip)°")
+	plot(gpri, ylims=(0, σ²+0.05), color = colorpri, ms = 5,
+		 legend = :bottomright, label = "empírico", title = "$azi ° / $dip °")
 
-    hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 end
 
 # ╔═╡ eb9ebce2-7476-4f44-ad4f-10a1ca522143
@@ -1315,33 +1308,32 @@ Agora que o variograma primário foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 92d11f3b-c8be-4701-8576-704b73d1b619
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_dip1 Slider(10.0:2.0:120.0, default=84.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:120.0, default=84.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_dip2 Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rpri₂ Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
 
 """
 
 # ╔═╡ fa93796d-7bc0-4391-89a7-eeb63e1a3838
 begin
 
-    model_dip0 = NuggetEffect(nugget=c₀)
+    γpriₒ = NuggetEffect(nugget = Float64(cₒ))
 
-    model_dip1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_dip1))
+    γpri₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rpri₁))
 
-    model_dip2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_dip2))
+    γpri₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rpri₂))
 
-    model_dip = model_dip0 + model_dip1 + model_dip2
+    γpri  = γpriₒ + γpri₁ + γpri₂
 
-    plot(γ_dip, marker=5, color=:deepskyblue)
+    plot(gpri, color = colorpri, ms = 5,
+	     legend = :bottomright, label = "primário", title = "$azi °/ $dip °")
 
-    plot!(model_dip, 0, 350, title="0$(azi)°/$(dip)°",
-          ylims=(0, 0.3), color=:red, lw=2)
-    
-    hline!([σ²_dh], color=:gray, ls=:dash, legend=false)
+    plot!(γpri, 0, 350, ylims = (0, σ²+0.05), color = colorpri, lw = 2,
+		  label = "teórico")
+		
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_dip2], color=:green, ls=:dash, legend=false)
+    vline!([range(γpri)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1354,28 +1346,13 @@ Sabe-se que, por definição, os três eixos principais do variograma são ortog
 
 Portanto, nesta etapa, encontraremos os **alcances intermediário e menor** do modelo de variograma final, bem como a **terceira rotação do variograma**, ou seja, aquela em torno do **eixo Y**.
 
-Nesse sentido, como o eixo primário do variograma apresenta uma orientação 0$(azi)° / $(dip)°, com o auxílio de um **estereograma**, podemos encontrar o plano que contém os eixos secundário e terciário. Ressalta-se ainda que **eixos secundário e terciário são ortogonais entre si**.
+Nesse sentido, como o eixo primário do variograma apresenta uma orientação $(azi) ° / $(dip) °, podemos encontrar o plano que contém os eixos secundário e terciário. Ressalta-se ainda que **eixos secundário e terciário são ortogonais entre si**.
 
-A Figura 9 mostra um estereograma cujo eixo primário tem orientação 067°/22.5°. O **ponto vermelho** representa o **eixo primário (Y)**, enquanto os **pontos pretos** são candidatos a **eixos secundário e terciário**. O **grande círculo vermelho** representa o **plano XZ**, ou seja, aquele que contém os eixos secundário (X) e terciário (Z).
-
-Portanto, adotaremos a seguinte convenção:
+Adotaremos a seguinte convenção:
 
 - Eixo primário (maior continuidade) = Y
 - Eixo secundário (continuidade intermediária) = X
 - Eixo terciário (menor continuidade) = Z
-
-"""
-
-# ╔═╡ 0e431ddb-45c1-4fb6-8469-8c5c10fcf13c
-html"""
-
-<p align="center">
-    <img src="" alt="Figura_09">
-</p>
-
-<p align="center">
-    <b>Figura 9</b>: Estereograma com o eixo primário e candidatos para os eixos secundário e terciário.
-</p>
 
 """
 
@@ -1391,14 +1368,11 @@ Para o cálculo dos variogramas experimentais secundário e terciário, podemos 
 # ╔═╡ 120f4a9c-2ca6-49f1-8abc-999bcc559149
 md"""
 
-Orientações: $(@bind orient Select(["config1" => "177.6°/41.1° e 317.4°/41.1°",
-                                    "config2" => "157.5°/00.0° e 247.5°/68.5°",
-                                    "config3" => "165.9°/20.4° e 295.3°/59.6°",
-                                    "config4" => "198.3°/58.9° e 328.7°/21.3°"]))
+Ângulo de rotação: $(@bind θ Slider(range(0, stop=90-180/8, step=180/8), default=45, show_value=true))°
 
-№ passos: $(@bind nlags_int_min Slider(5:1:15, default=12, show_value=true))
+Número de passos: $(@bind nlagssec Slider(5:1:15, default=12, show_value=true))
 
-Largura de Banda: $(@bind bw_int_min Slider(10:10:100, default=70, show_value=true)) m
+Largura de banda: $(@bind tolsec Slider(10:10:100, default=70, show_value=true)) m
 
 """
 
@@ -1407,44 +1381,29 @@ begin
 
     Random.seed!(1234)
 
-    azi1, dip1 = 177.6, 41.1
-    azi2, dip2 = 317.4, 41.1
-
-    if orient == "config1"
-        azi1, dip1 = 177.6, 41.1
-        azi2, dip2 = 317.4, 41.1
-
-    elseif orient == "config2"
-        azi1, dip1 = 157.5, 0.0
-        azi2, dip2 = 247.5, 68.5
-
-    elseif orient == "config3"
-        azi1, dip1 = 165.9, 20.4
-        azi2, dip2 = 295.3, 59.6
-
-    elseif orient == "config4"
-        azi1, dip1 = 198.3, 58.9
-        azi2, dip2 = 328.7, 21.3
-    end
-
-    γ_int_min1 = DirectionalVariogram(polar2cart(azi1,dip1),
-                                      samples, :CU,
-                                      dtol=bw_int_min, maxlag=250,
-                                      nlags=nlags_int_min)
-
-    γ_int_min2 = DirectionalVariogram(polar2cart(azi2,dip2),
-                                      samples, :CU,
-                                      dtol=bw_int_min, maxlag=250,
-                                      nlags=nlags_int_min)
+	# Encontra vetores u e v perpendiculares entre si e perpendiculares a normal
+	n = Vec(sph2cart(azi,dip))
+	u = Vec(sph2cart(azi+90,0))
+	v = n × u
 	
-	plot(γ_int_min1, marker=5, ylims=(0, 0.4), xlims=(0,250),
-         label="$(azi1)°/$(dip1)°", color=:red)
+	# Giro no plano perpendicular gerado por u e v
+	dirsec = cos(deg2rad(θ)) .* u .+ sin(deg2rad(θ)) .* v
+	dirter = cos(deg2rad(θ+90)) .* u .+ sin(deg2rad(θ+90)) .* v
 
-    plot!(γ_int_min2, marker=5, ylims=(0, 0.4), xlims=(0,250),
-          label="$(azi2)°/$(dip2)°", color=:deepskyblue,
-          legend=:topright)
+	# Variograma secundário
+    gsec = DirectionalVariogram(dirsec, samples, :CU,
+		                        maxlag = 250, nlags = nlagssec, dtol = tolsec)
 
-    hline!([σ²_dh], color="gray", ls=:dash, label=false)
+	# Variograma terciário
+    gter = DirectionalVariogram(dirter, samples, :CU,
+								maxlag = 250, nlags = nlagssec, dtol = tolsec)
+	
+	plot(gsec, ylims=(0, σ²+0.2), color = colorsec, ms = 5,
+		 legend = :bottomright, label = "secundário")
+
+    plot!(gter, color = colorter, ms = 5, label = "terciário")
+
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1453,40 +1412,39 @@ md"""
 
 ##### Modelagem do variograma secundário
 
-Agora que elegemos o variograma experimental representante do eixo secundário, podemos modelá-lo:
+Agora que elegemos o variograma experimental representante do eixo secundário, podemos modelá-lo com duas estruturas esféricas:
 
 """
 
 # ╔═╡ 922d81f3-0836-4b14-aaf2-83be903c8642
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_interm1 Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_interm2 Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
 
 """
 
 # ╔═╡ a74b7c50-4d31-4bd3-a1ef-6869abf73185
 begin
 
-    model_interm0 = NuggetEffect(c₀)
+    γsecₒ = NuggetEffect(Float64(cₒ))
 	
-    model_interm1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_interm1))
+    γsec₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rsec₁))
 
-    model_interm2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_interm2))
+    γsec₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rsec₂))
 
-    model_interm = model_interm0 + model_interm1 + model_interm2
+    γsec  = γsecₒ + γsec₁ + γsec₂
 
-    plot(γ_int_min1, marker=5, color=:deepskyblue)
+    plot(gsec, color = colorsec, ms = 5,
+	     label = "secundário", legend = :bottomright)
 
-    plot!(model_interm, 0, 200, title="$(azi1)°/$(dip1)°",
-          ylims=(0, 0.4), color=:red, lw=2)
+    plot!(γsec, 0, 250, ylims = (0, σ²+0.2), color = colorsec, lw = 2,
+		  label = "teórico")
 
-    hline!([σ²_dh], color="gray", ls=:dash, legend=false)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_interm2], color="green", ls=:dash, legend=false)
+    vline!([range(γsec)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1495,16 +1453,16 @@ md"""
 
 ##### Modelagem do variograma terciário
 
-Agora que elegemos o variograma experimental representante do eixo terciário, podemos modelá-lo:
+Fazemos o mesmo para o variograma terciário:
 
 """
 
 # ╔═╡ dacfe446-3c19-430d-8f5f-f276a022791f
 md"""
 
-Alcance 1ª Estrutura: $(@bind a_min1 Slider(10.0:2.0:82.0, default=48.0, show_value=true)) m
+Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:82.0, default=48.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind a_min2 Slider(10.0:2.0:110.0, default=64.0, show_value=true)) m
+Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:110.0, default=64.0, show_value=true)) m
 
 """
 
@@ -1512,47 +1470,23 @@ Alcance 2ª Estrutura: $(@bind a_min2 Slider(10.0:2.0:110.0, default=64.0, show_
 # ╔═╡ 0927d78e-9b50-4aaf-a93c-69578608a4f8
 begin
 
-    model_min0 = NuggetEffect(c₀)
+    γterₒ = NuggetEffect(Float64(cₒ))
 
-    model_min1 = SphericalVariogram(sill=Float64(c₁),
-                                    range=Float64(a_min1))
+    γter₁ = SphericalVariogram(sill = Float64(c₁), range = Float64(rter₁))
 
-    model_min2 = SphericalVariogram(sill=Float64(c₂),
-                                    range=Float64(a_min2))
+    γter₂ = SphericalVariogram(sill = Float64(c₂), range = Float64(rter₂))
 
-    model_min = model_min0 + model_min1 + model_min2
+    γter  = γterₒ + γter₁ + γter₂
 
-    plot(γ_int_min2, marker=5, color=:deepskyblue)
+    plot(gter, color = colorter, ms = 5, label = "terciário",
+	     legend = :bottomright)
 
-    plot!(model_min, 0, 200, title="$(azi2)°/$(dip2)°",
-          ylims=(0, 0.4), color=:red, lw=2)
+    plot!(γter, 0, 250, ylims = (0, σ²+0.2), color = colorter, lw = 2,
+		  label = "teórico")
 
-    hline!([σ²_dh], color="gray", ls=:dash)
+    hline!([σ²], color = :gray, ls = :dash, primary = false)
 
-    vline!([a_min2], color="green", ls=:dash, legend=false)
-
-end
-
-# ╔═╡ c9ac9fb4-5d03-43c9-833e-733e48565946
-begin
-
-    range_y = range(model_dip)
-    range_x = range(model_interm)
-    range_z = range(model_min)
-
-    plot(model_min, lw=2, label="Eixo primário ($(range_z) m)",
-         color=:blue, legend=:bottomright)
-
-    plot!(model_interm, lw=2, label="Eixo secundário ($(range_x) m)",
-		  color=:green)
-
-    plot!(model_dip, lw=2, label="Eixo terciário ($(range_y) m)",
-          color=:red, xlims=(0.0,350.0), ylims=(0.0,0.25))
-
-    vline!([range_y], ls=:dash, label=false, color=:red)
-    vline!([range_x], ls=:dash, label=false, color=:green)
-    vline!([range_z], ls=:dash, label=false, color=:blue)
-	hline!([σ²_dh], ls=:dash, label=false, color=:gray)
+    vline!([range(γter)], color = :gray, ls = :dash, primary = false)
 
 end
 
@@ -1561,53 +1495,31 @@ md"""
 
 #### Resumo
 
-Agora que temos as três direções principais do modelo de variograma, podemos sumarizar as informações obtidas nos itens anteriores:
+Agora que temos as três direções principais do modelo de variograma, podemos sumarizar as informações obtidas nos passos anteriores:
 
-|Estrutura| Modelo | Alcance em X  | Alcance em Y | Alcance em Z | Variância |Efeito Pepita|
-|:-------:|:------:|:-------------:|:------------:|:------------:|:---------:|:-----:|
-|    0    |   EPP  |     -         | -            |          -   |     -     | $(c₀) |
-|    1    |Esférico|$(a_interm1) m | $(a_dip1) m  | $(a_min1) m  |   $(c₁)   | -     |
-|    2    |Esférico| $(range_x) m  | $(range_y) m | $(range_z) m |   $(c₂)   |   -   |
+| Estrutura | Modelo | Alcance em Y | Alcance em X | Alcance em Z | Contribuição | Efeito Pepita |
+|:---:|:--------:|:--------:|:--------:|:--------:|:---:|:---:|
+|  0  |    EPP   |    -     |    -     |    -     |  -  | $cₒ |
+|  1  | Esférico |  $rpri₁  |  $rsec₁  |  $rter₁  | $c₁ |  -  |
+|  2  | Esférico |  $rpri₂  |  $rsec₂  |  $rter₂  | $c₂ |  -  |
 
 
 """
 
-# ╔═╡ 38d15817-f3f2-496b-9d83-7dc55f4276dc
+# ╔═╡ c9ac9fb4-5d03-43c9-833e-733e48565946
 begin
-	
-	# Obtendo rotações do variograma
-    rot_z = azi
-    rot_x = -dip
-    if orient == "config1"
-        rot_y = -45.0
-    elseif orient == "config2"
-        rot_y = -0.0
-    elseif orient == "config3"
-        rot_y = -22.5
-    elseif orient == "config4"
-        rot_y = -67.5
-    end
-	
-	# Criação dos elipsoides de anisotropia por estrutura
-	aniso_elp_1 = aniso2distance([a_dip1, a_interm1, a_min1], 
-								 [rot_z, rot_x, rot_y],
-								 convention=GSLIB)
 
-    aniso_elp_2 = aniso2distance([range_y, range_x, range_z], 
-                            	 [rot_z, rot_x, rot_y],
-                            	 convention=GSLIB)
+    plot(γpri, color = colorpri, lw = 2, label = "primário",
+		 legend = :bottomright, title = "Modelo de variograma 3D")
+
+    plot!(γsec, color = colorsec, lw = 2, label = "secundário")
+
+    plot!(γter, color = colorter, lw = 2, label = "terciário",
+		  ylims = (0, σ²+0.05))
 	
-	# Criação do modelo de variograma final
-	γ₀ = NuggetEffect(nugget=c₀)
+	hline!([σ²], color = :gray, ls = :dash, primary = false)
+	vline!(range.([γpri,γsec,γter]), color = :gray, ls = :dash, primary = false)
 
-    γ₁ = SphericalVariogram(sill=Float64(c₁),
-                            distance=aniso_elp_1)
-
-    γ₂ = SphericalVariogram(sill=Float64(c₂),
-                            distance=aniso_elp_2)
-
-    γ = γ₀ + γ₁ + γ₂
-	
 end
 
 # ╔═╡ d700e40b-dd7f-4630-a29f-f27773000597
@@ -1619,55 +1531,51 @@ Com as informações acima, podemos utilizar uma convenção de rotação, e def
 
 Nesse sentido, utilizando a **convenção de rotação do GSLIB**, as rotações do modelo de variograma serão:
 
-| Rotação | Eixo | Ângulo   |
+| Rotação | Eixo |  Ângulo  |
 |:-------:|:----:|:--------:|
-|    1ª   |   Z  |$(rot_z)° |
-|    2ª   |   X  |$(rot_x)° |
-|    3ª   |   Y  |$(rot_y)° |
+|    1ª   |   Z  |  $azi °  |
+|    2ª   |   X  |  $dip °  |
+|    3ª   |   Y  |  $(-θ) ° |
 
 """
+
+# ╔═╡ 38d15817-f3f2-496b-9d83-7dc55f4276dc
+begin
+	
+	# Elipsoides de anisotropia (θ seguindo regra da mão esquerda)
+	ellipsoid₁ = Ellipsoid([rpri₁, rsec₁, rter₁], [azi, dip, -θ], convention = GSLIB)
+
+    ellipsoid₂ = Ellipsoid([rpri₂, rsec₂, rter₂], [azi, dip, -θ], convention = GSLIB)
+
+	# Estruturas do variograma final
+	γₒ = NuggetEffect(nugget = Float64(cₒ))
+
+    γ₁ = SphericalVariogram(sill = Float64(c₁), distance = metric(ellipsoid₁))
+
+    γ₂ = SphericalVariogram(sill = Float64(c₂), distance = metric(ellipsoid₂))
+
+	# Variograma final
+    γ = γₒ + γ₁ + γ₂
+	
+end;
 
 # ╔═╡ 9baefd13-4c16-404f-ba34-5982497e8da6
 md"""
 
 ### 6. Krigagem
 
-Grande parte das estimativas realizadas na indústria são baseadas em **estimadores lineares ponderados**:
-
-- Esses estimadores são **lineares**, pelo fato serem construídos a partir de uma combinação linear entre valores de unidades amostrais Z(uᵢ) e seus respectivos pesos wᵢ.
-
-- Esses estimadores são **podenderados**, pelo fato de consistirem em uma média ponderada entre as amostras utilizadas para se estimar um determinado bloco.
-
-Dessa forma, a equação geral dos estimadores lineares ponderados é definida como:
+Grande parte das estimativas realizadas na indústria são baseadas em estimadores lineares:
 
 ```math
-ẑ(uₒ) = \sum_{i=1}^{n} wᵢ.z(uᵢ) = w₁.z(u₁) + w₂.z(u₂) + w₃.z(u₃) + ... + wₙ.z(uₙ)
+\hat{z}(x_o) = \sum_{i=1}^{n} w_i \cdot z(x_i) = w_1 \cdot z(x_1) + w_2 \cdot z(x_2) + \cdots + w_n \cdot z(x_n)
 ```
 
-Neste módulo, estimaremos os teores de Cu a partir dos estimadores Krigagem Simples e Krigagem Ordinária.
+Neste módulo, estimaremos os teores de Cu a partir dos estimadores lineares conhecidos como Krigagem Simples e Krigagem Ordinária.
 
-Na **Krigagem Simples (SK)**, a média populacional (μ) é assumida como conhecida e invariável em todo o domínio de estimativa. Em outras palavras, devemos definir uma média estacionária como entrada desse estimador que, no nosso contexto, será a média declusterizada. Diferentemente da Krigagem Ordinária, não há condição de fechamento para os pesos atribuídos às amostras da vizinhança e, nesse sentido, uma parte do peso é atribuída à média estacionária (μ):
+Na **Krigagem Simples (SK)**, a média populacional é assumida como conhecida e constante em todo o domínio de estimativa. Devemos portanto definir esse parâmetro como entrada desse estimador que, no nosso contexto, será a média declusterizada. Diferentemente da Krigagem Ordinária, não há condição de fechamento para os pesos atribuídos às amostras da vizinhança e, nesse sentido, uma parte do peso é atribuída à média especificada.
 
-```math
-\sum_{i=1}^{n} wᵢ + w(μ) = 1
-```
+Por outro lado, a **Krigagem Ordinária (OK)** não assume o conhecimento da média populacional. Nesse caso há condição de fechamento, em que o somatório dos pesos atribuídos às amostras da vizinhança deve resultar na unidade.
 
-Por outro lado, a **Krigagem Ordinária (OK)** não assume o conhecimento da média populacional e, nesse sentido, a hipótese de estacionariedade para todo o domínio de estimativa não é tão rígida. Nesse caso há condição de fechamento, em que o somatório dos pesos atribuídos às amostras da vizinhança deve resultar em 1. Portanto, não há atribuição de uma parcela do peso de krigagem para a média estacionária.
-
-```math
-\sum_{i=1}^{n} wᵢ = 1
-```
-
-"""
-
-# ╔═╡ c8fa42f3-22f2-44ae-83ec-b47bce486bb4
-md"""
-#### Fluxograma de estimação GeoStats.jl
-
-- Criação do modelo de blocos
-- Definição do problema
-- Definição do solver
-- Solução do problema
 """
 
 # ╔═╡ a7a59395-59ec-442a-b4b6-7db55d150d53
@@ -1683,6 +1591,26 @@ Nesta primeira etapa, definimos o **modelo de blocos**, ou seja, o domínio onde
 
 """
 
+# ╔═╡ f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+begin
+
+	# Caixa delimitadora das amostras
+    bbox = boundingbox(samples)
+	
+	# Lados da caixa delimitadora
+	extent = maximum(bbox) - minimum(bbox)
+	
+	# Tamanho dos blocos em cada direção (metros)
+	blocksizes = (20., 20., 10.)
+	
+	# Número de blocos em cada direção
+	nblocks = ceil.(Int, extent ./ blocksizes)
+
+	# Modelo de blocos para realização de estimativas
+    grid = CartesianGrid(minimum(bbox), maximum(bbox), dims = Tuple(nblocks))
+
+end
+
 # ╔═╡ 12d79d77-358c-4098-993a-d5be538929a2
 md"""
 
@@ -1692,25 +1620,8 @@ Rotação em X: $(@bind ψ₂ Slider(0:5:90, default=45, show_value=true))°
 
 """
 
-# ╔═╡ f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
-begin
-
-	# Caixa delimitadora das amostras
-    bbox = boundingbox(samples)
-	
-	# Tamanho dos blocos em cada direção (metros)
-	bsizes  = (20., 20., 10.)
-	
-	# Número de blocos em cada direção
-	nblocks = Tuple(maximum(bbox) - minimum(bbox)) ./ bsizes
-
-	# Modelo de blocos para realização de estimativas
-    grid = CartesianGrid(minimum(bbox), maximum(bbox),
-		                 dims = ceil.(Int, nblocks))
-
-    plot(grid, camera=(ψ₁,ψ₂), xlabel="X", ylabel="Y", zlabel="Z")
-
-end
+# ╔═╡ 6f7663ed-c672-4d29-8b06-415dcdc8fbff
+plot(grid, camera = (ψ₁,ψ₂), xlabel = "X", ylabel = "Y", zlabel = "Z")
 
 # ╔═╡ a8adf478-620d-4744-aae5-99d0891fe6b0
 md"""
@@ -1743,9 +1654,9 @@ Um **solver** nada mais é do que o estimador que utilizaremos para realizar a e
 # ╔═╡ 9c61271d-4afe-4f7c-a521-8f799b6981ed
 md"""
 
-№ mínimo de amostras: $(@bind s_min Slider(2:1:6, default=4, show_value=true))
+Número mínimo de amostras: $(@bind nmin Slider(2:1:6, default=4, show_value=true))
 
-№ máximo de amostras: $(@bind s_max Slider(6:1:20, default=8, show_value=true))
+Número máximo de amostras: $(@bind nmax Slider(6:1:20, default=8, show_value=true))
 
 """
 
@@ -1754,16 +1665,19 @@ begin
 	
 	# Média desclusterizada
     μ = mean(samples, :CU)
+	
+	# Inverso da distância
+	idw = IDW(:CU => (power = 2, neighbors = nmax))
 
 	# Krigagem simples
-    SK = Kriging(:CU => (variogram = γ, mean = μ,
-			             minneighbors = s_min,
-			             maxneighbors = s_max))
+    SK = Kriging(
+		:CU => (variogram = γ, mean = μ, minneighbors = nmin, maxneighbors = nmax)
+	)
 
 	# Krigagem ordinária
-    OK = Kriging(:CU => (variogram = γ,
-			             minneighbors = s_min,
-			             maxneighbors = s_max))
+    OK = Kriging(
+		:CU => (variogram = γ, minneighbors = nmin, maxneighbors = nmax)
+	)
 
 end;
 
@@ -1772,18 +1686,65 @@ md"""
 
 ##### Solução do problema
 
-Para gerar o modelo de teores de Cu, resolvemos o problema definido com qualquer um dos solvers:
+Para gerar o modelo de teores de Cu, resolvemos o problema definido com qualquer um dos solvers. Como o notebook que estamos trabalhando reage a qualquer alteração dos parâmetros, nós adicionamos um checkbox para apenas executar a Krigagem sob demanda.
+
+Marque o checkbox $(@bind run CheckBox()) para executar a Krigagem.
 
 """
 
-# ╔═╡ 86ae2f3e-6291-4107-b201-5cbd51fde73b
-begin
+# ╔═╡ e9b7e9b7-146f-4763-ad79-c93e111b25b4
+if run
+	sol_idw = solve(problem, idw)
+end
 
-    sol_SK = solve(problem, SK)
+# ╔═╡ 78117ae8-d77c-4508-9793-3e7e9dfbb913
+if run
+	sol_SK = solve(problem, SK)
+end
 
-    sol_OK = solve(problem, OK)
+# ╔═╡ 5e86ee34-60fe-43e4-851c-2f08072f836e
+if run
+	sol_OK = solve(problem, OK)
+end
 
-end;
+# ╔═╡ 50650d2f-350b-446d-8c4b-6aa19e18c148
+md"""
+Marque o checkbox $(@bind viz CheckBox()) para visualizar o modelo de teores.
+
+**Alerta:** A visualização pode demorar a aparecer por conta da biblioteca Plots.jl utilizada neste notebook. Aconselhamos a biblioteca [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D.
+"""
+
+# ╔═╡ 63d5db73-1073-4b8d-bfab-93577579571f
+if run && viz
+	cmin, cmax = coordinates.(extrema(grid))
+		
+	xm, ym, zm = cmin
+	xM, yM, zM = cmax
+	
+	md"""
+
+	Rotação em Z: $(@bind ϕ₁ Slider(0:5:90, default=45, show_value=true))°
+
+	Rotação em X: $(@bind ϕ₂ Slider(0:5:90, default=45, show_value=true))°
+
+	X: $(@bind x Slider(xm:xM, show_value=true, default=(xm+xM)/2)) m
+	
+	Y: $(@bind y Slider(ym:yM, show_value=true, default=(ym+yM)/2)) m
+	
+	Z: $(@bind z Slider(zm:zM, show_value=true, default=(zm+zM)/2)) m
+	"""
+end
+
+# ╔═╡ b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
+if run && viz
+	sol_OK |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
+	@map({CU = _.CU, X = _.COORDS[1], Y = _.COORDS[2], Z = _.COORDS[3]}) |>
+	@filter(_.X < x && _.Y < y && _.Z < z) |>
+	@df scatter(:X, :Y, :Z, marker_z = :CU, color = :berlin, marker = (:square, 4),
+	            xlabel = "X", ylabel = "Y", zlabel = "Z",
+		        xlims = (xm, xM), ylims = (ym, yM), zlims = (zm, zM),
+	            label = "Modelo de teores de Cu (%)", camera = (ϕ₁, ϕ₂))
+end
 
 # ╔═╡ 4f05c05d-c92a-460d-b3e0-d392111ef57a
 md"""
@@ -1819,7 +1780,14 @@ Nesta validação, nos atentaremos para a comparação entre os seguintes sumár
 """
 
 # ╔═╡ c6b0f335-19cb-4fbe-a47b-2ba3fd664832
-begin
+if run
+	
+	stats_idw = DataFrame(Variable = "Cu (Inverso da distância)",
+                         X̄   = mean(sol_idw[:CU]),
+                         S²  = var(sol_idw[:CU]),
+                         P10 = quantile(sol_idw[:CU], 0.1),
+                         P50 = quantile(sol_idw[:CU], 0.5),
+                         P90 = quantile(sol_idw[:CU], 0.9))
 	
 	stats_SK = DataFrame(Variable = "Cu (Krigagem simples)",
                          X̄   = mean(sol_SK[:CU]),
@@ -1838,12 +1806,14 @@ begin
 
     [Cu_clus
 	 Cu_decl
+	 stats_idw
 	 stats_SK
 	 stats_OK]
 
 end
 
 # ╔═╡ ed97c749-30b7-4c72-b790-fef5a8332548
+if run
 md"""
 A partir da comparação entre as estatísticas acima, nota-se que:
 
@@ -1853,6 +1823,7 @@ A partir da comparação entre as estatísticas acima, nota-se que:
 
 
 """
+end
 
 # ╔═╡ 263c1837-7474-462b-bd97-ee805baec458
 md"""
@@ -1866,41 +1837,69 @@ Quanto mais distantes forem os pontos do plot da função identidade (X=Y), mais
 """
 
 # ╔═╡ 193dde9b-1f4a-4313-a3a6-ba3c89600bcb
-begin
+if run
 
+	qq_idw = qqplot(
+				   samples[:CU], sol_idw[:CU],
+		           color = :red, legend = :false,
+                   xlabel = "Cu amostral (%)",
+		           ylabel = "Cu estimado (%)",
+                   title="IDW"
+                   )
+	
     qq_SK = qqplot(
 				   samples[:CU], sol_SK[:CU],
-                   xlabel="Cu(%)", ylabel="Cu-SK(%)",
-                   color=:red,legend=:false,
-                   title="Amostral x Estimado-SK"
+                   color = :red, legend = :false,
+		           xlabel = "Cu amostral (%)",
+                   title = "SK"
                    )
  
     qq_OK = qqplot(
 				   samples[:CU], sol_OK[:CU],
-                   xlabel="Cu(%)", ylabel="Cu-OK(%)",
-                   color=:green,
-                   title="Amostral x Estimado-OK"
+		           color = :green,
+                   xlabel = "Cu amostral (%)",
+                   title = "OK"
 				  )
 
-    plot(qq_SK, qq_OK)
+    plot(qq_idw, qq_SK, qq_OK, layout = (1,3), size = (700,500))
 
 end
+
+# ╔═╡ 2181506b-76f5-4a57-adba-e90679b2b21b
+md"""
+
+#### Resumo
+
+- A Krigagem ordinária é superior a Krigagem simples como ilustrado no Q-Q plot.
+
+- Especificamente neste depósito, os resultados do IDW e OK são bastante parecidos. De certa forma, isso é esperado dada a baixa erraticidade dos dados.
+
+- Métodos de Krigagem são conhecidos por suavizar **inadequadamente** a distribuição de teores.
+
+- Amanhã aprenderemos uma alternativa a Krigagem no módulo **simulação Gaussiana**.
+"""
 
 # ╔═╡ 5ad612f4-76e9-4867-b4c8-4c35540a5f47
 md"""
 
 ### 7. Exportação do modelo de teores
 
-É possível exportar o modelo de teores para diferentes formatos como CSV e GSLIB caso seja necessário continuar o trabalho em outro software. Por exemplo, para exportar no formato GSLIB, o seguinte código pode ser utilizado:
+É possível exportar o modelo de teores para diferentes formatos como CSV e GSLIB caso seja necessário continuar o trabalho em outro software.
+
+Para salvar o resultado em disco, marque o checkbox $(@bind store CheckBox()).
+
+Exportação no formato GSLIB:
 
 """
 
 # ╔═╡ b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
-save("output/grademodel.gslib", sol_OK)
+if run && store
+	save("output/grademodel.gslib", sol_OK)
+end
 
 # ╔═╡ 83b9ba41-4ada-496a-bf0f-32b37fde1027
 md"""
-E para exportar no formato CSV, a seguinte função pode ser útil:
+Exportação no formato CSV:
 """
 
 # ╔═╡ 79bc4b7d-72de-4c9e-94f5-3b5ba6bbff1d
@@ -1923,14 +1922,15 @@ function csvtable(solution, variable)
 end;
 
 # ╔═╡ 245c7304-1cc0-408a-97ec-867ac0cc81b0
-csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
+if run && store
+	csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv")
+end;
 
 # ╔═╡ Cell order:
 # ╟─980f4910-96f3-11eb-0d4f-b71ad9888d73
 # ╟─14ac7b6e-9538-40a0-93d5-0379fa009872
 # ╟─20fff27a-4328-43ac-97df-a35b63a6fdd0
 # ╟─c544614a-3e5c-4d22-9340-592aabf84871
-# ╟─1a00e8d4-4115-4651-86a7-5237b239307f
 # ╟─f443543c-c4f4-447b-996d-9ad00c67b1af
 # ╟─ff01a7d7-d491-4d49-b470-a2af6783c82b
 # ╟─af1aca7e-bde2-4e14-a664-b7c71ff80ffe
@@ -1978,11 +1978,11 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╟─0808061f-4856-4b82-8560-46a59e669ac4
 # ╟─71b45351-7397-46e4-912a-c5e65fb6a1c8
 # ╟─5bfa698a-4e29-47f8-96fe-3c533fbdb761
-# ╟─14beece5-6475-49a0-9f5c-cefb68328e24
 # ╟─201b805b-7241-441d-b2d9-5698b0da58ab
 # ╠═63b75ae2-8dca-40e3-afe0-68c6a639f54e
 # ╟─5699c563-d6cb-4bc2-8063-e1be00722a41
 # ╟─f74b8675-64e4-438d-aa8e-7c5792d25651
+# ╟─91bbc52e-412f-46eb-b342-0d202e965934
 # ╟─68e50bdd-b006-4abc-aeda-c4d67c30babb
 # ╟─c6710e72-400c-4e90-94e5-fd48b62b088a
 # ╟─32a075ee-e853-4bb3-8eff-44543b6db0d5
@@ -1994,10 +1994,10 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╟─d9c9b259-e09a-4571-85bf-844a881e8251
 # ╟─c2af3d54-377f-4d52-98f9-cfae89769950
 # ╟─c3a0dfb3-27e5-4d9a-82e5-f722a513b788
-# ╟─91700370-f8fe-40c9-88fb-946063ae9084
 # ╟─6d520cfe-aa7b-4083-b2bf-b34f840c0a75
 # ╟─289865a9-906f-46f4-9faa-f62feebbc92a
 # ╟─1db51803-8dc4-4db6-80a1-35a489b6fb9e
+# ╟─e49b7b48-77d8-4abf-a5df-70e9c65e3667
 # ╟─a717d5d3-9f4e-4a2d-8e32-f0605bbd742f
 # ╟─8162f98b-bda1-4475-aa03-e4e379b80b17
 # ╟─ffe3700c-262f-4949-b910-53cbe1dd597b
@@ -2014,13 +2014,13 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╟─78b45d90-c850-4a7e-96b8-535dd23bd1a7
 # ╟─294ac892-8952-49bc-a063-3d290c375ea5
 # ╟─3859448f-265a-4929-bfa4-1809036da3dd
+# ╟─99baafe5-6249-4eda-845f-d7f6219d5726
 # ╟─668da8c2-2db6-4812-90ce-86b17b289cc6
 # ╟─97670210-2c91-4be7-a607-0da83cb16f44
 # ╟─eb9ebce2-7476-4f44-ad4f-10a1ca522143
 # ╟─fa93796d-7bc0-4391-89a7-eeb63e1a3838
 # ╟─92d11f3b-c8be-4701-8576-704b73d1b619
 # ╟─6c048b83-d12c-4ce8-9e9a-b89bf3ef7638
-# ╟─0e431ddb-45c1-4fb6-8469-8c5c10fcf13c
 # ╟─512d0792-85fc-4d81-a939-076389a59f19
 # ╟─0def0326-55ef-45db-855e-a9a683b2a76d
 # ╟─120f4a9c-2ca6-49f1-8abc-999bcc559149
@@ -2033,11 +2033,11 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╟─483487c6-acf8-4551-8357-2e69e6ff44ff
 # ╟─c9ac9fb4-5d03-43c9-833e-733e48565946
 # ╟─d700e40b-dd7f-4630-a29f-f27773000597
-# ╟─38d15817-f3f2-496b-9d83-7dc55f4276dc
+# ╠═38d15817-f3f2-496b-9d83-7dc55f4276dc
 # ╟─9baefd13-4c16-404f-ba34-5982497e8da6
-# ╟─c8fa42f3-22f2-44ae-83ec-b47bce486bb4
 # ╟─a7a59395-59ec-442a-b4b6-7db55d150d53
-# ╟─f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+# ╠═f7cee6a3-5ac2-44ff-9d5e-58ede7327c46
+# ╟─6f7663ed-c672-4d29-8b06-415dcdc8fbff
 # ╟─12d79d77-358c-4098-993a-d5be538929a2
 # ╟─a8adf478-620d-4744-aae5-99d0891fe6b0
 # ╠═affacc76-18e5-49b2-8e7f-77499d2503b9
@@ -2045,13 +2045,19 @@ csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv");
 # ╠═2a76c2b9-953e-4e4b-a98e-8e992943f60c
 # ╟─9c61271d-4afe-4f7c-a521-8f799b6981ed
 # ╟─9b3fe534-78fa-48db-a101-e2a43f2478d6
-# ╠═86ae2f3e-6291-4107-b201-5cbd51fde73b
+# ╠═e9b7e9b7-146f-4763-ad79-c93e111b25b4
+# ╠═78117ae8-d77c-4508-9793-3e7e9dfbb913
+# ╠═5e86ee34-60fe-43e4-851c-2f08072f836e
+# ╟─50650d2f-350b-446d-8c4b-6aa19e18c148
+# ╟─b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
+# ╟─63d5db73-1073-4b8d-bfab-93577579571f
 # ╟─4f05c05d-c92a-460d-b3e0-d392111ef57a
 # ╟─64a8cd06-6020-434a-a1e2-115e17c51d29
 # ╟─c6b0f335-19cb-4fbe-a47b-2ba3fd664832
 # ╟─ed97c749-30b7-4c72-b790-fef5a8332548
 # ╟─263c1837-7474-462b-bd97-ee805baec458
 # ╟─193dde9b-1f4a-4313-a3a6-ba3c89600bcb
+# ╟─2181506b-76f5-4a57-adba-e90679b2b21b
 # ╟─5ad612f4-76e9-4867-b4c8-4c35540a5f47
 # ╠═b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
 # ╟─83b9ba41-4ada-496a-bf0f-32b37fde1027
