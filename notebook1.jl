@@ -21,7 +21,8 @@ begin
 	# load packages used in this notebook
 	using GeoStats, DrillHoles
 	using CSV, DataFrames, Query
-    using Statistics, StatsBase, Random
+    using Statistics, StatsBase
+	using LinearAlgebra, Random
 	using FileIO, PlutoUI
     using Plots, StatsPlots
 	
@@ -121,7 +122,7 @@ begin
 					holeid = :HOLEID, x = :X, y = :Y, z = :Z)
 
 	# Importação da tabela Survey
-	survey = Survey(file = "data/survey.csv",
+	survey = Survey(file = "data/survey.csv", invertdip = true,
 					holeid = :HOLEID, at = :AT, azm = :AZM, dip = :DIP)
 
 	# Importação da tabela Assay
@@ -719,9 +720,11 @@ begin
     # Linha vertical contínua verde (mediana)
     vline!([Cu_comp.P50], label = "P50")
 	
-	# Linha vertical tracejada cinza (P10)
-    vline!([Cu_comp.P10, Cu_comp.P90], color = :gray,
-		    linestyle = :dashdot, primary = false)
+	# Linha vertical tracejada cinza (P10-P90)
+	vline!([Cu_comp.P10], color = :gray,
+		    linestyle = :dashdot, label = "P10")
+    vline!([Cu_comp.P90], color = :gray,
+		    linestyle = :dashdot, label = "P90")
 
 end
 
@@ -807,7 +810,7 @@ A tabela abaixo mostra uma comparação estatística entre os teores de Cu antes
 
 # ╔═╡ 91bbc52e-412f-46eb-b342-0d202e965934
 md"""
-Tamanho de bloco: $(@bind s Slider(50.:10.:250., show_value=true)) m
+Tamanho de bloco: $(@bind s Slider(50.:10.:250., default=250., show_value=true)) m
 """
 
 # ╔═╡ 68e50bdd-b006-4abc-aeda-c4d67c30babb
@@ -1043,12 +1046,12 @@ begin
 	# Converte coordenadas esféricas para Cartesianas
 	function sph2cart(azi, dip)
 		θ, ϕ = deg2rad(azi), deg2rad(dip)
-		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), -sin(ϕ)
+		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), sin(ϕ)
 	end
 	
 	# Converte coordenadas Cartesianas para esféricas
 	function cart2sph(x, y, z)
-		θ, ϕ = atan(√(x^2 + y^2) / z), atan(y / x)
+		θ, ϕ = atan(x, y), atan(z, √(x^2 + y^2))
 		rad2deg(θ), rad2deg(ϕ)
 	end
 		
@@ -1143,11 +1146,12 @@ begin
     γdh  = γdhₒ + γdh₁ + γdh₂
 
     # Plotagem do variograma experimental downhole
-    plot(gdh, ylims = (0, σ²+0.05), color = colordh, ms = 5,
+    plot(gdh, color = colordh, ms = 5,
 		 legend = :bottomright, label = "empírico", title = "$μazi °/ $μdip °")
 
     # Plotagem do modelo de variograma aninhado
-    plot!(γdh, 0, 150, color = colordh, lw = 2, label = "teórico")
+    plot!(γdh, 0, 150, ylims = (0, σ²+0.05), color = colordh,
+		  lw = 2, label = "teórico")
     
     # Linha horizontal tracejada cinza (variância à priori)
     hline!([σ²], color = :gray, ls = :dash, primary = false)
@@ -1234,10 +1238,10 @@ begin
 
     γaziₐ  = γaziₒ + γazi₁ + γazi₂
 
-    plot(gaziₐ, ylims=(0, σ²+0.05), color = coloraziₐ, ms = 5,
+    plot(gaziₐ, color = coloraziₐ, ms = 5,
 		 legend = :bottomright, label = "empírico", title = "$azi °")
 
-    plot!(γaziₐ, 0, 350, color = coloraziₐ, lw = 2, label = "teórico")
+    plot!(γaziₐ, 0, 350, ylims=(0, σ²+0.05), color = coloraziₐ, lw = 2, label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1271,7 +1275,7 @@ colorpri, colorsec, colorter = cgrad(:Purples)[[9,7,5]];
 # ╔═╡ 97670210-2c91-4be7-a607-0da83cb16f44
 md"""
 
-Dip: $(@bind dip Slider(0.0:22.5:90.0, default=22.5, show_value=true))°
+Dip: $(@bind dip Slider(-90.0:22.5:0.0, default=-22.5, show_value=true))°
 
 Número de passos: $(@bind nlagspri Slider(5:1:12, default=10, show_value=true))
 
@@ -1321,10 +1325,11 @@ begin
 
     γpri  = γpriₒ + γpri₁ + γpri₂
 
-    plot(gpri, ylims = (0, σ²+0.05), color = colorpri, ms = 5,
+    plot(gpri, color = colorpri, ms = 5,
 	     legend = :bottomright, label = "primário", title = "$azi °/ $dip °")
 
-    plot!(γpri, 0, 350, color = colorpri, lw = 2, label = "teórico")
+    plot!(γpri, 0, 350, ylims = (0, σ²+0.05), color = colorpri, lw = 2,
+		  label = "teórico")
 		
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1363,7 +1368,7 @@ Para o cálculo dos variogramas experimentais secundário e terciário, podemos 
 # ╔═╡ 120f4a9c-2ca6-49f1-8abc-999bcc559149
 md"""
 
-Ângulo de rotação: $(@bind θ Slider(range(0, stop=180-180/8, step=180/8), show_value=true))°
+Ângulo de rotação: $(@bind θ Slider(range(0, stop=90-180/8, step=180/8), default=45, show_value=true))°
 
 Número de passos: $(@bind nlagssec Slider(5:1:15, default=12, show_value=true))
 
@@ -1377,7 +1382,9 @@ begin
     Random.seed!(1234)
 
 	# Encontra vetores u e v perpendiculares entre si e perpendiculares a normal
-    u, v = Variography.planebasis(Vec(dirdh))
+	n = Vec(sph2cart(azi,dip))
+	u = Vec(sph2cart(azi+90,0))
+	v = n × u
 	
 	# Giro no plano perpendicular gerado por u e v
 	dirsec = cos(deg2rad(θ)) .* u .+ sin(deg2rad(θ)) .* v
@@ -1391,7 +1398,7 @@ begin
     gter = DirectionalVariogram(dirter, samples, :CU,
 								maxlag = 250, nlags = nlagssec, dtol = tolsec)
 	
-	plot(gsec, ylims=(0, σ²+0.05), color = colorsec, ms = 5,
+	plot(gsec, ylims=(0, σ²+0.2), color = colorsec, ms = 5,
 		 legend = :bottomright, label = "secundário")
 
     plot!(gter, color = colorter, ms = 5, label = "terciário")
@@ -1429,10 +1436,11 @@ begin
 
     γsec  = γsecₒ + γsec₁ + γsec₂
 
-    plot(gsec, ylims = (0, σ²+0.05), color = colorsec, ms = 5,
+    plot(gsec, color = colorsec, ms = 5,
 	     label = "secundário", legend = :bottomright)
 
-    plot!(γsec, 0, 250, color = colorsec, lw = 2, label = "teórico")
+    plot!(γsec, 0, 250, ylims = (0, σ²+0.2), color = colorsec, lw = 2,
+		  label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1473,7 +1481,8 @@ begin
     plot(gter, color = colorter, ms = 5, label = "terciário",
 	     legend = :bottomright)
 
-    plot!(γter, 0, 250, color = colorter, lw = 2, label = "teórico")
+    plot!(γter, 0, 250, ylims = (0, σ²+0.2), color = colorter, lw = 2,
+		  label = "teórico")
 
     hline!([σ²], color = :gray, ls = :dash, primary = false)
 
@@ -1488,7 +1497,7 @@ md"""
 
 Agora que temos as três direções principais do modelo de variograma, podemos sumarizar as informações obtidas nos passos anteriores:
 
-| Estrutura | Modelo | Alcance em X | Alcance em Y | Alcance em Z | Contribuição | Efeito Pepita |
+| Estrutura | Modelo | Alcance em Y | Alcance em X | Alcance em Z | Contribuição | Efeito Pepita |
 |:---:|:--------:|:--------:|:--------:|:--------:|:---:|:---:|
 |  0  |    EPP   |    -     |    -     |    -     |  -  | $cₒ |
 |  1  | Esférico |  $rpri₁  |  $rsec₁  |  $rter₁  | $c₁ |  -  |
@@ -1522,21 +1531,21 @@ Com as informações acima, podemos utilizar uma convenção de rotação, e def
 
 Nesse sentido, utilizando a **convenção de rotação do GSLIB**, as rotações do modelo de variograma serão:
 
-| Rotação | Eixo | Ângulo  |
-|:-------:|:----:|:-------:|
-|    1ª   |   Z  |  $azi ° |
-|    2ª   |   X  |  $dip ° |
-|    3ª   |   Y  |  $θ   °  |
+| Rotação | Eixo |  Ângulo  |
+|:-------:|:----:|:--------:|
+|    1ª   |   Z  |  $azi °  |
+|    2ª   |   X  |  $dip °  |
+|    3ª   |   Y  |  $(-θ) ° |
 
 """
 
 # ╔═╡ 38d15817-f3f2-496b-9d83-7dc55f4276dc
 begin
 	
-	# Elipsoides de anisotropia
-	ellipsoid₁ = Ellipsoid([rpri₁, rsec₁, rter₁], [dip, azi, θ], convention = GSLIB)
+	# Elipsoides de anisotropia (θ seguindo regra da mão esquerda)
+	ellipsoid₁ = Ellipsoid([rpri₁, rsec₁, rter₁], [azi, dip, -θ], convention = GSLIB)
 
-    ellipsoid₂ = Ellipsoid([rpri₂, rsec₂, rter₂], [dip, azi, θ], convention = GSLIB)
+    ellipsoid₂ = Ellipsoid([rpri₂, rsec₂, rter₂], [azi, dip, -θ], convention = GSLIB)
 
 	# Estruturas do variograma final
 	γₒ = NuggetEffect(nugget = Float64(cₒ))
@@ -1656,6 +1665,9 @@ begin
 	
 	# Média desclusterizada
     μ = mean(samples, :CU)
+	
+	# Inverso da distância
+	idw = IDW(:CU => (power = 2, neighbors = nmax))
 
 	# Krigagem simples
     SK = Kriging(
@@ -1680,6 +1692,11 @@ Marque o checkbox $(@bind run CheckBox()) para executar a Krigagem.
 
 """
 
+# ╔═╡ e9b7e9b7-146f-4763-ad79-c93e111b25b4
+if run
+	sol_idw = solve(problem, idw)
+end
+
 # ╔═╡ 78117ae8-d77c-4508-9793-3e7e9dfbb913
 if run
 	sol_SK = solve(problem, SK)
@@ -1698,7 +1715,7 @@ Marque o checkbox $(@bind viz CheckBox()) para visualizar o modelo de teores.
 """
 
 # ╔═╡ 63d5db73-1073-4b8d-bfab-93577579571f
-if viz
+if run && viz
 	cmin, cmax = coordinates.(extrema(grid))
 		
 	xm, ym, zm = cmin
@@ -1719,7 +1736,7 @@ if viz
 end
 
 # ╔═╡ b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
-if viz
+if run && viz
 	sol_OK |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
 	@map({CU = _.CU, X = _.COORDS[1], Y = _.COORDS[2], Z = _.COORDS[3]}) |>
 	@filter(_.X < x && _.Y < y && _.Z < z) |>
@@ -1765,6 +1782,13 @@ Nesta validação, nos atentaremos para a comparação entre os seguintes sumár
 # ╔═╡ c6b0f335-19cb-4fbe-a47b-2ba3fd664832
 if run
 	
+	stats_idw = DataFrame(Variable = "Cu (Inverso da distância)",
+                         X̄   = mean(sol_idw[:CU]),
+                         S²  = var(sol_idw[:CU]),
+                         P10 = quantile(sol_idw[:CU], 0.1),
+                         P50 = quantile(sol_idw[:CU], 0.5),
+                         P90 = quantile(sol_idw[:CU], 0.9))
+	
 	stats_SK = DataFrame(Variable = "Cu (Krigagem simples)",
                          X̄   = mean(sol_SK[:CU]),
                          S²  = var(sol_SK[:CU]),
@@ -1782,6 +1806,7 @@ if run
 
     [Cu_clus
 	 Cu_decl
+	 stats_idw
 	 stats_SK
 	 stats_OK]
 
@@ -1814,21 +1839,29 @@ Quanto mais distantes forem os pontos do plot da função identidade (X=Y), mais
 # ╔═╡ 193dde9b-1f4a-4313-a3a6-ba3c89600bcb
 if run
 
+	qq_idw = qqplot(
+				   samples[:CU], sol_idw[:CU],
+		           color = :red, legend = :false,
+                   xlabel = "Cu amostral (%)",
+		           ylabel = "Cu estimado (%)",
+                   title="IDW"
+                   )
+	
     qq_SK = qqplot(
 				   samples[:CU], sol_SK[:CU],
-                   xlabel="Cu(%)", ylabel="Cu-SK(%)",
-                   color=:red,legend=:false,
-                   title="Amostral x Estimado-SK"
+                   color = :red, legend = :false,
+		           xlabel = "Cu amostral (%)",
+                   title = "SK"
                    )
  
     qq_OK = qqplot(
 				   samples[:CU], sol_OK[:CU],
-                   xlabel="Cu(%)", ylabel="Cu-OK(%)",
-                   color=:green,
-                   title="Amostral x Estimado-OK"
+		           color = :green,
+                   xlabel = "Cu amostral (%)",
+                   title = "OK"
 				  )
 
-    plot(qq_SK, qq_OK)
+    plot(qq_idw, qq_SK, qq_OK, layout = (1,3), size = (700,500))
 
 end
 
@@ -1838,6 +1871,8 @@ md"""
 #### Resumo
 
 - A Krigagem ordinária é superior a Krigagem simples como ilustrado no Q-Q plot.
+
+- Especificamente neste depósito, os resultados do IDW e OK são bastante parecidos. De certa forma, isso é esperado dada a baixa erraticidade dos dados.
 
 - Métodos de Krigagem são conhecidos por suavizar **inadequadamente** a distribuição de teores.
 
@@ -1849,18 +1884,22 @@ md"""
 
 ### 7. Exportação do modelo de teores
 
-É possível exportar o modelo de teores para diferentes formatos como CSV e GSLIB caso seja necessário continuar o trabalho em outro software. Por exemplo, para exportar no formato GSLIB, o seguinte código pode ser utilizado:
+É possível exportar o modelo de teores para diferentes formatos como CSV e GSLIB caso seja necessário continuar o trabalho em outro software.
+
+Para salvar o resultado em disco, marque o checkbox $(@bind store CheckBox()).
+
+Exportação no formato GSLIB:
 
 """
 
 # ╔═╡ b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
-if run
+if run && store
 	save("output/grademodel.gslib", sol_OK)
 end
 
 # ╔═╡ 83b9ba41-4ada-496a-bf0f-32b37fde1027
 md"""
-E para exportar no formato CSV, a seguinte função pode ser útil:
+Exportação no formato CSV:
 """
 
 # ╔═╡ 79bc4b7d-72de-4c9e-94f5-3b5ba6bbff1d
@@ -1883,7 +1922,7 @@ function csvtable(solution, variable)
 end;
 
 # ╔═╡ 245c7304-1cc0-408a-97ec-867ac0cc81b0
-if run
+if run && store
 	csvtable(sol_OK, "CU") |> CSV.write("output/grademodel.csv")
 end;
 
@@ -2006,6 +2045,7 @@ end;
 # ╠═2a76c2b9-953e-4e4b-a98e-8e992943f60c
 # ╟─9c61271d-4afe-4f7c-a521-8f799b6981ed
 # ╟─9b3fe534-78fa-48db-a101-e2a43f2478d6
+# ╠═e9b7e9b7-146f-4763-ad79-c93e111b25b4
 # ╠═78117ae8-d77c-4508-9793-3e7e9dfbb913
 # ╠═5e86ee34-60fe-43e4-851c-2f08072f836e
 # ╟─50650d2f-350b-446d-8c4b-6aa19e18c148
