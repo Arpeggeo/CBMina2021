@@ -70,7 +70,6 @@ md"""
 4. Declusterização
 5. Variografia
 6. Krigagem
-7. Exportação
 
 """
 
@@ -1667,7 +1666,7 @@ begin
 	# Média desclusterizada
     μ = mean(samples, :CU)
 	
-	# Inverso da distância
+	# Inverso do quadrado da distância
 	idw = IDW(:CU => (power = 2, neighbors = nmax))
 
 	# Krigagem simples
@@ -1697,17 +1696,17 @@ Marque o checkbox $(@bind run CheckBox()) para executar os solvers.
 
 # ╔═╡ e9b7e9b7-146f-4763-ad79-c93e111b25b4
 if run
-	sol_idw = solve(problem, idw) |> @filter(!isnan(_.CU)) |> DataFrame
+	sol_idw = solve(problem, idw)
 end
 
 # ╔═╡ 78117ae8-d77c-4508-9793-3e7e9dfbb913
 if run
-	sol_SK = solve(problem, SK) |> @filter(!isnan(_.CU)) |> DataFrame
+	sol_SK = solve(problem, SK)
 end
 
 # ╔═╡ 5e86ee34-60fe-43e4-851c-2f08072f836e
 if run
-	sol_OK = solve(problem, OK) |> @filter(!isnan(_.CU)) |> DataFrame
+	sol_OK = solve(problem, OK)
 end
 
 # ╔═╡ 50650d2f-350b-446d-8c4b-6aa19e18c148
@@ -1758,7 +1757,7 @@ end
 if run && viz
 	sol |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
 	@map({CU = _.CU, X = _.COORDS[1], Y = _.COORDS[2], Z = _.COORDS[3]}) |>
-	@filter(_.X < x && _.Y < y && _.Z < z) |> 
+	@filter(_.X < x && _.Y < y && _.Z < z) |> @filter(!isnan(_.CU)) |>
 	@df scatter(:X, :Y, :Z, marker_z = :CU, color = :berlin, marker = (:square, 4),
 	            xlabel = "X", ylabel = "Y", zlabel = "Z",
 		        xlims = (xm, xM), ylims = (ym, yM), zlims = (zm, zM),
@@ -1799,30 +1798,36 @@ Nesta validação, nos atentaremos para a comparação entre os seguintes sumár
 
 """
 
+# ╔═╡ 92b731f3-5eae-406e-a593-4e6d49f476d9
+if run
+	sol_SK_filt = sol_SK |> @filter(!isnan(_.CU)) |> DataFrame
+	sol_OK_filt = sol_OK |> @filter(!isnan(_.CU)) |> DataFrame
+end;
+
 # ╔═╡ c6b0f335-19cb-4fbe-a47b-2ba3fd664832
 if run
 	
 	stats_idw = DataFrame(Variable = "Cu (Inverso da distância)",
-                         X̄   = mean(sol_idw[!,:CU]),
-                         S²  = var(sol_idw[!,:CU]),
-                         P10 = quantile(sol_idw[!,:CU], 0.1),
-                         P50 = quantile(sol_idw[!,:CU], 0.5),
-                         P90 = quantile(sol_idw[!,:CU], 0.9))
+                         X̄   = mean(sol_idw[:CU]),
+                         S²  = var(sol_idw[:CU]),
+                         P10 = quantile(sol_idw[:CU], 0.1),
+                         P50 = quantile(sol_idw[:CU], 0.5),
+                         P90 = quantile(sol_idw[:CU], 0.9))
 	
 	stats_SK = DataFrame(Variable = "Cu (Krigagem simples)",
-                         X̄   = mean(sol_SK[!,:CU]),
-                         S²  = var(sol_SK[!,:CU]),
-                         P10 = quantile(sol_SK[!,:CU], 0.1),
-                         P50 = quantile(sol_SK[!,:CU], 0.5),
-                         P90 = quantile(sol_SK[!,:CU], 0.9))
+                         X̄   = mean(sol_SK_filt[!,:CU]),
+                         S²  = var(sol_SK_filt[!,:CU]),
+                         P10 = quantile(sol_SK_filt[!,:CU], 0.1),
+                         P50 = quantile(sol_SK_filt[!,:CU], 0.5),
+                         P90 = quantile(sol_SK_filt[!,:CU], 0.9))
 
 	
     stats_OK = DataFrame(Variable = "Cu (Krigagem ordinária)",
-                         X̄   = mean(sol_OK[!,:CU]),
-                         S²  = var(sol_OK[!,:CU]),
-                         P10 = quantile(sol_OK[!,:CU], 0.1),
-                         P50 = quantile(sol_OK[!,:CU], 0.5),
-                         P90 = quantile(sol_OK[!,:CU], 0.9))
+                         X̄   = mean(sol_OK_filt[!,:CU]),
+                         S²  = var(sol_OK_filt[!,:CU]),
+                         P10 = quantile(sol_OK_filt[!,:CU], 0.1),
+                         P50 = quantile(sol_OK_filt[!,:CU], 0.5),
+                         P90 = quantile(sol_OK_filt[!,:CU], 0.9))
 
     [Cu_clus
 	 Cu_decl
@@ -1860,7 +1865,7 @@ Quanto mais distantes forem os pontos do plot da função identidade (X=Y), mais
 if run
 
 	qq_idw = qqplot(
-				   samples[:CU], sol_idw[!,:CU],
+				   samples[:CU], sol_idw[:CU],
 		           color = :red, legend = :false,
                    xlabel = "Cu amostral (%)",
 		           ylabel = "Cu estimado (%)",
@@ -1868,14 +1873,14 @@ if run
                    )
 	
     qq_SK = qqplot(
-				   samples[:CU], sol_SK[!,:CU],
+				   samples[:CU], sol_SK_filt[!,:CU],
                    color = :red, legend = :false,
 		           xlabel = "Cu amostral (%)",
                    title = "SK"
                    )
  
     qq_OK = qqplot(
-				   samples[:CU], sol_OK[!,:CU],
+				   samples[:CU], sol_OK_filt[!,:CU],
 		           color = :green,
                    xlabel = "Cu amostral (%)",
                    title = "OK"
@@ -2075,6 +2080,7 @@ end;
 # ╟─63d5db73-1073-4b8d-bfab-93577579571f
 # ╟─4f05c05d-c92a-460d-b3e0-d392111ef57a
 # ╟─64a8cd06-6020-434a-a1e2-115e17c51d29
+# ╟─92b731f3-5eae-406e-a593-4e6d49f476d9
 # ╟─c6b0f335-19cb-4fbe-a47b-2ba3fd664832
 # ╟─ed97c749-30b7-4c72-b790-fef5a8332548
 # ╟─263c1837-7474-462b-bd97-ee805baec458
