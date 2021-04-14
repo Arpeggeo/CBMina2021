@@ -70,6 +70,7 @@ md"""
 4. Declusterização
 5. Variografia
 6. Krigagem
+7. Exportação do modelo de teores
 
 """
 
