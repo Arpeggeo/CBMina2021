@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -1118,15 +1118,15 @@ Agora que o variograma down hole foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 0585add6-1320-4a31-a318-0c40b7a444fa
 md"""
 
-Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.02, show_value=true))
+Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.035, show_value=true))
 
-Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.06, show_value=true))
+Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.065, show_value=true))
 
-Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.075, show_value=true))
+Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.055, show_value=true))
 
-Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:80.0, default=80.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:100.0, default=80.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:150.0, default=118.0, show_value=true)) m
 
 """
 
@@ -1221,7 +1221,7 @@ Agora que o variograma azimute foi calculado, podemos ajustá-lo com um modelo t
 # ╔═╡ 78b45d90-c850-4a7e-96b8-535dd23bd1a7
 md"""
 
-Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:100.0, default=60.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:120.0, default=100.0, show_value=true)) m
 
 Alcance 2ª estrutura: $(@bind razi₂ Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
 
@@ -1308,7 +1308,7 @@ Agora que o variograma primário foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 92d11f3b-c8be-4701-8576-704b73d1b619
 md"""
 
-Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:120.0, default=84.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:150.0, default=120.0, show_value=true)) m
 
 Alcance 2ª estrutura: $(@bind rpri₂ Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
 
@@ -1419,9 +1419,9 @@ Agora que elegemos o variograma experimental representante do eixo secundário, 
 # ╔═╡ 922d81f3-0836-4b14-aaf2-83be903c8642
 md"""
 
-Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:100.0, default=62.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:100.0, default=74.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:170.0, default=94.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:170.0, default=96.0, show_value=true)) m
 
 """
 
@@ -1460,9 +1460,9 @@ Fazemos o mesmo para o variograma terciário:
 # ╔═╡ dacfe446-3c19-430d-8f5f-f276a022791f
 md"""
 
-Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:82.0, default=48.0, show_value=true)) m
+Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:82.0, default=68.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:110.0, default=64.0, show_value=true)) m
+Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:110.0, default=68.0, show_value=true)) m
 
 """
 
@@ -1717,16 +1717,18 @@ Marque o checkbox $(@bind viz CheckBox()) para visualizar o modelo de teores.
 
 # ╔═╡ bce98bc9-c676-4a2e-bdac-10a74a9cdeae
 md"""
-Solução: $(@bind selection Select(["IDW", "SK", "OK"]))
+Solução: $(@bind selection Select(["IDW", "SK", "OK"], default = "OK"))
 """
 
 # ╔═╡ 97b41da9-979a-4785-9ee4-19f43d912c49
-if selection == "IDW"
-	sol = sol_idw
-elseif selection == "SK"
-	sol = sol_SK
-elseif selection == "OK"
-	sol = sol_OK
+if run && viz	
+	if selection == "IDW"
+		sol = sol_idw
+	elseif selection == "SK"
+		sol = sol_SK
+	elseif selection == "OK"
+		sol = sol_OK
+	end
 end;
 
 # ╔═╡ 63d5db73-1073-4b8d-bfab-93577579571f
@@ -2065,9 +2067,9 @@ end;
 # ╠═78117ae8-d77c-4508-9793-3e7e9dfbb913
 # ╠═5e86ee34-60fe-43e4-851c-2f08072f836e
 # ╟─50650d2f-350b-446d-8c4b-6aa19e18c148
+# ╟─bce98bc9-c676-4a2e-bdac-10a74a9cdeae
 # ╟─b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
 # ╟─97b41da9-979a-4785-9ee4-19f43d912c49
-# ╟─bce98bc9-c676-4a2e-bdac-10a74a9cdeae
 # ╟─63d5db73-1073-4b8d-bfab-93577579571f
 # ╟─4f05c05d-c92a-460d-b3e0-d392111ef57a
 # ╟─64a8cd06-6020-434a-a1e2-115e17c51d29
