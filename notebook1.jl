@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.0
 
 using Markdown
 using InteractiveUtils
@@ -1756,9 +1756,10 @@ end
 
 # ╔═╡ b2197d9c-0342-4efe-8c9e-ecf45a07fcf3
 if run && viz
-	sol |> @map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
+	sol |> @filter(!isnan(_.CU)) |>
+	@map({CU = _.CU, COORDS = coordinates(centroid(_.geometry))}) |>
 	@map({CU = _.CU, X = _.COORDS[1], Y = _.COORDS[2], Z = _.COORDS[3]}) |>
-	@filter(_.X < x && _.Y < y && _.Z < z) |> @filter(!isnan(_.CU)) |>
+	@filter(_.X < x && _.Y < y && _.Z < z) |>
 	@df scatter(:X, :Y, :Z, marker_z = :CU, color = :berlin, marker = (:square, 4),
 	            xlabel = "X", ylabel = "Y", zlabel = "Z",
 		        xlims = (xm, xM), ylims = (ym, yM), zlims = (zm, zM),
@@ -1921,7 +1922,7 @@ Exportação no formato GSLIB:
 # ╔═╡ b96c4bd5-54ba-4394-b963-5c5ddc06cf3b
 if run && store
 	save("output/grademodel.gslib", sol_OK)
-end
+end;
 
 # ╔═╡ 83b9ba41-4ada-496a-bf0f-32b37fde1027
 md"""
