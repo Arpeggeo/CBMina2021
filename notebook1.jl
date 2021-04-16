@@ -1913,7 +1913,7 @@ md"""
 
 É possível exportar o modelo de teores para diferentes formatos como CSV e GSLIB caso seja necessário continuar o trabalho em outro software.
 
-Para salvar o resultado em disco, marque o checkbox $(@bind store CheckBox()).
+Marque o checkbox $(@bind store CheckBox()) para salvar o modelo de teores.
 
 Exportação no formato GSLIB:
 
