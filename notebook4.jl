@@ -112,8 +112,7 @@ html"""
 
 # ╔═╡ 301d2074-a2d7-44dc-aeb6-29e69ca5348f
 md"""
-> **Nota:**
-> Métodos de raciocínio funcionam bem em problemas onde há um enorme acervo de conhecimento. São ótimos quando (1) poucos dados estão disponíveis sobre um determinado objeto de estudo, e (2) a literatura é irrefutável.
+> **Nota:** Métodos de raciocínio funcionam bem em problemas onde há um enorme acervo de conhecimento. São ótimos quando (1) poucos dados estão disponíveis sobre um determinado objeto de estudo, e (2) a literatura é irrefutável.
 """
 
 # ╔═╡ a0b00451-7418-4d60-812f-5c2a9b32cd4d
@@ -168,8 +167,7 @@ Observamos que:
 
 # ╔═╡ a280a283-59c3-4728-9110-b91d5ea63568
 md"""
-> **Nota:**
-> Métodos de aprendizado estatístico funcionam bem em problemas onde há uma grande quantidade de dados (os exemplos), preferencialmente anotados por especialistas.
+> **Nota:** Métodos de aprendizado estatístico funcionam bem em problemas onde há uma grande quantidade de dados (os exemplos), preferencialmente anotados por especialistas.
 """
 
 # ╔═╡ bfdbec36-069d-422d-8f88-fd97f8d85455
@@ -423,7 +421,7 @@ Com isso podemos definir o nosso problema de aprendizado geoestatístico:
 """
 
 # ╔═╡ a012ef03-64a4-44cb-95c2-a5f734a3f75d
-𝒫 = LearningProblem(𝒮ₛ, 𝒮ₜ, 𝒯)
+problem = LearningProblem(𝒮ₛ, 𝒮ₜ, 𝒯)
 
 # ╔═╡ 12112daa-17f1-445a-93e8-131c35cfb53d
 md"""
@@ -433,9 +431,18 @@ e resolvê-lo com mais de **150** modelos de aprendizado disponíveis no projeto
 # ╔═╡ 10ab0262-00ef-4b77-8b6b-a43cf236a29d
 models() |> DataFrame
 
+# ╔═╡ 427d35b8-daf0-4d16-87e5-f8eb33e265fe
+md"""
+> **Nota:** É extremamente importante separar a **definição do problema** de aprendizado geostatístico da **estratégia de solução** para uma comparação justa de modelos. A maioria dos frameworks clássicos de aprendizado (e.g. scikit-learn) **não** permite essa separação.
+"""
+
 # ╔═╡ 1ec6e447-fe94-4288-9996-0ba42c8d6cb0
 md"""
-Estamos interessados em modelos:
+#### Solução do problema
+
+Com o problema de aprendizado geoestatístico bem definido, nós podemos investigar diferentes estratégias de solução e realizar validações avançadas que só estão disponíveis no GeoStats.jl.
+
+Primeiro nós precisamos definir uma lista de modelos de aprendizado para resolver o problema. Estamos interessados em modelos:
 
 1. **Implementados em Julia** por terem uma maior performance computacional em grandes conjuntos de dados como os dados de New Zealand.
 2. Adequados para a tarefa de **classificação de formação** definida no problema:
@@ -443,7 +450,7 @@ Estamos interessados em modelos:
     - Com **variável alvo binária** (que produzem previsões `Urenui` ou `Manganui`)
 3. Sob licença **MIT** por ser uma licença de código aberto flexível e ótima para qualquer tipo de projeto acadêmico ou industrial.
 
-Podemos facilmente encontrar esses modelos utilizando filtros na função `models`:
+Podemos encontrar esses modelos utilizando filtros na função `models`:
 """
 
 # ╔═╡ 34f48c18-d452-4df4-a8f8-882bfc1db056
@@ -453,7 +460,7 @@ models(m -> m.is_pure_julia && m.is_supervised &&
 
 # ╔═╡ 2daa903b-af18-40ad-b9ce-0caf93b507c6
 md"""
-Iremos utilizar os seguintes modelos da lista:
+Utilizaremos os seguintes modelos:
 """
 
 # ╔═╡ afa08349-eab0-4ed6-a0aa-cc3cb39a619d
@@ -464,6 +471,45 @@ begin
 	ℳ₄ = @load ConstantClassifier     pkg = MLJModels
 	
 	ℳs = [ℳ₁(), ℳ₂(), ℳ₃(), ℳ₄()]
+end
+
+# ╔═╡ b0843d5b-69eb-4a53-bff7-2d3bbd8b0057
+md"""
+Esses modelos foram desenvolvidos para problemas genéricos de aprendizado com dados tabulares. Para que eles sejam utilizados de forma inteligente com dados geoespaciais, nós precisamos definir uma **estratégia de solução**.
+
+A estratégia de solução mais comum na literatura é o que denominamos aprendizado ponto-a-ponto (em inglês "pointwise learning"):
+"""
+
+# ╔═╡ 9dd85a75-c1e3-418a-bb3e-7c8875e9c5dd
+solvers = [PointwiseLearn(ℳ) for ℳ in ℳs]
+
+# ╔═╡ bd82b213-99b2-4ba7-997c-9ddbac69579c
+md"""
+Podemos finalmente resolver o problema com os diferentes solvers:
+"""
+
+# ╔═╡ 3ba896bd-e569-40c3-9fa1-3e79db50bf45
+solutions = [solve(problem, solver) for solver in solvers]
+
+# ╔═╡ f66e960b-e38f-4414-be79-09658eb5cf74
+md"""
+E visualizar qualquer uma das soluções i = $(@bind i Scrubbable(1:length(solvers), default=1)):
+"""
+
+# ╔═╡ 234cfc08-ff75-480c-b0e2-12e38966d515
+inds = sample(1:nelements(𝒮ₜ), 1000, replace = false);
+
+# ╔═╡ 03917e9d-1514-43e5-b135-d3840489bad1
+begin
+	Y = view(𝒮ₜ, inds, [:FORMATION])
+	
+	Ŷ = view(solutions[i], inds)
+	
+	plot(
+		plot(Ŷ, marker = (:BrBG_3, 4), title = "PREDIÇÃO"),
+		plot(Y, marker = (:BrBG_3, 4), title = "FORMAÇÃO"),
+		size = (700, 900), layout = (2,1),
+	)
 end
 
 # ╔═╡ bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
@@ -531,9 +577,17 @@ md"""
 # ╠═a012ef03-64a4-44cb-95c2-a5f734a3f75d
 # ╟─12112daa-17f1-445a-93e8-131c35cfb53d
 # ╠═10ab0262-00ef-4b77-8b6b-a43cf236a29d
+# ╟─427d35b8-daf0-4d16-87e5-f8eb33e265fe
 # ╟─1ec6e447-fe94-4288-9996-0ba42c8d6cb0
 # ╠═34f48c18-d452-4df4-a8f8-882bfc1db056
 # ╟─2daa903b-af18-40ad-b9ce-0caf93b507c6
 # ╠═afa08349-eab0-4ed6-a0aa-cc3cb39a619d
+# ╟─b0843d5b-69eb-4a53-bff7-2d3bbd8b0057
+# ╠═9dd85a75-c1e3-418a-bb3e-7c8875e9c5dd
+# ╟─bd82b213-99b2-4ba7-997c-9ddbac69579c
+# ╠═3ba896bd-e569-40c3-9fa1-3e79db50bf45
+# ╟─f66e960b-e38f-4414-be79-09658eb5cf74
+# ╟─234cfc08-ff75-480c-b0e2-12e38966d515
+# ╟─03917e9d-1514-43e5-b135-d3840489bad1
 # ╟─bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
 # ╠═74f940f3-5c76-4f7e-a46a-12038d7584c7
