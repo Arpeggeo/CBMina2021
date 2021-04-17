@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -392,7 +392,7 @@ Diferentemente da ciência de dados tradicional, existem dois tipos de espaço d
 1. Espaço geográfico
 2. Espaço de características
 
-Começaremos investigando o espaço geográfico através de visualizações das amostras em suas localizações no mundo físico. Utilizaremos o pacote `StatsPlots.jl` pela sua boa integração com o pacote `Query.jl`. O pacote introduz a operação `@df` como demonstrado a seguir:
+Começaremos investigando o espaço geográfico através de visualizações das amostras em suas localizações no mundo físico. Utilizaremos o pacote [StatsPlots.jl](https://github.com/JuliaPlots/StatsPlots.jl) pela sua boa integração com o pacote Query.jl. O pacote introduz a operação `@df` como demonstrado a seguir:
 """
 
 # ╔═╡ 28b22b40-7b26-48ad-839f-0a7770fd7765
