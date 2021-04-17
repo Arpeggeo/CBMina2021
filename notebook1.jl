@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -1718,9 +1718,11 @@ Marque o checkbox $(@bind viz CheckBox()) para visualizar o modelo de teores.
 """
 
 # ╔═╡ bce98bc9-c676-4a2e-bdac-10a74a9cdeae
+if run && viz
 md"""
 Solução: $(@bind selection Select(["IDW", "SK", "OK"], default = "OK"))
 """
+end
 
 # ╔═╡ 97b41da9-979a-4785-9ee4-19f43d912c49
 if run && viz	
