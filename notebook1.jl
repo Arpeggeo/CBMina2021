@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -1076,7 +1076,7 @@ md"""
 # ╔═╡ 1465f010-c6a7-4e72-9842-4504c6dda0be
 md"""
 
-Número de passos: $(@bind nlagsdh Slider(10:1:25, default=12, show_value=true))
+Número de passos: $(@bind nlagsdh Slider(5:1:30, default=12, show_value=true))
 
 Largura da banda: $(@bind toldh Slider(10:5:50, default=45, show_value=true)) m
 
@@ -1118,15 +1118,15 @@ Agora que o variograma down hole foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 0585add6-1320-4a31-a318-0c40b7a444fa
 md"""
 
-Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.035, show_value=true))
+Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.045, show_value=true))
 
-Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.065, show_value=true))
+Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.055, show_value=true))
 
 Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.055, show_value=true))
 
-Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:100.0, default=80.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:140.0, default=80.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:150.0, default=118.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
 
 """
 
@@ -1181,7 +1181,7 @@ Calcularemos diversos variogramas experimentais ortogonais entre si e escolherem
 md"""
 Azimute: $(@bind azi Slider(0.0:22.5:67.5, default=67.5, show_value=true)) °
 
-Número de passos: $(@bind nlagsazi Slider(5:1:12, default=9, show_value=true))
+Número de passos: $(@bind nlagsazi Slider(5:1:20, default=8, show_value=true))
 
 Largura de banda: $(@bind dtolazi Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1221,9 +1221,9 @@ Agora que o variograma azimute foi calculado, podemos ajustá-lo com um modelo t
 # ╔═╡ 78b45d90-c850-4a7e-96b8-535dd23bd1a7
 md"""
 
-Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:120.0, default=100.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:300.0, default=112.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind razi₂ Slider(10.0:2.0:200.0, default=176.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind razi₂ Slider(10.0:2.0:300.0, default=194.0, show_value=true)) m
 
 """
 
@@ -1277,7 +1277,7 @@ md"""
 
 Dip: $(@bind dip Slider(-90.0:22.5:0.0, default=-22.5, show_value=true))°
 
-Número de passos: $(@bind nlagspri Slider(5:1:12, default=10, show_value=true))
+Número de passos: $(@bind nlagspri Slider(5:1:20, default=10, show_value=true))
 
 Largura de banda: $(@bind tolpri Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1308,7 +1308,7 @@ Agora que o variograma primário foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 92d11f3b-c8be-4701-8576-704b73d1b619
 md"""
 
-Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:150.0, default=120.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:300.0, default=134.0, show_value=true)) m
 
 Alcance 2ª estrutura: $(@bind rpri₂ Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
 
@@ -1370,7 +1370,7 @@ md"""
 
 Ângulo de rotação: $(@bind θ Slider(range(0, stop=90-180/8, step=180/8), default=45, show_value=true))°
 
-Número de passos: $(@bind nlagssec Slider(5:1:15, default=12, show_value=true))
+Número de passos: $(@bind nlagssec Slider(5:1:20, default=12, show_value=true))
 
 Largura de banda: $(@bind tolsec Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1419,9 +1419,9 @@ Agora que elegemos o variograma experimental representante do eixo secundário, 
 # ╔═╡ 922d81f3-0836-4b14-aaf2-83be903c8642
 md"""
 
-Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:100.0, default=74.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:200.0, default=88.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:170.0, default=96.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:200.0, default=94.0, show_value=true)) m
 
 """
 
@@ -1460,9 +1460,9 @@ Fazemos o mesmo para o variograma terciário:
 # ╔═╡ dacfe446-3c19-430d-8f5f-f276a022791f
 md"""
 
-Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:82.0, default=68.0, show_value=true)) m
+Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:200.0, default=66.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:110.0, default=68.0, show_value=true)) m
+Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:200.0, default=66.0, show_value=true)) m
 
 """
 
