@@ -72,7 +72,8 @@ Ao final deste módulo você será capaz de:
     - O que é aprendizado de máquina (a.k.a. ML)?
     - A nova área de aprendizado **geo**estatístico
     - Os elementos do aprendizado **geo**estatístico
-2. Exemplos práticos com o GeoStats.jl
+    - Solução do problema e técnicas de validação
+2. Mais exemplos práticos com o GeoStats.jl
     - Exemplo 1
     - Exemplo 2
 """
@@ -266,7 +267,7 @@ Da visualização concluimos que a hipótese (1) da teoria clássica não é vá
 
 # ╔═╡ 3855a6d5-7b8a-487b-abad-288f9fc0152d
 md"""
-#### Falsificação da hipótese 2
+##### Falsificação da hipótese 2
 
 Vejamos agora a hipótese (2) da teoria clássica que assume que exemplos utilizados no treinamento de um modelo de aprendizado são amostrados de forma independente no espaço de propriedades.
 
@@ -336,14 +337,14 @@ A partir da análise variográfica, concluimos que a hipótese (2) também não 
 
 # ╔═╡ 06e19a21-5a4e-48c0-9030-9c6c43a3afdb
 md"""
-#### Falsificação da hipótese 3
+##### Falsificação da hipótese 3
 
 A hipótese (3) não é valida, pois como discutimos no primeiro dia do minicurso, amostras geofísicas geralmente tem um suporte (ou volume físico) variável. Neste caso, **o espaçamento das amostras ao longo dos poços não é constante**.
 """
 
 # ╔═╡ e3c46f60-b32e-4911-971f-230c87507f37
 md"""
-#### Resumo
+##### Resumo
 
 - A **análise bivariada** indicou que as **distribuições das propriedades** em poços `ONSHORE` e `OFFSHORE` **são distintas**. Portanto, não é aconselhável treinar um modelo de aprendizado com anotações em poços `ONSHORE` e aplicá-lo diretamente a poços `OFFSHORE`, e vice versa.
 
@@ -409,7 +410,7 @@ end;
 
 # ╔═╡ fbd3a1ec-214f-450f-9c2e-547df22157d3
 md"""
-O segundo elemento da definição é a **tarefa de apendizado**. Neste exemplo, definimos uma única tarefa de previsão de formação a partir de logs, ou seja $\mathcal{T}_s = \mathcal{T}_t$. No jargão de aprendizado essa tarefa é uma tarefa de classificação:
+O segundo elemento da definição é a **tarefa de apendizado**. Neste caso, definimos uma única tarefa de previsão de formação a partir de logs, ou seja $\mathcal{T}_s = \mathcal{T}_t$. No jargão de aprendizado essa tarefa é uma tarefa de classificação:
 """
 
 # ╔═╡ 55151073-083b-433c-96e0-5e51978e888f
@@ -438,7 +439,7 @@ md"""
 
 # ╔═╡ 1ec6e447-fe94-4288-9996-0ba42c8d6cb0
 md"""
-#### Solução do problema
+#### Solução do problema e técnicas de validação
 
 Com o problema de aprendizado geoestatístico bem definido, nós podemos investigar diferentes estratégias de solução e realizar validações avançadas que só estão disponíveis no GeoStats.jl.
 
@@ -475,9 +476,9 @@ end
 
 # ╔═╡ b0843d5b-69eb-4a53-bff7-2d3bbd8b0057
 md"""
-Esses modelos foram desenvolvidos para problemas genéricos de aprendizado com dados tabulares. Para que eles sejam utilizados de forma inteligente com dados geoespaciais, nós precisamos definir uma **estratégia de solução**.
+##### Estratégia de solução
 
-A estratégia de solução mais comum na literatura é o que denominamos aprendizado ponto-a-ponto (em inglês "pointwise learning"):
+Para que os modelos de aprendizado possam ser utilizados com dados geoespaciais no GeoStats.jl, nós precisamos definir uma **estratégia de solução**. A estratégia de solução mais comum na literatura geoespacial é o que denominamos aprendizado ponto-a-ponto (em inglês "pointwise learning"):
 """
 
 # ╔═╡ 9dd85a75-c1e3-418a-bb3e-7c8875e9c5dd
@@ -485,7 +486,14 @@ solvers = [PointwiseLearn(ℳ) for ℳ in ℳs];
 
 # ╔═╡ bd82b213-99b2-4ba7-997c-9ddbac69579c
 md"""
-Podemos finalmente resolver o problema com os diferentes solvers:
+Essa estratégia simplesmente **ignora as coordenadas** dos exemplos e trata o dado geoespacial como uma **tabela comum**. Apesar de ser uma estratégia simplista, ela pode demandar bastante tempo do usuário final que fica responsável pelo pré- e pós-processamento dos dados em formatos tabulares.
+
+O GeoStats.jl **automatiza esse processo de conversão** e salva tempo do geocientista interessado em testar diferentes modelos ao invés de ficar manipulando formatos de dados. Em particular, o framework se encarrega de:
+
+1. Treinar o modelo encapsulado na estratégia no domínio geoespacial de origem
+2. Aplicar o modelo treinado no domínio geoespacial de destino
+
+onde os domínios geoespaciais podem ser **qualquer tipo de malha** do projeto [Meshes.jl](https://github.com/JuliaGeometry/Meshes.jl).
 """
 
 # ╔═╡ 3ba896bd-e569-40c3-9fa1-3e79db50bf45
@@ -493,24 +501,73 @@ solutions = [solve(problem, solver) for solver in solvers]
 
 # ╔═╡ f66e960b-e38f-4414-be79-09658eb5cf74
 md"""
-E visualizar qualquer uma das soluções i = $(@bind i Scrubbable(1:length(solvers), default=1)):
+Podemos facilmente visualizar qualquer uma das soluções obtidas. Como o número de amostras neste case é considerável, e não estamos utilizando o [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D, visualizaremos apenas um subconjunto da solucão i = $(@bind i Scrubbable(1:length(solvers), default=1)):
 """
 
-# ╔═╡ 234cfc08-ff75-480c-b0e2-12e38966d515
-inds = sample(1:nelements(𝒮ₜ), 1000, replace = false);
+# ╔═╡ b70f5ab7-9790-4daf-a881-d75c602aaa67
+sampleᵢ = sample(solutions[i], 10000, replace = false);
 
-# ╔═╡ 03917e9d-1514-43e5-b135-d3840489bad1
-begin
-	Y = view(𝒮ₜ, inds, [:FORMATION])
+# ╔═╡ 5ec99dcc-58b4-4290-8f05-884ef11e464d
+plot(sampleᵢ, marker = (:BrBG_3, 4), colorbar = false,
+	 xlabel = "X", ylabel = "Y", zlabel = "Z",
+	 title = "PREVISÃO DE FORMAÇÃO\n(Urenui = Verde, Manganui = Laranja)")
+
+# ╔═╡ 78d9f9ba-1947-4bec-bc74-b895d084365e
+md"""
+Como neste **caso sintético** nós temos acesso ao tipo de formação nos poços `OFFSHORE`, nós podemos quantificar o erro de cada modelo utilizado.
+
+Em problemas de classificação, é comum reportar a **matriz de confusão** para cada modelo. Essa matriz informa o número de vezes que uma formação (coluna da matriz) foi classificada pelo modelo como uma certa outra formação (linha da matriz):
+"""
+
+# ╔═╡ e6e84f8b-e132-42a7-a0e4-1acd9006dbbb
+map(solutions) do 𝒮ᵢ
+	# Previsão da formação
+	ŷ = 𝒮ᵢ[:FORMATION]
 	
-	Ŷ = view(solutions[i], inds)
+	# Valor real da formação
+	y = 𝒮ₜ[:FORMATION]
 	
-	plot(
-		plot(Ŷ, marker = (:BrBG_3, 4), title = "PREDIÇÃO"),
-		plot(Y, marker = (:BrBG_3, 4), title = "FORMAÇÃO"),
-		size = (700, 900), layout = (2,1),
-	)
+	# Matriz de confusão
+	confmat(ŷ, y)
 end
+
+# ╔═╡ 653ed159-838c-47d6-878e-0b2530cf7c52
+md"""
+Podemos sumarizar a informação da matriz de confusão com diferentes medidas, como por exemplo a medida $F_1$-score calculada como
+
+$F_1 = \frac{tp}{tp + \frac{fp + fn}{2}}$
+
+onde $tp$ é o número de verdadeiros positivos, $fp$ é o número de falsos positivos, e $fn$ é o número de falsos negativos. Quanto maior é o $F_1$-score, maior é a performance do modelo:
+"""
+
+# ╔═╡ ab970650-8dbd-442b-9a25-4cd871ecd336
+map(solutions) do 𝒮ᵢ
+	# Previsão da formação
+	ŷ = 𝒮ᵢ[:FORMATION]
+	
+	# Valor real da formação
+	y = 𝒮ₜ[:FORMATION]
+	
+	# Matriz de confusão
+	f1score(ŷ, y)
+end
+
+# ╔═╡ 3e469cb8-745d-4f11-a6e7-814f29e1ccef
+md"""
+Existem mais de **50** medidas disponíveis para avaliar modelos quando as anotações são conhecidas no domínio geoespacial de destino. Da mesma forma que utilizamos a função `models` para descobrir os modelos disponíveis para o problema, podemos utilizar a função `measures` para descobrir as medidas válidas para a solução:
+"""
+
+# ╔═╡ 5b54c097-07b2-4c26-85b1-c7716cd98145
+measures(s -> s.target_scitype >: AbstractVector{<:Multiclass{2}} &&
+	          s.prediction_type == :deterministic) |> DataFrame
+
+# ╔═╡ 7d6597a0-ae24-483a-a67f-dd6235acb25e
+md"""
+##### Validação cruzada
+"""
+
+# ╔═╡ e3156d02-0b6d-4720-b44f-4ab7f9a689bc
+
 
 # ╔═╡ bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
 md"""
@@ -570,8 +627,8 @@ md"""
 # ╟─1218bb53-fd4e-4574-ba62-e67f955ba0a8
 # ╠═59c355a1-34d5-415b-9e29-afcab5103576
 # ╠═7e9c42eb-c70f-4269-8b5e-b8cddbdc692b
-# ╠═6300bcd6-44e4-4d2a-8e7d-dc7162eaea78
-# ╟─fbd3a1ec-214f-450f-9c2e-547df22157d3
+# ╟─6300bcd6-44e4-4d2a-8e7d-dc7162eaea78
+# ╠═fbd3a1ec-214f-450f-9c2e-547df22157d3
 # ╠═55151073-083b-433c-96e0-5e51978e888f
 # ╟─0250f930-ac62-4fdf-8e36-b79769974a25
 # ╠═a012ef03-64a4-44cb-95c2-a5f734a3f75d
@@ -587,7 +644,15 @@ md"""
 # ╟─bd82b213-99b2-4ba7-997c-9ddbac69579c
 # ╠═3ba896bd-e569-40c3-9fa1-3e79db50bf45
 # ╟─f66e960b-e38f-4414-be79-09658eb5cf74
-# ╟─234cfc08-ff75-480c-b0e2-12e38966d515
-# ╟─03917e9d-1514-43e5-b135-d3840489bad1
+# ╠═b70f5ab7-9790-4daf-a881-d75c602aaa67
+# ╠═5ec99dcc-58b4-4290-8f05-884ef11e464d
+# ╟─78d9f9ba-1947-4bec-bc74-b895d084365e
+# ╠═e6e84f8b-e132-42a7-a0e4-1acd9006dbbb
+# ╟─653ed159-838c-47d6-878e-0b2530cf7c52
+# ╠═ab970650-8dbd-442b-9a25-4cd871ecd336
+# ╟─3e469cb8-745d-4f11-a6e7-814f29e1ccef
+# ╠═5b54c097-07b2-4c26-85b1-c7716cd98145
+# ╟─7d6597a0-ae24-483a-a67f-dd6235acb25e
+# ╠═e3156d02-0b6d-4720-b44f-4ab7f9a689bc
 # ╟─bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
 # ╠═74f940f3-5c76-4f7e-a46a-12038d7584c7
