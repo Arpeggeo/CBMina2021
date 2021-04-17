@@ -19,7 +19,7 @@ begin
 	using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
 
 	# load packages used in this notebook
-	using GeoStats, Query
+	using GeoStats, MLJ
 	using CSV, DataFrames
 	using Distributions
 	using PlutoUI
@@ -278,7 +278,7 @@ Primeiro nós georreferenciamos as amostras em um dado geoespacial utilizando a 
 """
 
 # ╔═╡ 3a425474-8710-42f7-83b4-6db8b6fc14b9
-𝒮 = georef(samples, (:X, :Y, :Z)) |> uniquecoords
+𝒮 = georef(samples, (:X, :Y, :Z)) |> uniquecoords |> GeoData
 
 # ╔═╡ c10c7845-61ec-4275-b9a0-4934a7848e9b
 md"""
@@ -327,15 +327,125 @@ md"""
 
 Precisamos de uma nova definição de aprendizado com dados geoespaciais, que chamaremos de **aprendizado geoestatístico** ou GL:
 
-**Definição (GL).** *Dado um domínio geoespacial de origem $D_s$ (ou "source") e uma tarefa de aprendizado $T_s$, e um domínio de destino $D_t$ (ou "target") e uma tarefa de aprendizado $T_t$. O aprendizado geoestatístico consiste em aprender a tarefa $T_t$ no domínio $D_t$ utilizando o conhecimento adquirido no aprendizado da tarefa $T_s$ no domínio $D_s$. Assumindo que as propriedades em $D_s$ e $D_t$ são uma única realização dos processos envolvidos.*
+**Definição (GL).** *Dado um domínio geoespacial de origem $\mathcal{D}_s$ (ou "source") e uma tarefa de aprendizado $\mathcal{T}_s$, e um domínio de destino $\mathcal{D}_t$ (ou "target") e uma tarefa de aprendizado $\mathcal{T}_t$. O aprendizado geoestatístico consiste em aprender a tarefa $\mathcal{T}_t$ no domínio $\mathcal{D}_t$ utilizando o conhecimento adquirido no aprendizado da tarefa $\mathcal{T}_s$ no domínio $\mathcal{D}_s$. Assumindo que as propriedades em $\mathcal{D}_s$ e $\mathcal{D}_t$ são uma única realização dos processos envolvidos.*
 """
 
 # ╔═╡ 0e168bfe-902b-4732-8ecb-a9a75b330bbb
 md"""
-### Elementos do aprendizado geoestatístico
+#### Elementos do aprendizado geoestatístico
+
+Para esclarecer a definição de GL, continuaremos explorando os dados de New Zealand. O primeiro elemento da definição é o **domínio geoespacial** onde dados estão disponíveis. Definimos dois domínios:
+
+- O **domínio de origem** $\mathcal{D}_s$ representa as trajetórias dos poços `ONSHORE`. Nesse domínio estão disponíveis os logs, assim como as anotações do tipo de formação feitas por especialistas.
+- O **domínio de destino** $\mathcal{D}_t$ representa as trajetórias dos poços `OFFSHORE`. Nesse domínio estão disponíveis apenas os logs que serão utilizados pelo modelo de aprendizao para previsão do tipo de formação.
+
+Vemos que os nossos dados geoespaciais estão definidos em um domínio do tipo `PointSet`:
 """
 
+# ╔═╡ 8ee75575-d2f2-409f-9016-dac048fc6ff6
+domain(𝒮)
+
+# ╔═╡ a21d65cb-d369-4e9b-a1a6-53b06b09dc22
+md"""
+E que a tabela de valores associada a esse domínio contém as seguintes variáveis:
+"""
+
+# ╔═╡ cb8d9a31-d415-45b7-a743-15c715dfd2a5
+values(𝒮) |> DataFrame
+
+# ╔═╡ 8712e1ec-0b84-4fc4-a44e-6f5a91180b8b
+md"""
+Queremos particionar esse dado geoespacial de acordo com a coluna `ONSHORE`. Existem várias maneiras de obter esse resultado, como por exemplo:
+"""
+
+# ╔═╡ 75d031cd-b55f-4d8a-89fd-3acb11a551ef
+Π = GeoStats.groupby(𝒮, :ONSHORE)
+
+# ╔═╡ 1218bb53-fd4e-4574-ba62-e67f955ba0a8
+md"""
+Essa partição contem um campo de metadados associados a cada subconjunto da partição, que podemos utilizar para definir os dois dados geoespaciais de interesse, com seus respectivos domínios:
+"""
+
+# ╔═╡ 59c355a1-34d5-415b-9e29-afcab5103576
+begin
+	ON1, ON2 = metadata(Π)[:values]
+	
+	if ON1 == true
+		𝒮ₛ, 𝒮ₜ = Π
+	else
+		𝒮ₜ, 𝒮ₛ = Π
+	end
+end;
+
+# ╔═╡ 7e9c42eb-c70f-4269-8b5e-b8cddbdc692b
+𝒟ₛ = domain(𝒮ₛ)
+
+# ╔═╡ 6300bcd6-44e4-4d2a-8e7d-dc7162eaea78
+𝒟ₜ = domain(𝒮ₜ)
+
 # ╔═╡ fbd3a1ec-214f-450f-9c2e-547df22157d3
+md"""
+O segundo elemento da definição é a **tarefa de apendizado**. Neste exemplo, definimos uma única tarefa de previsão de formação a partir de logs, ou seja $\mathcal{T}_s = \mathcal{T}_t$. No jargão de aprendizado essa tarefa é uma tarefa de classificação:
+"""
+
+# ╔═╡ 55151073-083b-433c-96e0-5e51978e888f
+𝒯 = ClassificationTask(LOGS, :FORMATION)
+
+# ╔═╡ 0250f930-ac62-4fdf-8e36-b79769974a25
+md"""
+Com isso podemos definir o nosso problema de aprendizado geoestatístico:
+"""
+
+# ╔═╡ a012ef03-64a4-44cb-95c2-a5f734a3f75d
+𝒫 = LearningProblem(𝒮ₛ, 𝒮ₜ, 𝒯)
+
+# ╔═╡ 12112daa-17f1-445a-93e8-131c35cfb53d
+md"""
+e resolvê-lo com mais de **150** modelos de aprendizado disponíveis no projeto [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl), incluindo todos os modelos do [scikit-learn](https://scikit-learn.org) e outros modelos de alta performance implementados em Julia:
+"""
+
+# ╔═╡ 10ab0262-00ef-4b77-8b6b-a43cf236a29d
+models() |> DataFrame
+
+# ╔═╡ 1ec6e447-fe94-4288-9996-0ba42c8d6cb0
+md"""
+Estamos interessados em modelos:
+
+1. **Implementados em Julia** por terem uma maior performance computacional em grandes conjuntos de dados como os dados de New Zealand.
+2. Adequados para a tarefa de **classificação de formação** definida no problema:
+    - Modelos **supervisionados** (que aprendem de exemplos de entrada e saída)
+    - Com **variável alvo binária** (que produzem previsões `Urenui` ou `Manganui`)
+3. Sob licença **MIT** por ser uma licença de código aberto flexível e ótima para qualquer tipo de projeto acadêmico ou industrial.
+
+Podemos facilmente encontrar esses modelos utilizando filtros na função `models`:
+"""
+
+# ╔═╡ 34f48c18-d452-4df4-a8f8-882bfc1db056
+models(m -> m.is_pure_julia && m.is_supervised &&
+	        m.target_scitype >: AbstractVector{<:Multiclass{2}} &&
+	        m.package_license == "MIT") |> DataFrame
+
+# ╔═╡ 2daa903b-af18-40ad-b9ce-0caf93b507c6
+md"""
+Iremos utilizar os seguintes modelos da lista:
+"""
+
+# ╔═╡ afa08349-eab0-4ed6-a0aa-cc3cb39a619d
+begin
+	ℳ₁ = @load DecisionTreeClassifier pkg = DecisionTree
+	ℳ₂ = @load KNNClassifier          pkg = NearestNeighborModels
+	ℳ₃ = @load LogisticClassifier     pkg = MLJLinearModels
+	ℳ₄ = @load ConstantClassifier     pkg = MLJModels
+	
+	ℳs = [ℳ₁(), ℳ₂(), ℳ₃(), ℳ₄()]
+end
+
+# ╔═╡ bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
+md"""
+### 2. Exemplos de aprendizado geoestatístico
+"""
+
+# ╔═╡ 74f940f3-5c76-4f7e-a46a-12038d7584c7
 
 
 # ╔═╡ Cell order:
@@ -378,4 +488,24 @@ md"""
 # ╟─06e19a21-5a4e-48c0-9030-9c6c43a3afdb
 # ╟─e3c46f60-b32e-4911-971f-230c87507f37
 # ╟─0e168bfe-902b-4732-8ecb-a9a75b330bbb
-# ╠═fbd3a1ec-214f-450f-9c2e-547df22157d3
+# ╠═8ee75575-d2f2-409f-9016-dac048fc6ff6
+# ╟─a21d65cb-d369-4e9b-a1a6-53b06b09dc22
+# ╠═cb8d9a31-d415-45b7-a743-15c715dfd2a5
+# ╟─8712e1ec-0b84-4fc4-a44e-6f5a91180b8b
+# ╠═75d031cd-b55f-4d8a-89fd-3acb11a551ef
+# ╟─1218bb53-fd4e-4574-ba62-e67f955ba0a8
+# ╠═59c355a1-34d5-415b-9e29-afcab5103576
+# ╠═7e9c42eb-c70f-4269-8b5e-b8cddbdc692b
+# ╠═6300bcd6-44e4-4d2a-8e7d-dc7162eaea78
+# ╟─fbd3a1ec-214f-450f-9c2e-547df22157d3
+# ╠═55151073-083b-433c-96e0-5e51978e888f
+# ╟─0250f930-ac62-4fdf-8e36-b79769974a25
+# ╠═a012ef03-64a4-44cb-95c2-a5f734a3f75d
+# ╟─12112daa-17f1-445a-93e8-131c35cfb53d
+# ╠═10ab0262-00ef-4b77-8b6b-a43cf236a29d
+# ╟─1ec6e447-fe94-4288-9996-0ba42c8d6cb0
+# ╠═34f48c18-d452-4df4-a8f8-882bfc1db056
+# ╟─2daa903b-af18-40ad-b9ce-0caf93b507c6
+# ╠═afa08349-eab0-4ed6-a0aa-cc3cb39a619d
+# ╟─bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
+# ╠═74f940f3-5c76-4f7e-a46a-12038d7584c7
