@@ -242,7 +242,7 @@ describe(samples)
 
 # ╔═╡ ce132078-cfd3-4455-98b4-3297b1be405f
 md"""
-Como a tarefa de aprendizado que definimos consiste em prever a formação em poços `OFFSHORE` baseado em anotações em poços `ONSHORE`, nós visualizaremos os dados agrupados dessa forma. Em particular, nós queremos investigar a distribuição bivariada entre o logs $(@bind X1 Select(string.(LOGS))) e $(@bind X2 Select(string.(LOGS), default="SP")) nesse agrupamento:
+Como a tarefa de aprendizado que definimos consiste em prever a formação em poços `OFFSHORE` baseado em anotações em poços `ONSHORE`, nós visualizaremos os dados agrupados dessa forma. Em particular, nós queremos investigar a **distribuição bivariada** entre o logs $(@bind X1 Select(string.(LOGS))) e $(@bind X2 Select(string.(LOGS), default="SP")) nesse agrupamento:
 """
 
 # ╔═╡ 4a3d8d5a-e429-4bc9-91ee-1de5aaa8444b
@@ -270,15 +270,41 @@ Da visualização concluimos que a hipótese (1) da teoria clássica não é vá
 md"""
 #### Falsificação da hipótese 2
 
-Vejamos agora a hipótese (2) da teoria clássica que assume que exemplos utilizados no treinamento de um modelo de aprendizado são amostrados de forma independente.
+Vejamos agora a hipótese (2) da teoria clássica que assume que exemplos utilizados no treinamento de um modelo de aprendizado são amostrados de forma independente no espaço de propriedades.
 
-Para avaliarmos essa hipótese, utilizaremos a análise variográfica. O GeoStats.jl possui estimadores de variogramas de alta performance que conseguem lidar com **centenas de milhares** de amostras em poucos segundos. [Hoffimann & Zadrozny. 2019. Efficient variography with partition variograms.](https://www.sciencedirect.com/science/article/pii/S0098300419302936).
+Para avaliarmos essa hipótese, utilizaremos a **análise variográfica**. O GeoStats.jl possui estimadores de variogramas de alta performance que conseguem lidar com **centenas de milhares** de amostras em poucos segundos. [Hoffimann & Zadrozny. 2019. Efficient variography with partition variograms.](https://www.sciencedirect.com/science/article/pii/S0098300419302936).
 
-Primeiro nós georreferenciamos as amostras em um dado geoespacial utilizando a função `georef` e agregamos as amostras que possuem coordenadas repetidas utilizando a função `uniquecoords`:
+Para utilizar esses estimadores, nós precisaremos **georreferenciar a tabela** de amostras em um dado geoespacial do GeoStats.jl que chamamos de `GeoData`. Esse dado se comporta como uma tabela comum, mas adicionalmente armazena informações necessárias para análises geoespaciais.
+
+Além de georreferenciar as amostras, nós iremos aproveitar esta etapa de processamento para especificar o **tipo científico** de cada variável da tabela. Por padrão esses tipos são inferidos pela linguagem como:
 """
 
-# ╔═╡ 3a425474-8710-42f7-83b4-6db8b6fc14b9
-𝒮 = georef(samples, (:X, :Y, :Z)) |> uniquecoords |> GeoData
+# ╔═╡ eb9d3014-65b2-44f7-8d33-445826e6974b
+schema(samples)
+
+# ╔═╡ 4b41d46e-ccf0-4232-8ce8-f9520a90efea
+md"""
+Nós iremos converter os tipos científicos `Textual` e `Count` das variáveis `FORMATION` e `ONSHORE` pelo tipo `Multiclass` que representa uma variável categórica.
+
+Por fim, nós iremos eliminar todas as amostras com coordenadas geográficas repetidas já que procedimentos de variografia requerem unicidade de coordenadas.
+
+Em resumo, nós utilizaremos:
+
+1. A função `coerce` para especificar o tipo científico das variáveis `FORMATION` e `ONSHORE`.
+2. A função `georef` para georreferenciar as amostras utilizando as coordenadas `X`, `Y` e `Z`.
+3. A função `uniquecoords` para eliminar amostras com coordenadas repetidas.
+"""
+
+# ╔═╡ a1c4fc51-1878-4c13-8d01-3642d23ee670
+begin
+	# Operações de processamento
+	g1(table) = coerce(table, :FORMATION => Multiclass, :ONSHORE => Multiclass)
+	g2(table) = georef(table, (:X, :Y, :Z))
+	g3(table) = uniquecoords(table)
+	
+	# Sequenciamento de operações
+	𝒮 = samples |> g1 |> g2 |> g3 |> GeoData
+end
 
 # ╔═╡ c10c7845-61ec-4275-b9a0-4934a7848e9b
 md"""
@@ -476,7 +502,9 @@ md"""
 # ╟─4a3d8d5a-e429-4bc9-91ee-1de5aaa8444b
 # ╟─4eadc228-7905-4328-ab01-f21339dd40aa
 # ╟─3855a6d5-7b8a-487b-abad-288f9fc0152d
-# ╠═3a425474-8710-42f7-83b4-6db8b6fc14b9
+# ╠═eb9d3014-65b2-44f7-8d33-445826e6974b
+# ╟─4b41d46e-ccf0-4232-8ce8-f9520a90efea
+# ╠═a1c4fc51-1878-4c13-8d01-3642d23ee670
 # ╟─c10c7845-61ec-4275-b9a0-4934a7848e9b
 # ╠═d70ac330-0aae-4fae-91a2-159f1c1bc11f
 # ╠═44a77b1f-9d34-45f0-989c-ab03d3d2aaa9
