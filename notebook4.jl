@@ -72,8 +72,8 @@ Ao final deste módulo você será capaz de:
     - O que é aprendizado de máquina (a.k.a. ML)?
     - A nova área de aprendizado **geo**estatístico
     - Os elementos do aprendizado **geo**estatístico
-    - Solução do problema e técnicas de validação
-2. Mais exemplos práticos com o GeoStats.jl
+    - Solução do problema e validação cruzada
+2. Mais exemplos com o GeoStats.jl
     - Exemplo 1
     - Exemplo 2
 """
@@ -439,7 +439,9 @@ md"""
 
 # ╔═╡ 1ec6e447-fe94-4288-9996-0ba42c8d6cb0
 md"""
-#### Solução do problema e técnicas de validação
+#### Solução do problema e validação cruzada
+
+##### Modelos de aprendizado
 
 Com o problema de aprendizado geoestatístico bem definido, nós podemos investigar diferentes estratégias de solução e realizar validações avançadas que só estão disponíveis no GeoStats.jl.
 
@@ -501,6 +503,8 @@ solutions = [solve(problem, solver) for solver in solvers]
 
 # ╔═╡ f66e960b-e38f-4414-be79-09658eb5cf74
 md"""
+##### Avaliação qualitativa
+
 Podemos facilmente visualizar qualquer uma das soluções obtidas. Como o número de amostras neste case é considerável, e não estamos utilizando o [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D, visualizaremos apenas um subconjunto da solucão i = $(@bind i Scrubbable(1:length(solvers), default=1)):
 """
 
@@ -514,6 +518,8 @@ plot(sampleᵢ, marker = (:BrBG_3, 4), colorbar = false,
 
 # ╔═╡ 78d9f9ba-1947-4bec-bc74-b895d084365e
 md"""
+##### Avaliação quantitativa
+
 Como neste **caso sintético** nós temos acesso ao tipo de formação nos poços `OFFSHORE`, nós podemos quantificar o erro de cada modelo utilizado.
 
 Em problemas de classificação, é comum reportar a **matriz de confusão** para cada modelo. Essa matriz informa o número de vezes que uma formação (coluna da matriz) foi classificada pelo modelo como uma certa outra formação (linha da matriz):
@@ -537,7 +543,24 @@ Podemos sumarizar a informação da matriz de confusão com diferentes medidas, 
 
 $F_1 = \frac{tp}{tp + \frac{fp + fn}{2}}$
 
-onde $tp$ é o número de verdadeiros positivos, $fp$ é o número de falsos positivos, e $fn$ é o número de falsos negativos. Quanto maior é o $F_1$-score, maior é a performance do modelo:
+onde $tp$ é o número de verdadeiros positivos, $fp$ é o número de falsos positivos, e $fn$ é o número de falsos negativos. Em geral quanto maior é o $F_1$-score, maior é a performance do modelo:
+"""
+
+# ╔═╡ da350067-a8fb-47bc-b9b8-b069e742383b
+html"""
+
+<p align="center">
+
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Precisionrecall.svg/350px-Precisionrecall.svg.png">
+
+</p>
+
+<p align="center">
+
+    <b>Figura 2</b>: Ilustração da medida F1-score como combinação de precisão e recall.
+
+</p>
+
 """
 
 # ╔═╡ ab970650-8dbd-442b-9a25-4cd871ecd336
@@ -649,6 +672,7 @@ md"""
 # ╟─78d9f9ba-1947-4bec-bc74-b895d084365e
 # ╠═e6e84f8b-e132-42a7-a0e4-1acd9006dbbb
 # ╟─653ed159-838c-47d6-878e-0b2530cf7c52
+# ╟─da350067-a8fb-47bc-b9b8-b069e742383b
 # ╠═ab970650-8dbd-442b-9a25-4cd871ecd336
 # ╟─3e469cb8-745d-4f11-a6e7-814f29e1ccef
 # ╠═5b54c097-07b2-4c26-85b1-c7716cd98145
