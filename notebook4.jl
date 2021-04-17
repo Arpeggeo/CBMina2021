@@ -274,7 +274,7 @@ Para avaliarmos essa hipótese, utilizaremos a **análise variográfica**. O Geo
 
 Para utilizar esses estimadores, nós precisaremos **georreferenciar a tabela** de amostras em um dado geoespacial do GeoStats.jl que chamamos de `GeoData`. Esse dado se comporta como uma tabela comum, mas adicionalmente armazena informações necessárias para análises geoespaciais.
 
-Além de georreferenciar as amostras, nós iremos aproveitar esta etapa de processamento para especificar o **tipo científico** de cada variável da tabela. Por padrão esses tipos são inferidos pela linguagem como:
+Além de georreferenciar as amostras, nós iremos aproveitar esta etapa de processamento para especificar o **tipo científico** de cada coluna da tabela. Por padrão esses tipos são inferidos pela linguagem como:
 """
 
 # ╔═╡ eb9d3014-65b2-44f7-8d33-445826e6974b
@@ -282,13 +282,13 @@ schema(samples)
 
 # ╔═╡ 4b41d46e-ccf0-4232-8ce8-f9520a90efea
 md"""
-Nós iremos converter os tipos científicos `Textual` e `Count` das variáveis `FORMATION` e `ONSHORE` pelo tipo `Multiclass` que representa uma variável categórica.
+Nós iremos converter os tipos científicos `Textual` e `Count` das colunas `FORMATION` e `ONSHORE` pelo tipo `Multiclass` que representa uma propriedade categórica.
 
-Por fim, nós iremos eliminar todas as amostras com coordenadas geográficas repetidas já que procedimentos de variografia requerem unicidade de coordenadas.
+Por fim, nós iremos agregar todas as amostras com coordenadas repetidas em uma única amostra já que procedimentos de variografia requerem unicidade de coordenadas no conjunto de dados.
 
 Em resumo, nós utilizaremos:
 
-1. A função `coerce` para especificar o tipo científico das variáveis `FORMATION` e `ONSHORE`.
+1. A função `coerce` para especificar o tipo científico das colunas `FORMATION` e `ONSHORE`.
 2. A função `georef` para georreferenciar as amostras utilizando as coordenadas `X`, `Y` e `Z`.
 3. A função `uniquecoords` para eliminar amostras com coordenadas repetidas.
 """
@@ -306,7 +306,7 @@ end
 
 # ╔═╡ c10c7845-61ec-4275-b9a0-4934a7848e9b
 md"""
-Em seguida calculamos o variograma direcional (vertical) ao longo da direção dos poços:
+Para avaliar a dependência das amostras, calculamos o variograma direcional (vertical) ao longo da direção dos poços para qualquer uma das variáveis:
 """
 
 # ╔═╡ d70ac330-0aae-4fae-91a2-159f1c1bc11f
@@ -481,7 +481,7 @@ A estratégia de solução mais comum na literatura é o que denominamos aprendi
 """
 
 # ╔═╡ 9dd85a75-c1e3-418a-bb3e-7c8875e9c5dd
-solvers = [PointwiseLearn(ℳ) for ℳ in ℳs]
+solvers = [PointwiseLearn(ℳ) for ℳ in ℳs];
 
 # ╔═╡ bd82b213-99b2-4ba7-997c-9ddbac69579c
 md"""
