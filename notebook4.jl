@@ -294,7 +294,7 @@ end
 
 # ╔═╡ 4eadc228-7905-4328-ab01-f21339dd40aa
 md"""
-Da visualização concluimos que a hipótese (1) da teoria clássica não é válida neste caso. Isto é, a **distribuição das propriedades dos exemplos varia drasticamente** de um domínio geológico para outro, mesmo quando consideramos um subconjunto pequeno dos dados para duas formações localizadas em uma única bacia.
+Da visualização concluimos que a hipótese (1) da teoria clássica não é válida neste caso. Isto é, a **distribuição das propriedades dos exemplos varia drasticamente** de um domínio geoespacial para outro, mesmo quando consideramos um subconjunto pequeno dos dados para duas formações localizadas em uma única bacia.
 """
 
 # ╔═╡ 3855a6d5-7b8a-487b-abad-288f9fc0152d
@@ -401,7 +401,27 @@ O primeiro elemento da definição é o **domínio geoespacial** onde os dados e
 
 - O **domínio de origem** $\mathcal{D}_s$ representa as trajetórias dos poços `ONSHORE`. Nesse domínio estão disponíveis os logs, assim como as anotações do tipo de formação feitas por especialistas.
 - O **domínio de destino** $\mathcal{D}_t$ representa as trajetórias dos poços `OFFSHORE`. Nesse domínio estão disponíveis apenas os logs que serão utilizados pelo modelo de aprendizao para previsão do tipo de formação.
+"""
 
+# ╔═╡ bfbb10f9-364f-441a-872a-96753c3d2231
+html"""
+
+<p align="center">
+
+    <img src="https://i.postimg.cc/d3BpsStQ/domains.png">
+
+</p>
+
+<p align="center">
+
+    <b>Figura 3</b>: Domínio geoespacial de origem e de destino.
+
+</p>
+
+"""
+
+# ╔═╡ 89e8f272-8812-4e1e-8ab6-1cb7700c0fde
+md"""
 Vemos que os nossos dados geoespaciais estão definidos em um domínio do tipo `PointSet`:
 """
 
@@ -629,7 +649,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 3</b>: Ilustração da medida F1-score como combinação de precisão e recall.
+    <b>Figura 4</b>: Ilustração da medida F1-score como combinação de precisão e recall.
 
 </p>
 
@@ -662,11 +682,57 @@ measures(s -> s.target_scitype >: AbstractVector{<:Multiclass{2}} &&
 md"""
 ### 5. Validação cruzada
 
+Nas seções anteriores, aprendemos a definir um problema de aprendizado geoestatístico e a resolver esse problema com diferentes modelos. Nesta seção aprenderemos a selecionar modelos mesmo quando as anotações dos especialistas não estão disponíveis no domínio geoespacial de destino.
+
+Dentre os vários métodos de seleção, os métodos de **validação cruzada** são os que apresentam os resultados mais satisfatórios em problemas reais. Esses métodos se baseiam nas seguintes observações:
+
+1. Anotações de especialistas só estão disponíveis no domínio geoespacial de origem $\mathcal{D}_s$.
+2. Subconjuntos de dados em $\mathcal{D}_s$ podem apresentar a mesma distribuição dos dados originais.
+3. É possível treinar um modelo em um subdomínio $\mathcal{B}_s \subset \mathcal{D}_s$ e avaliar em $\mathcal{D}_s - \mathcal{B}_s$.
+
+A Figure 4 ilustra um processo de subdivisão do domínio de origem em subdomínios aleatórios marcados em cores distintas. Esse subdomínios são chamados de **folds**.
+"""
+
+# ╔═╡ d10b3695-0f6d-406f-813d-17e76d47ba76
+html"""
+
+<p align="center">
+
+    <img src="https://i.postimg.cc/wj642dcw/cv.png">
+
+</p>
+
+<p align="center">
+
+    <b>Figura 5</b>: Folds aleatórios no domínio geoespacial de origem representados em diferentes cores.
+
+</p>
 
 """
 
-# ╔═╡ e3156d02-0b6d-4720-b44f-4ab7f9a689bc
+# ╔═╡ f96d976f-f40c-4ad2-8bbe-e45da5a3ae3d
+md"""
+O processo de validação cruzada consiste em **omitir** um dos $k$ folds do conjunto de dados, **treinar** o modelo nos $k-1$ folds restantes, e **avaliar** quantitativamente o erro do modelo no fold que foi omitido. Esse processo é repitido para todos os folds ou cores do domínio, e os resultados são agregados em um erro esperado:
 
+$\epsilon(m) = \frac{1}{k} \sum_{i=1}^k \sum_{j=1}^{n_k} w^{(i)}_j \cdot \mathcal{L}(\hat{y}^{(i)}_j, y^{(i)}_j)$
+
+onde $m$ é o modelo sendo avaliado, $\mathcal{L}$ é uma função conhecida como **função de perda**, e $w^{(i)}_j$ é um peso atribuído ao erro do exemplo $j$ no fold $i$.
+
+Revisaremos três métodos de validação cruzada:
+
+1. Validação cruzada clássica (CV)
+2. Validação cruzada em blocos (BCV)
+4. Validação cruzada com razões de densidade (DRV)
+"""
+
+# ╔═╡ 6ccd3492-a71d-4848-97e1-900614df7aa7
+md"""
+#### Validação cruzada clássica (CV)
+
+A validação cruzada clássica é o método mais simples de validação no qual os folds são aleatórios e todos os exemplos recebem o mesmo peso unitário (Figura 5). Por ser bastante simples, o método está disponível em qualquer framework de aprendizado (e.g. sckit-learn, MLJ, mlr3).
+
+O maior problema da validação cruzada clássica é que ela não foi desenvolvida para dados geoespaciais. A existência de correlação entre duas localizações do domínio compromete a estimativa do erro que se torna **super otimista**.
+"""
 
 # ╔═╡ Cell order:
 # ╟─32f6d41e-3248-4549-9546-53b34d5aa7c6
@@ -710,6 +776,8 @@ md"""
 # ╟─06e19a21-5a4e-48c0-9030-9c6c43a3afdb
 # ╟─e3c46f60-b32e-4911-971f-230c87507f37
 # ╟─0e168bfe-902b-4732-8ecb-a9a75b330bbb
+# ╟─bfbb10f9-364f-441a-872a-96753c3d2231
+# ╟─89e8f272-8812-4e1e-8ab6-1cb7700c0fde
 # ╠═8ee75575-d2f2-409f-9016-dac048fc6ff6
 # ╟─a21d65cb-d369-4e9b-a1a6-53b06b09dc22
 # ╠═cb8d9a31-d415-45b7-a743-15c715dfd2a5
@@ -745,4 +813,6 @@ md"""
 # ╟─3e469cb8-745d-4f11-a6e7-814f29e1ccef
 # ╠═5b54c097-07b2-4c26-85b1-c7716cd98145
 # ╟─7d6597a0-ae24-483a-a67f-dd6235acb25e
-# ╠═e3156d02-0b6d-4720-b44f-4ab7f9a689bc
+# ╟─d10b3695-0f6d-406f-813d-17e76d47ba76
+# ╟─f96d976f-f40c-4ad2-8bbe-e45da5a3ae3d
+# ╟─6ccd3492-a71d-4848-97e1-900614df7aa7
