@@ -723,7 +723,7 @@ Revisaremos três métodos de validação cruzada:
 
 1. Validação cruzada clássica (CV)
 2. Validação cruzada em blocos (BCV)
-4. Validação cruzada com razões de densidade (DRV)
+4. Validação cruzada com razão de densidade (DRV)
 """
 
 # ╔═╡ 6ccd3492-a71d-4848-97e1-900614df7aa7
@@ -798,8 +798,6 @@ end
 # ╔═╡ 7a790985-6c7d-422d-bcb2-f5ba8caf0322
 md"""
 #### Validação cruzada em blocos (BCV)
-
-
 """
 
 # ╔═╡ 551b332f-3601-472a-b44b-c9b74b199db4
@@ -814,6 +812,28 @@ html"""
 <p align="center">
 
     <b>Figura 6</b>: Folds da validação cruzada em blocos.
+
+</p>
+
+"""
+
+# ╔═╡ c867fdb8-9b85-4413-8275-533e773fb466
+md"""
+#### Validação cruzada com razão de densidade (BCV)
+"""
+
+# ╔═╡ 141524ec-9f9d-4950-9881-8b5ddcaa95f8
+html"""
+
+<p align="center">
+
+    <img src="https://i.postimg.cc/gJR4Wv92/drv.png">
+
+</p>
+
+<p align="center">
+
+    <b>Figura 7</b>: Folds da validação cruzada com razão de densidade.
 
 </p>
 
@@ -913,3 +933,5 @@ html"""
 # ╠═f0f10827-7753-4f93-ba63-9b717e1e6ac9
 # ╟─7a790985-6c7d-422d-bcb2-f5ba8caf0322
 # ╟─551b332f-3601-472a-b44b-c9b74b199db4
+# ╟─c867fdb8-9b85-4413-8275-533e773fb466
+# ╟─141524ec-9f9d-4950-9881-8b5ddcaa95f8
