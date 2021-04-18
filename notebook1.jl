@@ -49,13 +49,13 @@ Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](
 # ╔═╡ c544614a-3e5c-4d22-9340-592aabf84871
 md"""
 
-## Estimativa (tradicional) de recursos
+## Estimativa tradicional de recursos
 
-Este módulo objetiva demonstrar um fluxo de trabalho completo de estimativa (tradicional) de recursos por Krigagem realizado com a linguagem [Julia](https://docs.julialang.org/en/v1/) e o pacote [GeoStats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html).
+Este módulo objetiva demonstrar um fluxo de trabalho completo de estimativa tradicional de recursos por **Krigagem** realizado com a linguagem [Julia](https://docs.julialang.org/en/v1/) e o pacote [GeoStats.jl](https://juliaearth.github.io/GeoStats.jl/stable/index.html).
 
-Nesse sentido, cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a estimativa dos recursos num modelo de blocos 3D.
+Cobriremos desde a etapa de importação dos dados brutos (tabelas collar, survey e assay) até a estimativa dos recursos num modelo de blocos 3D.
 
-Portanto, o **produto final** é um **modelo de blocos estimado** por Krigagem ordinária.
+O **produto final** deste módulo é um **modelo de blocos estimado** por diferentes métodos: Inverso da distância, Krigagem simples e Krigagem ordinária.
 
 """
 
