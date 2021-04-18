@@ -50,7 +50,7 @@ md"""
 
 Neste módulo aprenderemos sobre esta nova área denominada **aprendizado geoestatístico** ([Hoffimann et al 2021](https://arxiv.org/abs/2102.08791)). Introduziremos os elementos do problema de aprendizado com **dados geoespaciais**, e veremos como a biblioteca [GeoStats.jl](https://github.com/JuliaEarth/GeoStats.jl) está na vanguarda desta tecnologia.
 
-Existem questões teóricas muito interessantes que não cobriremos neste minicurso, e que estão sendo desenvolvidas ativamente no projeto. Nos concentraremos aqui em **exemplos práticos** para que você possa adaptar este notebook aos seus próprios desafios na mineração.
+Existem questões teóricas muito interessantes que não cobriremos neste minicurso, e que estão sendo desenvolvidas ativamente no projeto. Nos concentraremos aqui em **exemplos práticos** para que você possa adaptar este notebook aos seus próprios desafios na mineração. Para mais detalhes teóricos, assista o vídeo abaixo:
 """
 
 # ╔═╡ 4a3fb559-73dd-41e0-8a11-993e5bf286bf
@@ -63,26 +63,21 @@ md"""
 Ao final deste módulo você será capaz de:
 
 - Identificar os **elementos do aprendizado geoestatístico**
-- Definir o **problema de aprendizado** de forma clara
-- Resolver o problema com vários **modelos de aprendizado**
+- Definir de forma clara o **problema de aprendizado na sua área**
+- Resolver o problema com vários **modelos de aprendizado** no GeoStats.jl
 
 ### Agenda
 
-1. Aprendizado **geo**estatístico
-    - O que é aprendizado de máquina (a.k.a. ML)?
-    - A nova área de aprendizado **geo**estatístico (a.k.a. GL)
-    - Os elementos do aprendizado **geo**estatístico
-    - Solução do problema e validação cruzada
-2. Mais exemplos com o GeoStats.jl
-    - Exemplo 1
-    - Exemplo 2
+1. O que é aprendizado de máquina (a.k.a. ML)?
+2. A nova área de aprendizado geoestatístico
+3. Os elementos do aprendizado geoestatístico
+4. Solução do problema (exemplo Nova Zelândia)
+5. Métodos de validação (seleção de modelos)
 """
 
 # ╔═╡ 1856e01b-2d55-448d-8bdf-e59825934193
 md"""
-### 1. Aprendizado geoestatístico
-
-#### O que é o aprendizado de máquina?
+### 1. O que é o aprendizado de máquina?
 
 Antes de podermos entender o problema de aprendizado **geo**estatístico, isto é, o problema de aprendizado com dados **geoespacias**, precisamos entender o problema mais simples de **aprendizado de máquina** introduzido na ciência da computação na área de **inteligência artificial**.
 
@@ -91,7 +86,7 @@ Nessa área, buscam-se criar tecnologias capazes de "imitar" a inteligência hum
 1. A habilidade de **raciocinar sobre fatos**
 2. A habilidade **aprender com experiência**
 
-##### Raciocínio
+#### Raciocínio
 
 A habilidade de **raciocínio** é o que nos permite gerar conclusões sobre fatos, segundo alguma lógica pré-estabelecida. Essa habilidade pode ser entendida informalmente como um sistema **dedutivo** da forma:
 
@@ -154,7 +149,7 @@ md"""
 
 # ╔═╡ a0b00451-7418-4d60-812f-5c2a9b32cd4d
 md"""
-##### Aprendizado
+#### Aprendizado
 
 A habilidade de **aprendizado**, por outro lado, é o que nos permite **gerar novas regras** sobre o ambiente em que operamos baseado em experiências presentes. É com essa habilidade que evoluimos o nosso entendimento de mundo.
 
@@ -211,7 +206,7 @@ md"""
 
 # ╔═╡ bfdbec36-069d-422d-8f88-fd97f8d85455
 md"""
-#### Aprendizado geoestatístico
+### 2. Aprendizado geoestatístico
 
 A **teoria de aprendizado clássica** utilizada no desenvolvimento de vários métodos de aprendizado de máquina **não é apropriada para lidar com dados geoespaciais**, principalmente porque a maior parte da literatura assume que:
 
@@ -234,44 +229,43 @@ e uma tarefa de aprendizado que consiste em prever o tipo de formação da rocha
 
 # ╔═╡ c2fbca00-a248-4f9e-9754-08fd47225bed
 md"""
-##### Falsificação da hipótese 1
+#### Falsificação da hipótese 1
 
-Por simplicidade, eliminaremos as linhas da tabela com dados faltantes para os logs `GR`, `SP`, `DENS`, `NEUT` e `DTC`, e manteremos apenas as linhas com formações `Urenui` e `Manganui`:
+Por simplicidade, eliminaremos as linhas da tabela com dados faltantes para os logs `GR`, `SP`, `DENS`, `NEUT` e `DTC`, e manteremos apenas as linhas com formações `Manganui` e `Urenui`.
+
+Para facilitar a interpretação dos dados e o posterior treinamento de modelos de aprendizado, nós normalizaremos os logs para que tenham média zero e desvio padrão unitário.
 """
 
 # ╔═╡ b106e967-13c3-483d-bc53-9772c25947be
 begin
-	# Dados utilizados
+	# Dados utilizados no experimento
 	LOGS  = [:GR,:SP,:DENS,:NEUT,:DTC]
 	CATEG = [:FORMATION, :ONSHORE]
 	COORD = [:X, :Y, :Z]
-	FORMS = ["Urenui", "Manganui"]
+	FORMS = ["Manganui", "Urenui"]
 	
-	# Operações de limpeza dos dados
+	# Operações de pré-processamento
 	f1(table) = select(table, [LOGS; CATEG; COORD])
+	
 	f2(table) = dropmissing(table)
+	
 	f3(table) = filter(row -> row.FORMATION ∈ FORMS, table)
 	
-	# Sequenciamento de operações
-	samples = table |> f1 |> f2 |> f3
-end
-
-# ╔═╡ 9e6849d8-4c4b-4b18-a12e-734b45f9e41f
-md"""
-Para facilitar a interpretação dos dados e o posterior treinamento de modelos de aprendizado, nós normalizaremos os logs para que tenham média zero e desvio padrão unitário:
-"""
-
-# ╔═╡ 48a4fdfb-07d8-4ce9-a489-5f9611ed4c5b
-for LOG in LOGS
-	# Seleciona coluna com o log
-	x = samples[!, LOG]
+	function f4(table)
+		result = copy(table)
+		for LOG in LOGS
+			x = table[!, LOG]
+			
+			μ = mean(x)
+			σ = std(x, mean = μ)
 	
-	# Calcula média e desvio padrão
-	μ = mean(x)
-	σ = std(x, mean = μ)
+			result[!, LOG] = (x .- μ) ./ σ
+		end
+		result
+	end
 	
-	# Normaliza coluna
-	samples[!, LOG] = (x .- μ) ./ σ
+	# Execução da sequência de operações
+	samples = table |> f1 |> f2 |> f3 |> f4
 end
 
 # ╔═╡ e912de0f-cab2-4e11-b0bd-6a9603a9e966
@@ -305,7 +299,7 @@ Da visualização concluimos que a hipótese (1) da teoria clássica não é vá
 
 # ╔═╡ 3855a6d5-7b8a-487b-abad-288f9fc0152d
 md"""
-##### Falsificação da hipótese 2
+#### Falsificação da hipótese 2
 
 Vejamos agora a hipótese (2) da teoria clássica que assume que exemplos utilizados no treinamento de um modelo de aprendizado são amostrados de forma independente no espaço de propriedades.
 
@@ -334,12 +328,14 @@ Em resumo, nós utilizaremos:
 
 # ╔═╡ a1c4fc51-1878-4c13-8d01-3642d23ee670
 begin
-	# Operações de processamento
+	# Operações de pré-processamento
 	g1(table) = coerce(table, :FORMATION => Multiclass, :ONSHORE => Multiclass)
+	
 	g2(table) = georef(table, (:X, :Y, :Z))
+	
 	g3(table) = uniquecoords(table)
 	
-	# Sequenciamento de operações
+	# Execução da sequência de operações
 	𝒮 = samples |> g1 |> g2 |> g3 |> GeoData
 end
 
@@ -375,14 +371,14 @@ A partir da análise variográfica, concluimos que a hipótese (2) também não 
 
 # ╔═╡ 06e19a21-5a4e-48c0-9030-9c6c43a3afdb
 md"""
-##### Falsificação da hipótese 3
+#### Falsificação da hipótese 3
 
 A hipótese (3) não é valida, pois como discutimos no primeiro dia do minicurso, amostras geofísicas geralmente tem um suporte (ou volume físico) variável. Neste caso, **o espaçamento das amostras ao longo dos poços não é constante**.
 """
 
 # ╔═╡ e3c46f60-b32e-4911-971f-230c87507f37
 md"""
-##### Resumo
+#### Resumo
 
 - A **análise bivariada** indicou que as **distribuições das propriedades** em poços `ONSHORE` e `OFFSHORE` **são distintas**. Portanto, não é aconselhável treinar um modelo de aprendizado com anotações em poços `ONSHORE` e aplicá-lo diretamente a poços `OFFSHORE`, e vice versa.
 
@@ -395,9 +391,13 @@ Precisamos de uma nova definição de aprendizado com dados geoespaciais, que ch
 
 # ╔═╡ 0e168bfe-902b-4732-8ecb-a9a75b330bbb
 md"""
-#### Elementos do aprendizado geoestatístico
+### 3. Elementos do aprendizado geoestatístico
 
-Para esclarecer a definição de GL, continuaremos explorando os dados de New Zealand. O primeiro elemento da definição é o **domínio geoespacial** onde dados estão disponíveis. Definimos dois domínios:
+Para esclarecer a definição de GL, continuaremos explorando os dados da Nova Zelândia.
+
+#### Domínio geoespacial
+
+O primeiro elemento da definição é o **domínio geoespacial** onde os dados estão georreferenciados:
 
 - O **domínio de origem** $\mathcal{D}_s$ representa as trajetórias dos poços `ONSHORE`. Nesse domínio estão disponíveis os logs, assim como as anotações do tipo de formação feitas por especialistas.
 - O **domínio de destino** $\mathcal{D}_t$ representa as trajetórias dos poços `OFFSHORE`. Nesse domínio estão disponíveis apenas os logs que serão utilizados pelo modelo de aprendizao para previsão do tipo de formação.
@@ -418,36 +418,64 @@ values(𝒮) |> DataFrame
 
 # ╔═╡ 8712e1ec-0b84-4fc4-a44e-6f5a91180b8b
 md"""
-Queremos particionar esse dado geoespacial de acordo com a coluna `ONSHORE`. Existem várias maneiras de obter esse resultado, como por exemplo:
-"""
-
-# ╔═╡ 75d031cd-b55f-4d8a-89fd-3acb11a551ef
-Π = GeoStats.groupby(𝒮, :ONSHORE)
-
-# ╔═╡ 1218bb53-fd4e-4574-ba62-e67f955ba0a8
-md"""
-Essa partição contem um campo de metadados associados a cada subconjunto da partição, que podemos utilizar para definir os dois dados geoespaciais de interesse, com seus respectivos domínios:
+Queremos particionar os dados em poços `ONSHORE` e `OFFSHORE` de acordo com a informação já presente na tabela de valores. Utilizaremos a função `groupby` do GeoStats.jl para **particionar os dados preservando as informações geoespaciais**. O resultado da partição possui um campo de metadados associados a cada subconjunto que podemos utilizar para definir os dois domínios de interesse:
 """
 
 # ╔═╡ 59c355a1-34d5-415b-9e29-afcab5103576
-begin
-	ON1, ON2 = metadata(Π)[:values]
+function onandoff(𝒮)
+	Π = GeoStats.groupby(𝒮, :ONSHORE)
 	
-	if ON1 == true
+	ON₁, ON₂ = metadata(Π)[:values]
+	
+	if ON₁ == true
 		𝒮ₛ, 𝒮ₜ = Π
 	else
 		𝒮ₜ, 𝒮ₛ = Π
 	end
-end;
+end
 
-# ╔═╡ 7e9c42eb-c70f-4269-8b5e-b8cddbdc692b
-𝒟ₛ = domain(𝒮ₛ)
+# ╔═╡ 340c939a-2a9b-475d-91ef-62effb2a8da3
+𝒮ₛ, 𝒮ₜ = onandoff(𝒮)
 
-# ╔═╡ 6300bcd6-44e4-4d2a-8e7d-dc7162eaea78
-𝒟ₜ = domain(𝒮ₜ)
+# ╔═╡ 2c7442fa-5b8c-411d-b3f8-f0ed2ed00dc8
+md"""
+Para evitar viés no processo de aprendizado, nós balancearemos os dados utilizando uma simples técnica de **subamostragem**. Essa técnica é adequada para grandes conjuntos de dados, e reduz a presença da formação majoritária no treinamento de modelos estatísticos.
+
+Ao aplicar a subamostragem obtemos um conjunto de dados balanceado com 50% dos exemplos na formação `Manganui` e 50% na formação `Urenui`:
+"""
+
+# ╔═╡ a7b23e9e-b3f3-4a8b-a5a7-dae05fd73bf1
+function balance(𝒮)
+	# Coluna com anotações
+	y  = 𝒮[:FORMATION]
+	
+	# Localizações na formação Manganui
+	y₁ = isequal.(y, "Manganui")
+	
+	# Contagem de exemplos nas duas formações
+	n  = length(y)
+	n₁ = count(y₁)
+	n₂ = n - n₁
+	
+	# Subamostragem dos dados
+	if n₁ > n₂
+		inds₁ = sample(findall(y₁), n₂, replace = false)
+		inds₂ = findall(!, y₁)
+	else
+		inds₁ = findall(y₁)
+		inds₂ = sample(findall(!, y₁), n₁, replace = false)
+	end
+	
+	view(𝒮, [inds₁; inds₂])
+end
+
+# ╔═╡ 777f4131-2cbb-4ba5-b786-d6175e3036a5
+Ωₛ, Ωₜ = balance(𝒮ₛ), balance(𝒮ₜ)
 
 # ╔═╡ fbd3a1ec-214f-450f-9c2e-547df22157d3
 md"""
+#### Tarefa de aprendizado
+
 O segundo elemento da definição é a **tarefa de apendizado**. Neste caso, definimos uma única tarefa de previsão de formação a partir de logs, ou seja $\mathcal{T}_s = \mathcal{T}_t$. No jargão de aprendizado essa tarefa é uma tarefa de classificação:
 """
 
@@ -460,11 +488,11 @@ Com isso podemos definir o nosso problema de aprendizado geoestatístico:
 """
 
 # ╔═╡ a012ef03-64a4-44cb-95c2-a5f734a3f75d
-problem = LearningProblem(𝒮ₛ, 𝒮ₜ, 𝒯)
+problem = LearningProblem(Ωₛ, Ωₜ, 𝒯)
 
 # ╔═╡ 12112daa-17f1-445a-93e8-131c35cfb53d
 md"""
-e resolvê-lo com mais de **150** modelos de aprendizado disponíveis no projeto [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl), incluindo todos os modelos do [scikit-learn](https://scikit-learn.org) e outros modelos de alta performance implementados em Julia:
+Como veremos em seguida, nós podemos resolver o problema com mais de **150** modelos de aprendizado disponíveis no projeto [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl), incluindo todos os modelos do [scikit-learn](https://scikit-learn.org) e outros modelos de alta performance implementados em Julia:
 """
 
 # ╔═╡ 10ab0262-00ef-4b77-8b6b-a43cf236a29d
@@ -477,9 +505,9 @@ md"""
 
 # ╔═╡ 1ec6e447-fe94-4288-9996-0ba42c8d6cb0
 md"""
-#### Solução do problema e validação cruzada
+### 4. Solução do problema
 
-##### Modelos de aprendizado
+#### Modelos de aprendizado
 
 Com o problema de aprendizado geoestatístico bem definido, nós podemos investigar diferentes estratégias de solução e realizar validações avançadas que só estão disponíveis no GeoStats.jl.
 
@@ -488,7 +516,7 @@ Primeiro nós precisamos definir uma lista de modelos de aprendizado para resolv
 1. **Implementados em Julia** por terem uma maior performance computacional em grandes conjuntos de dados como os dados de New Zealand.
 2. Adequados para a tarefa de **classificação de formação** definida no problema:
     - Modelos **supervisionados** (que aprendem de exemplos de entrada e saída)
-    - Com **variável alvo binária** (que produzem previsões `Urenui` ou `Manganui`)
+    - Com **variável alvo binária** (que produzem previsões `Manganui` ou `Urenui`)
 3. Sob licença **MIT** por ser uma licença de código aberto flexível e ótima para qualquer tipo de projeto acadêmico ou industrial.
 
 Podemos encontrar esses modelos utilizando filtros na função `models`:
@@ -516,7 +544,7 @@ end
 
 # ╔═╡ b0843d5b-69eb-4a53-bff7-2d3bbd8b0057
 md"""
-##### Estratégia de solução
+#### Estratégia de solução
 
 Para que os modelos de aprendizado possam ser utilizados com dados geoespaciais no GeoStats.jl, nós precisamos definir uma **estratégia de solução**. A estratégia de solução mais comum na literatura geoespacial é o que denominamos aprendizado ponto-a-ponto (em inglês "pointwise learning"):
 """
@@ -541,7 +569,7 @@ solutions = [solve(problem, solver) for solver in solvers]
 
 # ╔═╡ f66e960b-e38f-4414-be79-09658eb5cf74
 md"""
-##### Avaliação qualitativa
+#### Avaliação qualitativa
 
 Podemos facilmente visualizar qualquer uma das soluções obtidas. Como o número de amostras neste case é considerável, e não estamos utilizando o [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D, visualizaremos apenas um subconjunto da solucão i = $(@bind i Scrubbable(1:length(solvers), default=1)):
 """
@@ -556,7 +584,7 @@ plot(solutionᵢ, marker = (:BrBG_3, 4), colorbar = false,
 
 # ╔═╡ 78d9f9ba-1947-4bec-bc74-b895d084365e
 md"""
-##### Avaliação quantitativa
+#### Avaliação quantitativa
 
 Como neste **caso sintético** nós temos acesso ao tipo de formação nos poços `OFFSHORE`, nós podemos quantificar o erro de cada modelo utilizado.
 
@@ -564,20 +592,26 @@ Em problemas de classificação, é comum reportar a **matriz de confusão** par
 """
 
 # ╔═╡ e6e84f8b-e132-42a7-a0e4-1acd9006dbbb
-map(solutions) do 𝒮ᵢ
+map(solutions) do Ω̂ᵢ
 	# Previsão da formação
-	ŷ = 𝒮ᵢ[:FORMATION]
+	ŷ = Ω̂ᵢ[:FORMATION]
 	
 	# Valor real da formação
-	y = 𝒮ₜ[:FORMATION]
+	y = Ωₜ[:FORMATION]
 	
 	# Matriz de confusão
-	confmat(ŷ, y)
+    confmat(ŷ, y)
 end
 
 # ╔═╡ 653ed159-838c-47d6-878e-0b2530cf7c52
 md"""
-Podemos sumarizar a informação da matriz de confusão com diferentes medidas, como por exemplo a medida $F_1$-score calculada como
+Observamos que:
+
+- O **modelo mais simples** (logistic) apresenta os **melhores resultados** nos poços `OFFSHORE`.
+- Os **modelos mais complexos** (e.g. decision tree, knn) ficam **"superfitados"** aos poços `ONSHORE` pela quantidade de dados e diferença de distribuição `ONSHORE` e `OFFSHORE`.
+- Como esperado, o modelo constante apresenta o pior resultado.
+
+Podemos sumarizar a informação da matriz de confusão com diferentes medidas, como por exemplo a medida $F_1$-score bastante utilizada na área médica, e calculada como
 
 $F_1 = \frac{tp}{tp + \frac{fp + fn}{2}}$
 
@@ -602,12 +636,12 @@ html"""
 """
 
 # ╔═╡ ab970650-8dbd-442b-9a25-4cd871ecd336
-map(solutions) do 𝒮ᵢ
+map(solutions) do Ω̂ᵢ
 	# Previsão da formação
-	ŷ = 𝒮ᵢ[:FORMATION]
+	ŷ = Ω̂ᵢ[:FORMATION]
 	
 	# Valor real da formação
-	y = 𝒮ₜ[:FORMATION]
+	y = Ωₜ[:FORMATION]
 	
 	# Matriz de confusão
 	f1score(ŷ, y)
@@ -615,7 +649,11 @@ end
 
 # ╔═╡ 3e469cb8-745d-4f11-a6e7-814f29e1ccef
 md"""
-Existem mais de **50** medidas disponíveis para avaliar modelos quando as anotações são conhecidas no domínio geoespacial de destino. Da mesma forma que utilizamos a função `models` para descobrir os modelos disponíveis para o problema, podemos utilizar a função `measures` para descobrir as medidas válidas para a solução:
+Dessa forma, se soubéssemos o valor real da formação nos poços `OFFSHORE` como neste caso sintético, nós poderíamos escolher o modelo logistic como o melhor modelo segundo o $F_1$-score. Na prática, porém, **não temos as anotações no domínio geoespacial de destino**, e precisamos de outras métodos para a seleção de modelos, como por exemplo métodos de **validação cruzada**.
+
+Antes de investigarmos esses métodos em detalhe na próxima seção, observamos que existem mais de **50** medidas disponíveis para avaliar modelos quando as anotações são conhecidas no domínio geoespacial de destino.
+
+Da mesma forma que utilizamos a função `models` para descobrir os modelos disponíveis para o problema, podemos utilizar a função `measures` para descobrir as medidas válidas para a solução:
 """
 
 # ╔═╡ 5b54c097-07b2-4c26-85b1-c7716cd98145
@@ -624,18 +662,10 @@ measures(s -> s.target_scitype >: AbstractVector{<:Multiclass{2}} &&
 
 # ╔═╡ 7d6597a0-ae24-483a-a67f-dd6235acb25e
 md"""
-##### Validação cruzada
+### 5. Validação cruzada
 """
 
 # ╔═╡ e3156d02-0b6d-4720-b44f-4ab7f9a689bc
-
-
-# ╔═╡ bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
-md"""
-### 2. Exemplos de aprendizado geoestatístico
-"""
-
-# ╔═╡ 74f940f3-5c76-4f7e-a46a-12038d7584c7
 
 
 # ╔═╡ Cell order:
@@ -661,8 +691,6 @@ md"""
 # ╟─2702b5c2-b0b8-4926-aabb-9e1a34feb1d6
 # ╟─c2fbca00-a248-4f9e-9754-08fd47225bed
 # ╠═b106e967-13c3-483d-bc53-9772c25947be
-# ╟─9e6849d8-4c4b-4b18-a12e-734b45f9e41f
-# ╠═48a4fdfb-07d8-4ce9-a489-5f9611ed4c5b
 # ╠═e912de0f-cab2-4e11-b0bd-6a9603a9e966
 # ╟─ce132078-cfd3-4455-98b4-3297b1be405f
 # ╟─4a3d8d5a-e429-4bc9-91ee-1de5aaa8444b
@@ -686,12 +714,12 @@ md"""
 # ╟─a21d65cb-d369-4e9b-a1a6-53b06b09dc22
 # ╠═cb8d9a31-d415-45b7-a743-15c715dfd2a5
 # ╟─8712e1ec-0b84-4fc4-a44e-6f5a91180b8b
-# ╠═75d031cd-b55f-4d8a-89fd-3acb11a551ef
-# ╟─1218bb53-fd4e-4574-ba62-e67f955ba0a8
 # ╠═59c355a1-34d5-415b-9e29-afcab5103576
-# ╠═7e9c42eb-c70f-4269-8b5e-b8cddbdc692b
-# ╟─6300bcd6-44e4-4d2a-8e7d-dc7162eaea78
-# ╠═fbd3a1ec-214f-450f-9c2e-547df22157d3
+# ╠═340c939a-2a9b-475d-91ef-62effb2a8da3
+# ╟─2c7442fa-5b8c-411d-b3f8-f0ed2ed00dc8
+# ╠═a7b23e9e-b3f3-4a8b-a5a7-dae05fd73bf1
+# ╠═777f4131-2cbb-4ba5-b786-d6175e3036a5
+# ╟─fbd3a1ec-214f-450f-9c2e-547df22157d3
 # ╠═55151073-083b-433c-96e0-5e51978e888f
 # ╟─0250f930-ac62-4fdf-8e36-b79769974a25
 # ╠═a012ef03-64a4-44cb-95c2-a5f734a3f75d
@@ -718,5 +746,3 @@ md"""
 # ╠═5b54c097-07b2-4c26-85b1-c7716cd98145
 # ╟─7d6597a0-ae24-483a-a67f-dd6235acb25e
 # ╠═e3156d02-0b6d-4720-b44f-4ab7f9a689bc
-# ╟─bd1738fb-26f3-4ef8-a43c-f4c3740c46cb
-# ╠═74f940f3-5c76-4f7e-a46a-12038d7584c7
