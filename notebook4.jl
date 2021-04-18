@@ -21,6 +21,7 @@ begin
 	# load packages used in this notebook
 	using GeoStats, MLJ
 	using CSV, DataFrames
+	using LossFunctions
 	using Distributions
 	using PlutoUI
 	using Plots
@@ -88,7 +89,7 @@ Nessa área, buscam-se criar tecnologias capazes de "imitar" a inteligência hum
 
 #### Raciocínio
 
-A habilidade de **raciocínio** é o que nos permite gerar conclusões sobre fatos, segundo alguma lógica pré-estabelecida. Essa habilidade pode ser entendida informalmente como um sistema **dedutivo** da forma:
+A habilidade de **raciocínio** é o que nos permite gerar conclusões sobre fatos, segundo alguma lógica pré-estabelecida. Essa habilidade pode ser entendida informalmente como um sistema dedutivo da forma:
 
 $\text{premissa}_1 + \text{premissa}_2 + \cdots + \text{premissa}_n \longrightarrow \text{conclusão}$
 
@@ -120,7 +121,7 @@ html"""
 md"""
 Devemos observar que:
 
-- Sistemas de raciocínio determinísticos como o exemplo acima tendem a não ser robustos em áreas da ciência que apresentam alta complexidade e interação entre as entidades envolvidas no raciocínio, especialmente quando esses sistemas são construídos por [seres humanos e seus vários traços de irracionalidade](https://en.wikipedia.org/wiki/Predictably_Irrational).
+- Sistemas de raciocínio determinísticos como o exemplo acima tendem a falhar em áreas da ciência que apresentam alta complexidade e interação entre as entidades envolvidas no raciocínio, especialmente quando esses sistemas são construídos por [seres humanos e seus vários traços de irracionalidade](https://en.wikipedia.org/wiki/Predictably_Irrational).
 
 - Sistemas de raciocínio probabilísticos, isto é, sistemas que utilizam de teorias de probabilidade para representar incertezas no raciocínio, tem sido mais bem sucedidos na indústria. Um exemplo deste tipo de sistema está descrito em [Hoffimann et al 2021. Probabilistic Knowledge-based Characterization of Conceptual Geological Models](https://www.sciencedirect.com/science/article/pii/S2590197421000033), onde um modelo conhecido como rede Bayesiana é utilizado para auxiliar geocientistas na identificação de cenários geológicos de um sistema petrolífero (Figura 2).
 """
@@ -628,7 +629,7 @@ md"""
 Observamos que:
 
 - O **modelo mais simples** (logistic) apresenta os **melhores resultados** nos poços `OFFSHORE`.
-- Os **modelos mais complexos** (e.g. decision tree, knn) ficam **"superfitados"** aos poços `ONSHORE` devido principalmente a quantidade de dados e diferença de distribuição `ONSHORE` e `OFFSHORE`.
+- Os **modelos mais complexos** (e.g. decision tree, knn) ficam **"superfitados"** aos poços `ONSHORE` devido principalmente a diferença de distribuição `ONSHORE` e `OFFSHORE`.
 - O modelo constante apresenta o pior resultado como esperado.
 
 Podemos sumarizar a informação da matriz de confusão com diferentes medidas, como por exemplo a medida $F_1$-score. A medida é bastante utilizada na área médica, e é calculada como
@@ -729,10 +730,66 @@ Revisaremos três métodos de validação cruzada:
 md"""
 #### Validação cruzada clássica (CV)
 
-A validação cruzada clássica é o método mais simples de validação no qual os folds são aleatórios e todos os exemplos recebem o mesmo peso unitário (Figura 5). Por ser bastante simples, o método está disponível em qualquer framework de aprendizado (e.g. sckit-learn, MLJ, mlr3).
+A validação cruzada clássica é o método mais simples de validação no qual os **folds são aleatórios** e todos os exemplos recebem o mesmo **peso unitário** (Figura 5). Por ser bastante simples, o método está disponível em qualquer framework de aprendizado (e.g. sckit-learn, MLJ, mlr3).
 
 O maior problema da validação cruzada clássica é que ela não foi desenvolvida para dados geoespaciais. A existência de correlação entre duas localizações do domínio compromete a estimativa do erro que se torna **super otimista**.
+
+Para ilustrar esse problema, tentaremos estimar o erro de qualquer um dos solvers (e.g. poitwise decision tree) utilizando o método CV. Precisamos definir o **número de folds** e a **função de perda**.
+
+O número de folds geralmente é escolhido em função da quantidade de dados no domínio de origem e recurso computacional disponível. Como existem muitos exemplos (>300k) nos poços `ONSHORE`, podemos escolher valores altos de $k$ sem termos que nos preocupar com a **distribuição dos folds que precisa coincidir com a distribuição original**. Por outro lado, valores muito maiores que $k=20$ são computacionalmente inviáveis:
 """
+
+# ╔═╡ 7c5beee4-c4bb-40a5-ab3e-c2fb88e363cb
+k = 20
+
+# ╔═╡ 7204b07c-7ad3-4384-b41c-f214e040d280
+md"""
+Em seguida escolhemos uma função de perda do pacote [LossFunctions.jl](https://github.com/JuliaML/LossFunctions.jl). Neste caso de classificação binária podemos escolher a função `MissclassLoss()` que assume o valor `1` quando o exemplo é classificado incorretamente pelo modelo e `0` quando a classificação é correta:
+"""
+
+# ╔═╡ 10454510-fcff-46d6-8e28-7800cc0bfd4d
+ℒ = MisclassLoss()
+
+# ╔═╡ e4d731eb-e8a3-42d2-beae-54f053722503
+md"""
+Criamos o método de validação CV especificando o número de folds e a função de perda para cada variáveis de saída do problema, neste caso apenas a variável `FORMATION`:
+"""
+
+# ╔═╡ 74ecd539-73e9-4fdc-ab35-4a58278ef5bf
+CV = CrossValidation(20, loss = Dict(:FORMATION => ℒ))
+
+# ╔═╡ 6dd4b8dd-7dd1-44b7-818a-f6461c9b619a
+md"""
+Em uma linha de código, o GeoStats.jl se encarrega de particionar o domínio geoespacial, treinar os modelos em paralelo em cada fold, e combinar as estimativas de erro:
+"""
+
+# ╔═╡ 56a82bee-08fc-4c17-9437-e105b2a3cb1c
+md"""
+Solver index: $(@bind index Scrubbable(1:length(solvers), default=1))
+"""
+
+# ╔═╡ 68280b04-6640-4e3c-bf78-951109f2aed0
+ϵ̂ = error(solvers[index], problem, CV)
+
+# ╔═╡ a183e138-60be-49ad-8b67-f780b46e9bb2
+md"""
+Podemos comparar a estimativa de erro obtida com o método CV com o erro real neste caso sintético, e constatar o super otimismo da validação cruzada clássica:
+"""
+
+# ╔═╡ f0f10827-7753-4f93-ba63-9b717e1e6ac9
+begin
+	# Solução geoespacial
+	Ω̂ₜ = solutions[index]
+	
+	# Valor real da formação
+	y  = Ωₜ[:FORMATION]
+	
+	# Previsão da formação
+	ŷ  = Ω̂ₜ[:FORMATION]
+	
+	# Taxa de misclassicação real
+	LossFunctions.value(ℒ, y, ŷ, AggMode.Mean())
+end
 
 # ╔═╡ Cell order:
 # ╟─32f6d41e-3248-4549-9546-53b34d5aa7c6
@@ -816,3 +873,13 @@ O maior problema da validação cruzada clássica é que ela não foi desenvolvi
 # ╟─d10b3695-0f6d-406f-813d-17e76d47ba76
 # ╟─f96d976f-f40c-4ad2-8bbe-e45da5a3ae3d
 # ╟─6ccd3492-a71d-4848-97e1-900614df7aa7
+# ╠═7c5beee4-c4bb-40a5-ab3e-c2fb88e363cb
+# ╟─7204b07c-7ad3-4384-b41c-f214e040d280
+# ╠═10454510-fcff-46d6-8e28-7800cc0bfd4d
+# ╟─e4d731eb-e8a3-42d2-beae-54f053722503
+# ╠═74ecd539-73e9-4fdc-ab35-4a58278ef5bf
+# ╟─6dd4b8dd-7dd1-44b7-818a-f6461c9b619a
+# ╟─56a82bee-08fc-4c17-9437-e105b2a3cb1c
+# ╠═68280b04-6640-4e3c-bf78-951109f2aed0
+# ╟─a183e138-60be-49ad-8b67-f780b46e9bb2
+# ╠═f0f10827-7753-4f93-ba63-9b717e1e6ac9
