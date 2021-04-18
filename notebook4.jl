@@ -265,7 +265,7 @@ begin
 		result
 	end
 	
-	# Execução da sequência de operações
+	# Execução das operações em sequência
 	samples = table |> f1 |> f2 |> f3 |> f4
 end
 
@@ -336,7 +336,7 @@ begin
 	
 	g3(table) = uniquecoords(table)
 	
-	# Execução da sequência de operações
+	# Execução das operações em sequência
 	𝒮 = samples |> g1 |> g2 |> g3 |> GeoData
 end
 
@@ -360,7 +360,7 @@ O comprimento de correlação ou "range" positivo do variograma indica a depend�
 γₜ = fit(Variogram, γ, h -> exp(-h/20))
 
 # ╔═╡ 86694a19-f5c9-45a7-8f2b-ec63af5b9cdf
-range(γₜ)
+r = range(γₜ)
 
 # ╔═╡ 6d1b48f9-c7c6-461d-9908-f2a36de2694f
 plot(γ); plot!(γₜ, 0, 100)
@@ -736,7 +736,8 @@ O maior problema da validação cruzada clássica é que ela não foi desenvolvi
 
 Para ilustrar esse problema, tentaremos estimar o erro de qualquer um dos solvers (e.g. poitwise decision tree) utilizando o método CV. Precisamos definir o **número de folds** e a **função de perda**.
 
-O número de folds geralmente é escolhido em função da quantidade de dados no domínio de origem e recurso computacional disponível. Como existem muitos exemplos (>300k) nos poços `ONSHORE`, podemos escolher valores altos de $k$ sem termos que nos preocupar com a **distribuição dos folds que precisa coincidir com a distribuição original**. Por outro lado, valores muito maiores que $k=20$ são computacionalmente inviáveis:
+##### Número de folds $k$
+O número de folds geralmente é escolhido em função da quantidade de dados no domínio de origem e do recurso computacional disponível. Como existem muitos exemplos (>300k) nos poços `ONSHORE`, podemos escolher valores de $k$ em função do custo computacional. Valores muito maiores que $k=20$ são desnecessariamente caros computacionalmente:
 """
 
 # ╔═╡ 7c5beee4-c4bb-40a5-ab3e-c2fb88e363cb
@@ -744,7 +745,8 @@ k = 20
 
 # ╔═╡ 7204b07c-7ad3-4384-b41c-f214e040d280
 md"""
-Em seguida escolhemos uma função de perda do pacote [LossFunctions.jl](https://github.com/JuliaML/LossFunctions.jl). Neste caso de classificação binária podemos escolher a função `MissclassLoss()` que assume o valor `1` quando o exemplo é classificado incorretamente pelo modelo e `0` quando a classificação é correta:
+##### Função de perda $\mathcal{L}$
+Uma função de perda pode ser escolhida do pacote [LossFunctions.jl](https://github.com/JuliaML/LossFunctions.jl). Neste caso de classificação binária podemos escolher a função `MissclassLoss()` que assume o valor `1` quando o exemplo é classificado incorretamente pelo modelo e `0` quando a classificação é correta:
 """
 
 # ╔═╡ 10454510-fcff-46d6-8e28-7800cc0bfd4d
@@ -752,7 +754,7 @@ Em seguida escolhemos uma função de perda do pacote [LossFunctions.jl](https:/
 
 # ╔═╡ e4d731eb-e8a3-42d2-beae-54f053722503
 md"""
-Criamos o método de validação CV especificando o número de folds e a função de perda para cada variáveis de saída do problema, neste caso apenas a variável `FORMATION`:
+Por fim, criamos o método de validação CV especificando o número de folds e a função de perda para cada variável de saída do problema:
 """
 
 # ╔═╡ 74ecd539-73e9-4fdc-ab35-4a58278ef5bf
@@ -760,6 +762,8 @@ CV = CrossValidation(20, loss = Dict(:FORMATION => ℒ))
 
 # ╔═╡ 6dd4b8dd-7dd1-44b7-818a-f6461c9b619a
 md"""
+##### Estimativa CV
+
 Em uma linha de código, o GeoStats.jl se encarrega de particionar o domínio geoespacial, treinar os modelos em paralelo em cada fold, e combinar as estimativas de erro:
 """
 
@@ -768,8 +772,8 @@ md"""
 Solver index: $(@bind index Scrubbable(1:length(solvers), default=1))
 """
 
-# ╔═╡ 68280b04-6640-4e3c-bf78-951109f2aed0
-ϵ̂ = error(solvers[index], problem, CV)
+# ╔═╡ 7e1896be-7ae8-4b61-8f47-c147ee199bac
+error(solvers[index], problem, CV)
 
 # ╔═╡ a183e138-60be-49ad-8b67-f780b46e9bb2
 md"""
@@ -790,6 +794,30 @@ begin
 	# Taxa de misclassicação real
 	LossFunctions.value(ℒ, y, ŷ, AggMode.Mean())
 end
+
+# ╔═╡ 7a790985-6c7d-422d-bcb2-f5ba8caf0322
+md"""
+#### Validação cruzada em blocos (BCV)
+
+
+"""
+
+# ╔═╡ 551b332f-3601-472a-b44b-c9b74b199db4
+html"""
+
+<p align="center">
+
+    <img src="https://i.postimg.cc/mkRzF40s/bcv.png">
+
+</p>
+
+<p align="center">
+
+    <b>Figura 6</b>: Folds da validação cruzada em blocos.
+
+</p>
+
+"""
 
 # ╔═╡ Cell order:
 # ╟─32f6d41e-3248-4549-9546-53b34d5aa7c6
@@ -880,6 +908,8 @@ end
 # ╠═74ecd539-73e9-4fdc-ab35-4a58278ef5bf
 # ╟─6dd4b8dd-7dd1-44b7-818a-f6461c9b619a
 # ╟─56a82bee-08fc-4c17-9437-e105b2a3cb1c
-# ╠═68280b04-6640-4e3c-bf78-951109f2aed0
+# ╠═7e1896be-7ae8-4b61-8f47-c147ee199bac
 # ╟─a183e138-60be-49ad-8b67-f780b46e9bb2
 # ╠═f0f10827-7753-4f93-ba63-9b717e1e6ac9
+# ╟─7a790985-6c7d-422d-bcb2-f5ba8caf0322
+# ╟─551b332f-3601-472a-b44b-c9b74b199db4
