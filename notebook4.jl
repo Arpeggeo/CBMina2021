@@ -62,15 +62,15 @@ html"""
 md"""
 Ao final deste módulo você será capaz de:
 
-- Identificar os **elementos do aprendizado geoestatístico** na mineração
-- Definir o **problema de aprendizado** de forma clara com o GeoStats.jl
-- Resolver o problema com vários **modelos de aprendizado** disponíveis
+- Identificar os **elementos do aprendizado geoestatístico**
+- Definir o **problema de aprendizado** de forma clara
+- Resolver o problema com vários **modelos de aprendizado**
 
 ### Agenda
 
 1. Aprendizado **geo**estatístico
     - O que é aprendizado de máquina (a.k.a. ML)?
-    - A nova área de aprendizado **geo**estatístico
+    - A nova área de aprendizado **geo**estatístico (a.k.a. GL)
     - Os elementos do aprendizado **geo**estatístico
     - Solução do problema e validação cruzada
 2. Mais exemplos com o GeoStats.jl
@@ -91,7 +91,43 @@ Nessa área, buscam-se criar tecnologias capazes de "imitar" a inteligência hum
 1. A habilidade de **raciocinar sobre fatos**
 2. A habilidade **aprender com experiência**
 
-A habilidade de **raciocínio** é o que nos permite gerar conclusões sobre fatos, segundo alguma lógica pré-estabelecida. Por exemplo, geocientistas são capazes de imaginar sistemas deposicionais na subsuperfície a quilômetros de profundidade utilizando regras de probabilidade em cima de conhecimento pré-estabelecido na literatura. [Hoffimann et al 2021. Probabilistic Knowledge-based Characterization of Conceptual Geological Models](https://www.sciencedirect.com/science/article/pii/S2590197421000033).
+##### Raciocínio
+
+A habilidade de **raciocínio** é o que nos permite gerar conclusões sobre fatos, segundo alguma lógica pré-estabelecida. Essa habilidade pode ser entendida informalmente como um sistema **dedutivo** da forma:
+
+$\text{premissa}_1 + \text{premissa}_2 + \cdots + \text{premissa}_n \longrightarrow \text{conclusão}$
+
+onde um conjunto de **premissas** sobre o funcionamento do mundo leva a uma **conclusão** lógica. Por exemplo, consideremos a habilidade de um geólogo de deduzir que a região onde o fóssil da Figura 2 foi encontrado estava sob água há milhões de anos. O raciocínio se dá da seguinte forma:
+
+- *Premissa 1:* Trilobitas são seres marinhos
+- *Premissa 2:* Fóssil de trilobita encontrado na região
+- *Conclusão:* Região foi mar num passado distante
+"""
+
+# ╔═╡ 615e4ed2-f77f-4f38-a6c1-7f0c0f985d49
+html"""
+
+<p align="center">
+
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLZzO7ZIjwJzgTPHk6EootRI5usLZCcuDJ-f0Vdz6aYq2rPpNFpaFM8FBPgny42fGfYQQ&usqp=CAU">
+
+</p>
+
+<p align="center">
+
+    <b>Figura 1</b>: Fóssil de trilobita, um antrópode do paleozóico de ambientes marinhos.
+
+</p>
+
+"""
+
+# ╔═╡ b89139a7-57da-4d9d-a791-c06edd5ab99d
+md"""
+Devemos observar que:
+
+- Sistemas de raciocínio determinísticos como o exemplo acima tendem a não ser robustos em áreas da ciência que apresentam alta complexidade e interação entre as entidades envolvidas no raciocínio, especialmente quando esses sistemas são construídos por [seres humanos e seus vários traços de irracionalidade](https://en.wikipedia.org/wiki/Predictably_Irrational).
+
+- Sistemas de raciocínio probabilísticos, isto é, sistemas que utilizam de teorias de probabilidade para representar incertezas no raciocínio, tem sido mais bem sucedidos na indústria. Um exemplo deste tipo de sistema está descrito em [Hoffimann et al 2021. Probabilistic Knowledge-based Characterization of Conceptual Geological Models](https://www.sciencedirect.com/science/article/pii/S2590197421000033). Neste exemplo, um modelo conhecido como rede Bayesiana é utilizado para auxiliar geocientistas na identificação de cenários geológicos em um sistema petrolífero (Figura 2).
 """
 
 # ╔═╡ 8301bda7-e4a1-442e-bdd4-ad5c7c9e0b46
@@ -105,7 +141,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 1</b>: Modelo geológico conceitual e possíveis cenários geológicos para o sistema deposicional: Braided Rivers, Fluvial Delta, Continental Slope, Inner Shelf.
+    <b>Figura 2</b>: Modelo geológico conceitual e possíveis cenários geológicos para o sistema deposicional: Braided Rivers, Fluvial Delta, Continental Slope, Inner Shelf.
 
 </p>
 
@@ -118,11 +154,13 @@ md"""
 
 # ╔═╡ a0b00451-7418-4d60-812f-5c2a9b32cd4d
 md"""
-A habilidade de **aprendizado**, por outro lado, é o que nos permite **gerar novas regras** baseadas em experiências presentes. É com essa habilidade que evoluimos o nosso entendimento de mundo e criamos novas conexões sobre o ambiente em que operamos.
+##### Aprendizado
 
-De forma mais precisa, podemos definir aprendizado em termos de experiência $E$, tarefa $T$ a ser executada e medida de performance $P$ nessa tarefa. Adotaremos a definição do [Mitchell 1997](http://www.cs.cmu.edu/~tom/mlbook.html):
+A habilidade de **aprendizado**, por outro lado, é o que nos permite **gerar novas regras** sobre o ambiente em que operamos baseado em experiências presentes. É com essa habilidade que evoluimos o nosso entendimento de mundo.
 
-**Definição (Aprendizado).** *Dizemos que um agente (e.g. programa de computador) aprende com a experiência $E$ em relacão à tarefa $T$ e à medida de performance $P$ se a performance, medida por $P$, melhora com a experiência $E$.*
+De forma mais precisa, podemos definir aprendizado em termos de experiência $\mathcal{E}$, tarefa $\mathcal{T}$ a ser executada e medida de performance $\mathcal{P}$ nessa tarefa. Adotaremos a definição do [Mitchell 1997](http://www.cs.cmu.edu/~tom/mlbook.html):
+
+**Definição (Aprendizado).** *Dizemos que um agente (e.g. programa de computador) aprende com a experiência $\mathcal{E}$ em relacão à tarefa $\mathcal{T}$ e à medida de performance $\mathcal{P}$ se a performance, medida por $\mathcal{P}$, melhora com a experiência $\mathcal{E}$.*
 
 Por exemplo, um programa de computador pode aprender a jogar xadrez jogando partidas contra si mesmo. A medida de performance pode ser o número de partidas ganhas em um série de 10 partidas, e nesse caso cada é uma experiência nova adquirida.
 
@@ -509,12 +547,12 @@ Podemos facilmente visualizar qualquer uma das soluções obtidas. Como o númer
 """
 
 # ╔═╡ b70f5ab7-9790-4daf-a881-d75c602aaa67
-sampleᵢ = sample(solutions[i], 10000, replace = false);
+solutionᵢ = sample(solutions[i], 10000, replace = false);
 
 # ╔═╡ 5ec99dcc-58b4-4290-8f05-884ef11e464d
-plot(sampleᵢ, marker = (:BrBG_3, 4), colorbar = false,
+plot(solutionᵢ, marker = (:BrBG_3, 4), colorbar = false,
 	 xlabel = "X", ylabel = "Y", zlabel = "Z",
-	 title = "PREVISÃO DE FORMAÇÃO\n(Urenui = Verde, Manganui = Laranja)")
+	 title = "PREVISÃO DE FORMAÇÃO\n(Manganui = Laranja, Urenui = Verde)")
 
 # ╔═╡ 78d9f9ba-1947-4bec-bc74-b895d084365e
 md"""
@@ -557,7 +595,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 2</b>: Ilustração da medida F1-score como combinação de precisão e recall.
+    <b>Figura 3</b>: Ilustração da medida F1-score como combinação de precisão e recall.
 
 </p>
 
@@ -608,6 +646,8 @@ md"""
 # ╟─4a3fb559-73dd-41e0-8a11-993e5bf286bf
 # ╟─f3ff120d-940c-40c9-b9f6-24d4a0b3aec1
 # ╟─1856e01b-2d55-448d-8bdf-e59825934193
+# ╟─615e4ed2-f77f-4f38-a6c1-7f0c0f985d49
+# ╟─b89139a7-57da-4d9d-a791-c06edd5ab99d
 # ╟─8301bda7-e4a1-442e-bdd4-ad5c7c9e0b46
 # ╟─301d2074-a2d7-44dc-aeb6-29e69ca5348f
 # ╟─a0b00451-7418-4d60-812f-5c2a9b32cd4d
