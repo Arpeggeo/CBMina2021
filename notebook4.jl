@@ -63,15 +63,15 @@ md"""
 Ao final deste módulo você será capaz de:
 
 - Identificar os **elementos do aprendizado geoestatístico**
-- Definir de forma clara o **problema de aprendizado na sua área**
-- Resolver o problema com vários **modelos de aprendizado** no GeoStats.jl
+- Definir de forma clara **problemas de aprendizado na sua área**
+- Resolver o problema com **modelos geoespaciais do GeoStats.jl**
 
 ### Agenda
 
-1. O que é aprendizado de máquina (a.k.a. ML)?
-2. A nova área de aprendizado geoestatístico
+1. O que é aprendizado de máquina?
+2. A nova área de **aprendizado geoestatístico**
 3. Os elementos do aprendizado geoestatístico
-4. Solução do problema (exemplo Nova Zelândia)
+4. Solução do problema (exemplo *Nova Zelândia*)
 5. Métodos de validação (seleção de modelos)
 """
 
@@ -79,12 +79,12 @@ Ao final deste módulo você será capaz de:
 md"""
 ### 1. O que é o aprendizado de máquina?
 
-Antes de podermos entender o problema de aprendizado **geo**estatístico, isto é, o problema de aprendizado com dados **geoespacias**, precisamos entender o problema mais simples de **aprendizado de máquina** introduzido na ciência da computação na área de **inteligência artificial**.
+Antes de podermos entender o problema de aprendizado **geo**estatístico, isto é, o problema de aprendizado com dados **geoespacias**, precisamos entender o problema genérico de **aprendizado de máquina** introduzido na ciência da computação na área de **inteligência artificial**.
 
 Nessa área, buscam-se criar tecnologias capazes de "imitar" a inteligência humana. Ao invés de tentarmos definir inteligência, vamos nos concentrar em duas habilidades que nós humanos exercermos todo dia:
 
-1. A habilidade de **raciocinar sobre fatos**
-2. A habilidade **aprender com experiência**
+- A habilidade de **raciocinar sobre fatos**
+- A habilidade **aprender com experiência**
 
 #### Raciocínio
 
@@ -92,7 +92,7 @@ A habilidade de **raciocínio** é o que nos permite gerar conclusões sobre fat
 
 $\text{premissa}_1 + \text{premissa}_2 + \cdots + \text{premissa}_n \longrightarrow \text{conclusão}$
 
-onde um conjunto de **premissas** sobre o funcionamento do mundo leva a uma **conclusão** lógica. Por exemplo, consideremos a habilidade de um geólogo de deduzir que a região onde o fóssil da Figura 2 foi encontrado estava sob água há milhões de anos. O raciocínio se dá da seguinte forma:
+onde um conjunto de **premissas** sobre o funcionamento do mundo leva a uma **conclusão** lógica. Como exemplo, podemos considerar a habilidade de um geólogo de deduzir condições marítimas ao ver o fóssil da Figura 2. O raciocínio se dá da seguinte forma:
 
 - *Premissa 1:* Trilobitas são seres marinhos
 - *Premissa 2:* Fóssil de trilobita encontrado na região
@@ -122,7 +122,7 @@ Devemos observar que:
 
 - Sistemas de raciocínio determinísticos como o exemplo acima tendem a não ser robustos em áreas da ciência que apresentam alta complexidade e interação entre as entidades envolvidas no raciocínio, especialmente quando esses sistemas são construídos por [seres humanos e seus vários traços de irracionalidade](https://en.wikipedia.org/wiki/Predictably_Irrational).
 
-- Sistemas de raciocínio probabilísticos, isto é, sistemas que utilizam de teorias de probabilidade para representar incertezas no raciocínio, tem sido mais bem sucedidos na indústria. Um exemplo deste tipo de sistema está descrito em [Hoffimann et al 2021. Probabilistic Knowledge-based Characterization of Conceptual Geological Models](https://www.sciencedirect.com/science/article/pii/S2590197421000033). Neste exemplo, um modelo conhecido como rede Bayesiana é utilizado para auxiliar geocientistas na identificação de cenários geológicos em um sistema petrolífero (Figura 2).
+- Sistemas de raciocínio probabilísticos, isto é, sistemas que utilizam de teorias de probabilidade para representar incertezas no raciocínio, tem sido mais bem sucedidos na indústria. Um exemplo deste tipo de sistema está descrito em [Hoffimann et al 2021. Probabilistic Knowledge-based Characterization of Conceptual Geological Models](https://www.sciencedirect.com/science/article/pii/S2590197421000033), onde um modelo conhecido como rede Bayesiana é utilizado para auxiliar geocientistas na identificação de cenários geológicos de um sistema petrolífero (Figura 2).
 """
 
 # ╔═╡ 8301bda7-e4a1-442e-bdd4-ad5c7c9e0b46
@@ -151,13 +151,13 @@ md"""
 md"""
 #### Aprendizado
 
-A habilidade de **aprendizado**, por outro lado, é o que nos permite **gerar novas regras** sobre o ambiente em que operamos baseado em experiências presentes. É com essa habilidade que evoluimos o nosso entendimento de mundo.
+A habilidade de **aprendizado**, por outro lado, é o que nos permite **gerar novas regras** sobre o ambiente em que operamos baseado em novas experiências vividas. É com essa habilidade que evoluimos o nosso entendimento de mundo.
 
 De forma mais precisa, podemos definir aprendizado em termos de experiência $\mathcal{E}$, tarefa $\mathcal{T}$ a ser executada e medida de performance $\mathcal{P}$ nessa tarefa. Adotaremos a definição do [Mitchell 1997](http://www.cs.cmu.edu/~tom/mlbook.html):
 
 **Definição (Aprendizado).** *Dizemos que um agente (e.g. programa de computador) aprende com a experiência $\mathcal{E}$ em relacão à tarefa $\mathcal{T}$ e à medida de performance $\mathcal{P}$ se a performance, medida por $\mathcal{P}$, melhora com a experiência $\mathcal{E}$.*
 
-Por exemplo, um programa de computador pode aprender a jogar xadrez jogando partidas contra si mesmo. A medida de performance pode ser o número de partidas ganhas em um série de 10 partidas, e nesse caso cada é uma experiência nova adquirida.
+Por exemplo, um programa de computador pode aprender a jogar xadrez jogando partidas contra si mesmo. A medida de performance pode ser o número de partidas ganhas em um série de 10 partidas, e nesse caso cada partida é uma experiência nova adquirida.
 
 Aqui estamos interessados no **aprendizado estatístico** que consiste de aprender novas regras utilizando grandes bases de dados como furos de sondagem, dados oriundos da geometalurgia, e imagens de satélite. Em particular, estamos interessados na aplicacão dessa teoria por meio de programas de computador, conhecida como **aprendizado de máquina** (em inglês "machine learning" ou "ML").
 
@@ -191,7 +191,7 @@ end
 
 # ╔═╡ 6f400014-4f12-42ec-8ee8-db181d82f656
 md"""
-Quanto mais complexa é a função $f$, mais exemplos são necessários para aprendê-la segundo alguma medida de performance (e.g. erro quadrático). Por exemplo, se o período de oscilação $T / 2\pi$ da função for baixo, mais densa terá que ser a amostragem do eixo $x$ para um aprendizado bem sucedido.
+Quanto mais complexa é a função $f$, mais exemplos são necessários para aprendê-la segundo alguma medida de performance (e.g. erro quadrático). Por exemplo, se o período de oscilação $T / 2\pi$ da função acima for baixo, mais densa terá que ser a amostragem do eixo $x$ para um aprendizado bem sucedido.
 
 Observamos que:
 
@@ -439,9 +439,9 @@ end
 
 # ╔═╡ 2c7442fa-5b8c-411d-b3f8-f0ed2ed00dc8
 md"""
-Para evitar viés no processo de aprendizado, nós balancearemos os dados utilizando uma simples técnica de **subamostragem**. Essa técnica é adequada para grandes conjuntos de dados, e reduz a presença da formação majoritária no treinamento de modelos estatísticos.
+Para evitar viés no processo de aprendizado, nós balancearemos os dados utilizando uma simples técnica de **subamostragem**. Essa técnica reduz a presença da formação majoritária no treinamento de modelos estatísticos, e é adequada para grandes conjuntos de dados.
 
-Ao aplicar a subamostragem obtemos um conjunto de dados balanceado com 50% dos exemplos na formação `Manganui` e 50% na formação `Urenui`:
+Ao aplicar a subamostragem nos poços `ONSHORE` e `OFFSHORE` obtemos um novo conjunto de dados balanceado com 50% dos exemplos na formação `Manganui` e 50% na formação `Urenui`:
 """
 
 # ╔═╡ a7b23e9e-b3f3-4a8b-a5a7-dae05fd73bf1
@@ -513,11 +513,11 @@ Com o problema de aprendizado geoestatístico bem definido, nós podemos investi
 
 Primeiro nós precisamos definir uma lista de modelos de aprendizado para resolver o problema. Estamos interessados em modelos:
 
-1. **Implementados em Julia** por terem uma maior performance computacional em grandes conjuntos de dados como os dados de New Zealand.
+1. **Implementados em Julia** por terem uma maior performance computacional.
 2. Adequados para a tarefa de **classificação de formação** definida no problema:
     - Modelos **supervisionados** (que aprendem de exemplos de entrada e saída)
     - Com **variável alvo binária** (que produzem previsões `Manganui` ou `Urenui`)
-3. Sob licença **MIT** por ser uma licença de código aberto flexível e ótima para qualquer tipo de projeto acadêmico ou industrial.
+3. Sob licença **MIT** por ser uma licença de código aberto permissível.
 
 Podemos encontrar esses modelos utilizando filtros na função `models`:
 """
@@ -556,9 +556,9 @@ solvers = [PointwiseLearn(ℳ) for ℳ in ℳs];
 md"""
 Essa estratégia simplesmente **ignora as coordenadas** dos exemplos e trata o dado geoespacial como uma **tabela comum**. Apesar de ser uma estratégia simplista, ela pode demandar bastante tempo do usuário final que fica responsável pelo pré- e pós-processamento dos dados em formatos tabulares.
 
-O GeoStats.jl **automatiza esse processo de conversão** e salva tempo do geocientista interessado em testar diferentes modelos ao invés de ficar manipulando formatos de dados. Em particular, o framework se encarrega de:
+O GeoStats.jl **automatiza esse processo de conversão** e salva tempo do geocientista interessado em testar diferentes modelos. Em particular, o framework se encarrega de:
 
-1. Treinar o modelo encapsulado na estratégia no domínio geoespacial de origem
+1. Treinar o modelo encapsulado no domínio geoespacial de origem
 2. Aplicar o modelo treinado no domínio geoespacial de destino
 
 onde os domínios geoespaciais podem ser **qualquer tipo de malha** do projeto [Meshes.jl](https://github.com/JuliaGeometry/Meshes.jl).
@@ -571,7 +571,7 @@ solutions = [solve(problem, solver) for solver in solvers]
 md"""
 #### Avaliação qualitativa
 
-Podemos facilmente visualizar qualquer uma das soluções obtidas. Como o número de amostras neste case é considerável, e não estamos utilizando o [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D, visualizaremos apenas um subconjunto da solucão i = $(@bind i Scrubbable(1:length(solvers), default=1)):
+Podemos facilmente visualizar qualquer uma das soluções obtidas. Como o número de amostras é considerável neste caso, e não estamos utilizando o [Makie.jl](https://github.com/JuliaPlots/Makie.jl) para visualizações 3D, visualizaremos apenas um subconjunto da solucão i = $(@bind i Scrubbable(1:length(solvers), default=1)):
 """
 
 # ╔═╡ b70f5ab7-9790-4daf-a881-d75c602aaa67
@@ -608,10 +608,10 @@ md"""
 Observamos que:
 
 - O **modelo mais simples** (logistic) apresenta os **melhores resultados** nos poços `OFFSHORE`.
-- Os **modelos mais complexos** (e.g. decision tree, knn) ficam **"superfitados"** aos poços `ONSHORE` pela quantidade de dados e diferença de distribuição `ONSHORE` e `OFFSHORE`.
-- Como esperado, o modelo constante apresenta o pior resultado.
+- Os **modelos mais complexos** (e.g. decision tree, knn) ficam **"superfitados"** aos poços `ONSHORE` devido principalmente a quantidade de dados e diferença de distribuição `ONSHORE` e `OFFSHORE`.
+- O modelo constante apresenta o pior resultado como esperado.
 
-Podemos sumarizar a informação da matriz de confusão com diferentes medidas, como por exemplo a medida $F_1$-score bastante utilizada na área médica, e calculada como
+Podemos sumarizar a informação da matriz de confusão com diferentes medidas, como por exemplo a medida $F_1$-score. A medida é bastante utilizada na área médica, e é calculada como
 
 $F_1 = \frac{tp}{tp + \frac{fp + fn}{2}}$
 
@@ -649,11 +649,9 @@ end
 
 # ╔═╡ 3e469cb8-745d-4f11-a6e7-814f29e1ccef
 md"""
-Dessa forma, se soubéssemos o valor real da formação nos poços `OFFSHORE` como neste caso sintético, nós poderíamos escolher o modelo logistic como o melhor modelo segundo o $F_1$-score. Na prática, porém, **não temos as anotações no domínio geoespacial de destino**, e precisamos de outras métodos para a seleção de modelos, como por exemplo métodos de **validação cruzada**.
+Dessa forma, se soubéssemos o valor real da formação nos poços `OFFSHORE`, nós poderíamos escolher o modelo logistic como o melhor modelo segundo o $F_1$-score. Na prática, porém, **não temos as anotações no domínio geoespacial de destino**, e precisamos de outras métodos para a seleção de modelos.
 
-Antes de investigarmos esses métodos em detalhe na próxima seção, observamos que existem mais de **50** medidas disponíveis para avaliar modelos quando as anotações são conhecidas no domínio geoespacial de destino.
-
-Da mesma forma que utilizamos a função `models` para descobrir os modelos disponíveis para o problema, podemos utilizar a função `measures` para descobrir as medidas válidas para a solução:
+Antes de investigarmos esses métodos em detalhe na próxima seção, observamos que existem mais de **50** medidas disponíveis para avaliar modelos de aprendizado quando as anotações são conhecidas em um caso sintético. Podemos utilizar a função `measures` para descobrir as medidas válidas para as soluções encontradas:
 """
 
 # ╔═╡ 5b54c097-07b2-4c26-85b1-c7716cd98145
@@ -663,6 +661,8 @@ measures(s -> s.target_scitype >: AbstractVector{<:Multiclass{2}} &&
 # ╔═╡ 7d6597a0-ae24-483a-a67f-dd6235acb25e
 md"""
 ### 5. Validação cruzada
+
+
 """
 
 # ╔═╡ e3156d02-0b6d-4720-b44f-4ab7f9a689bc
