@@ -790,7 +790,7 @@ Solver index: $(@bind index Scrubbable(1:length(solvers), default=1))
 """
 
 # ╔═╡ 7e1896be-7ae8-4b61-8f47-c147ee199bac
-error(solvers[index], problem, CV)
+cv_ϵ = error(solvers[index], problem, CV)
 
 # ╔═╡ a183e138-60be-49ad-8b67-f780b46e9bb2
 md"""
@@ -809,12 +809,14 @@ begin
 	ŷ  = Ω̂ₜ[:FORMATION]
 	
 	# Taxa de misclassicação real
-	LossFunctions.value(ℒ, y, ŷ, AggMode.Mean())
+	ϵ = LossFunctions.value(ℒ, y, ŷ, AggMode.Mean())
 end
 
 # ╔═╡ 7a790985-6c7d-422d-bcb2-f5ba8caf0322
 md"""
 #### Validação cruzada em blocos (BCV)
+
+A comunidade geoestatística propôs diferentes métodos de validação na tentativa de evitar o super otimismo do CV. Todos esses métodos estão implementados no GeoStats.jl, como por exemplo o método de validação em blocos:
 """
 
 # ╔═╡ 551b332f-3601-472a-b44b-c9b74b199db4
@@ -833,6 +835,72 @@ html"""
 </p>
 
 """
+
+# ╔═╡ fbe21d36-4b10-4fde-b7cf-794590bdac3f
+md"""
+No método BCV os folds são **blocos** de lado $r = (r_1,r_2,\ldots,r_d)$. Esses lados são escolhidos para eliminar os efeitos de correlação geoespacial. Na Figura 7, o bloco em vermelho é omitido, assim como uma região ao redor desse bloco denominada **"dead zone"**. O modelo é treinado com dados dos blocos restantes e avaliado no dados do bloco omitido.
+
+Diferentemente do méotodo CV onde especicamos o número de folds $k$ diretamente, no método BCV o número de folds é indiretamente calculado do tamanho dos blocos para o domínio em questão.
+
+##### Tamanho do bloco $(r_1,r_2,\ldots,r_d)$
+
+A escolha do tamanho do bloco é baseada no **comprimento de correlação** ou "range" dos variogramas das propriedades utilizadas no problema de aprendizado geoestatístico.
+
+Nós já estimamos do comprimento de correlação geoespacial para uma das propriedades (`GR`) na etapa de análise variográfica:
+"""
+
+# ╔═╡ 213d2c41-2e59-4e9e-a948-ab1854ae3cfa
+r
+
+# ╔═╡ ed49afa5-ab89-4d3c-b1b1-0579776bf05e
+md"""
+Precisamos escolher um tamanho do bloco superior ao maior comprimento de correlação geoespacial de todas as propriedades no problema, e grande o suficiente de forma que número de folds seja computacionalmente viável.
+
+Os poços `ONSHORE` estão distribuídos geoespacialmente dentro de uma caixa de tamanho:
+"""
+
+# ╔═╡ d473c279-70b0-4990-9f86-96f117a0ee18
+sides(boundingbox(Ωₛ))
+
+# ╔═╡ f03596bc-c6f5-4cd0-9ac4-21e8975bc3e3
+md"""
+Por conta da enorme extensão geoespacial, utilizaremos o seguinte tamanho de bloco:
+"""
+
+# ╔═╡ 3aec8cde-3697-43b3-bba6-88da0613d4c0
+rᵦ = (10000., 10000., 500.)
+
+# ╔═╡ fd91134a-733c-4ce3-a80a-6303b7f3b9ba
+BCV = BlockCrossValidation(rᵦ, loss = Dict(:FORMATION => ℒ))
+
+# ╔═╡ 1ad58522-9dad-4df5-89f7-04800e90cd06
+md"""
+##### Estimativa BCV
+
+Novamente utilizamos a função `error` para estimar o erro do solver no problema. Enfatizamos que a validação está sendo realizada com mais de 300k exemplos em um domínio geoespacial 3D:
+"""
+
+# ╔═╡ 70e42110-ed92-4216-bba1-142f45a7ffae
+bcv_ϵ = error(solvers[index], problem, BCV)
+
+# ╔═╡ eadc2c92-04d2-40d0-97e6-a564c457c2d2
+md"""
+Como é possível observar, a estimativa não sofre do mesmo super otimismo do CV:
+"""
+
+# ╔═╡ 42580d47-ca5a-4c38-acb9-135bd93f04fe
+DataFrame(REAL=[ϵ], CV=[cv_ϵ[:FORMATION]], BCV=[bcv_ϵ[:FORMATION]])
+
+# ╔═╡ 0c6043fb-45a7-4190-8f52-7a9656e30d7b
+md"""
+Porém, o método **BCV é enviesado** devido à seleção sistemática dos folds. Informalmente, quanto maior o tamanho dos blocos, maior a estimativa do erro:
+"""
+
+# ╔═╡ 63383652-1023-4ad7-a03a-0a5806c4c1a7
+error(solvers[index], problem, BlockCrossValidation(2 .* rᵦ))
+
+# ╔═╡ 70670205-763f-4845-8cdf-ce65a196fbec
+error(solvers[index], problem, BlockCrossValidation(4 .* rᵦ))
 
 # ╔═╡ c867fdb8-9b85-4413-8275-533e773fb466
 md"""
@@ -951,5 +1019,19 @@ html"""
 # ╠═f0f10827-7753-4f93-ba63-9b717e1e6ac9
 # ╟─7a790985-6c7d-422d-bcb2-f5ba8caf0322
 # ╟─551b332f-3601-472a-b44b-c9b74b199db4
+# ╟─fbe21d36-4b10-4fde-b7cf-794590bdac3f
+# ╠═213d2c41-2e59-4e9e-a948-ab1854ae3cfa
+# ╟─ed49afa5-ab89-4d3c-b1b1-0579776bf05e
+# ╠═d473c279-70b0-4990-9f86-96f117a0ee18
+# ╟─f03596bc-c6f5-4cd0-9ac4-21e8975bc3e3
+# ╠═3aec8cde-3697-43b3-bba6-88da0613d4c0
+# ╠═fd91134a-733c-4ce3-a80a-6303b7f3b9ba
+# ╟─1ad58522-9dad-4df5-89f7-04800e90cd06
+# ╠═70e42110-ed92-4216-bba1-142f45a7ffae
+# ╟─eadc2c92-04d2-40d0-97e6-a564c457c2d2
+# ╟─42580d47-ca5a-4c38-acb9-135bd93f04fe
+# ╟─0c6043fb-45a7-4190-8f52-7a9656e30d7b
+# ╠═63383652-1023-4ad7-a03a-0a5806c4c1a7
+# ╠═70670205-763f-4845-8cdf-ce65a196fbec
 # ╟─c867fdb8-9b85-4413-8275-533e773fb466
 # ╟─141524ec-9f9d-4950-9881-8b5ddcaa95f8
