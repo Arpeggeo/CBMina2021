@@ -220,6 +220,23 @@ Recentemente, nós formalizamos o problema de **aprendizado geoestatístico** (e
 Para ilustrar esses desafios, vamos considerar um conjunto de dados de poços de petróleo que construímos de fontes públicas da Nova Zelândia ([Carvalho et al. 2020](https://zenodo.org/record/3832955#.YHmR9EOYU3w)):
 """
 
+# ╔═╡ aeb7423b-73c4-4e6f-9b88-b99641211be0
+html"""
+
+<p align="center">
+
+    <img src="https://i.postimg.cc/qqQQfR2b/newzealand.png">
+
+</p>
+
+<p align="center">
+
+    <b>Figura 3</b>: Conjunto de dados de poços de petróleo na bacia Taranaki na Nova Zelândia.
+
+</p>
+
+"""
+
 # ╔═╡ b6b9f6db-5d69-496b-9862-bf7d6add901b
 table = CSV.File("data/taranaki/logs.csv") |> DataFrame
 
@@ -415,7 +432,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 3</b>: Domínio geoespacial de origem e de destino.
+    <b>Figura 4</b>: Domínio geoespacial de origem e de destino.
 
 </p>
 
@@ -650,7 +667,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 4</b>: Ilustração da medida F1-score como combinação de precisão e recall.
+    <b>Figura 5</b>: Ilustração da medida F1-score como combinação de precisão e recall.
 
 </p>
 
@@ -691,7 +708,7 @@ Dentre os vários métodos de seleção, os métodos de **validação cruzada** 
 2. Subconjuntos de dados em $\mathcal{D}_s$ podem apresentar a mesma distribuição dos dados originais.
 3. É possível treinar um modelo em um subdomínio $\mathcal{B}_s \subset \mathcal{D}_s$ e avaliar em $\mathcal{D}_s - \mathcal{B}_s$.
 
-A Figure 4 ilustra um processo de subdivisão do domínio de origem em subdomínios aleatórios marcados em cores distintas. Esse subdomínios são chamados de **folds**.
+A Figura 6 ilustra um processo de subdivisão do domínio de origem em subdomínios aleatórios marcados em cores distintas. Esse subdomínios são chamados de **folds**.
 """
 
 # ╔═╡ d10b3695-0f6d-406f-813d-17e76d47ba76
@@ -705,7 +722,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 5</b>: Folds aleatórios no domínio geoespacial de origem representados em diferentes cores.
+    <b>Figura 6</b>: Folds aleatórios no domínio geoespacial de origem representados em diferentes cores.
 
 </p>
 
@@ -811,7 +828,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 6</b>: Folds da validação cruzada em blocos.
+    <b>Figura 7</b>: Folds da validação cruzada em blocos.
 
 </p>
 
@@ -833,7 +850,7 @@ html"""
 
 <p align="center">
 
-    <b>Figura 7</b>: Folds da validação cruzada com razão de densidade.
+    <b>Figura 8</b>: Folds da validação cruzada com razão de densidade.
 
 </p>
 
@@ -858,6 +875,7 @@ html"""
 # ╟─6f400014-4f12-42ec-8ee8-db181d82f656
 # ╟─a280a283-59c3-4728-9110-b91d5ea63568
 # ╟─bfdbec36-069d-422d-8f88-fd97f8d85455
+# ╟─aeb7423b-73c4-4e6f-9b88-b99641211be0
 # ╠═b6b9f6db-5d69-496b-9862-bf7d6add901b
 # ╟─2702b5c2-b0b8-4926-aabb-9e1a34feb1d6
 # ╟─c2fbca00-a248-4f9e-9754-08fd47225bed
