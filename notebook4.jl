@@ -22,6 +22,7 @@ begin
 	using GeoStats, MLJ
 	using CSV, DataFrames
 	using LossFunctions
+	using DensityRatioEstimation
 	using Distributions
 	using PlutoUI
 	using Plots
@@ -904,7 +905,13 @@ error(solvers[index], problem, BlockCrossValidation(4 .* rᵦ))
 
 # ╔═╡ c867fdb8-9b85-4413-8275-533e773fb466
 md"""
-#### Validação cruzada com razão de densidade (BCV)
+#### Validação cruzada com razão de densidade (DRV)
+
+Por fim revisamos o método de validação com razão de densidade. Esse método foi proposto na literatura de **aprendizado sob transferência** (em inglês "transfer learning") para lidar com a diferença de distribuição entre domínio de origem e domínio de destino.
+
+Apesar de não ter sido desenvolvido para dados geoespaciais, o método apresenta bons resultados em geral, e é indicado como método padrão no aprendizado geoestatístico caso o usuário não saiba que método deve escolher.
+
+Por não tratar geoespaciais explicitamente, o método DRV também é **super otimista** em modelos de aprendizado de moderada a alta complexidade.
 """
 
 # ╔═╡ 141524ec-9f9d-4950-9881-8b5ddcaa95f8
@@ -922,6 +929,62 @@ html"""
 
 </p>
 
+"""
+
+# ╔═╡ 041c791b-41ca-445b-8b80-50a927eaf5fe
+md"""
+O método utiliza a razão de densidade de probabilidade das propriedades no domínio de destino e de origem para definir pesos para cada exemplo $j$ do domínio de origem:
+
+$w(x_j) = \frac{p_t(x_j)}{p_s(x_j)}$
+
+Dos três métodos de validação apresentados, esse é o único método que adota uma estretégia de pesagem não uniforme. Para estimar a razão de densidade o método utiliza uma função "kernel" com um **desvio padrão** $\sigma$ no espaço de propriedades e um estimador do pacote [DensityRatioEstimation.jl](https://github.com/JuliaEarth/DensityRatioEstimation.jl). Para mais detalhes técnicos, recomendamos a leitura do nosso artigo.
+
+##### Número de folds $k$
+
+Utilizaremos o mesmo número de folds utilizado pelo método CV para comparação dos resultados:
+"""
+
+# ╔═╡ 678e56f9-5afe-455a-8189-cab6d34f6836
+k
+
+# ╔═╡ 64149d61-c2ea-4b9f-9df7-cd8620436b08
+md"""
+##### Desvio $\sigma$
+
+Como normalizamos os dados para que as propriedades tenham um desvio padrão unitário $\sigma_o=1$, nós podemos utilizar um desvio $\sigma = 2\sigma_o = 2$ como parâmetro no método DRV. Utilizaremos o estimador `LSIF` para a razão de densidade:
+"""
+
+# ╔═╡ 0051d2a8-907c-4def-853d-c388807c392f
+σ = 2.0
+
+# ╔═╡ c2f28fd6-e33e-4e21-8a29-cb491a9a7481
+drv = DensityRatioValidation(k, estimator = LSIF(σ = σ))
+
+# ╔═╡ 236686c4-0566-4360-8c92-47768abc56d4
+md"""
+##### Estimativa DRV
+
+A estimativa do erro é obtida da mesma forma que com os métodos anteriores:
+"""
+
+# ╔═╡ 3cc83dc2-c94c-41cd-886a-b798d58dabea
+drv_ϵ = error(solvers[index], problem, drv)
+
+# ╔═╡ fe87e49e-ae13-4ba4-ab35-8f1b97a12f60
+md"""
+Podemos comparar as três estimativas de erro CV, BCV e DRV lado a lado e perceber que nenhuma dessas estimativas é satisfatória neste caso:
+"""
+
+# ╔═╡ 4a561e82-98ab-412a-8af1-7ef9acd903c6
+DataFrame(REAL=[ϵ], CV=[cv_ϵ[:FORMATION]], BCV=[bcv_ϵ[:FORMATION]], DRV=[drv_ϵ[:FORMATION]])
+
+# ╔═╡ 3b64c7e0-d6f6-453d-872c-a938dce64ab9
+md"""
+##### Resumo
+
+- Os métodos **CV** e **DRV** de validação sofrem de **super otimismo** por não levarem em consideração a correlação geoespacial das propriedades.
+- O método **BCV** sofre de **viés**, e nenhuma garantia teórica existe para que ele convirja para o erro real do modelo no domínio geoespacial de destino.
+- Estamos pesquisando novos **métodos de validação geoespaciais** para contornar esses desafios.
 """
 
 # ╔═╡ Cell order:
@@ -1035,3 +1098,13 @@ html"""
 # ╠═70670205-763f-4845-8cdf-ce65a196fbec
 # ╟─c867fdb8-9b85-4413-8275-533e773fb466
 # ╟─141524ec-9f9d-4950-9881-8b5ddcaa95f8
+# ╟─041c791b-41ca-445b-8b80-50a927eaf5fe
+# ╠═678e56f9-5afe-455a-8189-cab6d34f6836
+# ╟─64149d61-c2ea-4b9f-9df7-cd8620436b08
+# ╠═0051d2a8-907c-4def-853d-c388807c392f
+# ╠═c2f28fd6-e33e-4e21-8a29-cb491a9a7481
+# ╟─236686c4-0566-4360-8c92-47768abc56d4
+# ╠═3cc83dc2-c94c-41cd-886a-b798d58dabea
+# ╟─fe87e49e-ae13-4ba4-ab35-8f1b97a12f60
+# ╟─4a561e82-98ab-412a-8af1-7ef9acd903c6
+# ╟─3b64c7e0-d6f6-453d-872c-a938dce64ab9
