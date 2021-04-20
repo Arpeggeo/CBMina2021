@@ -45,7 +45,7 @@ Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](
 md"""
 ## Geociência de dados 🔥
 
-Neste módulo aprenderemos sobre esta nova área que está pegando fogo em geociências, a **geociência de dados**. Vamos aprender técnicas de manipulação de grandes bases de dados na mineração, assim como visualizações avançadas que podem ser customizadas para necessidades específicas de projetos.
+Neste módulo aprenderemos sobre esta nova área que está crescendo muito em geociências, a **geociência de dados**. Vamos aprender técnicas de manipulação de grandes bases de dados na mineração, assim como visualizações avançadas que podem ser customizadas para necessidades específicas de projetos.
 
 Ao final deste módulo, você será capaz de:
 
@@ -104,7 +104,7 @@ Também podemos utilizar símbolos matemáticos para as nossas variáveis, o que
 
 # ╔═╡ 800a6ddc-41fc-11eb-0909-dfd4d9e0179b
 md"""
-Podemos definir funções de várias formas bem simples, principalmente se comparamos com outras linguagens de programação populares:
+Podemos definir funções de várias formas bastante simples, principalmente se comparamos com outras linguagens de programação populares:
 """
 
 # ╔═╡ 800cc280-41fc-11eb-193e-f38e4102427c
@@ -161,7 +161,7 @@ namedtuple = (a = 1, b = 2)
 
 # ╔═╡ 803883ac-41fc-11eb-02ad-772e3cf848af
 md"""
-As coleções mais utilizadas m aplicações científicas são os vetores, matrizes, tensores, ou mais geralmente o que chamamos de `Array` em Julia.
+As coleções mais utilizadas em aplicações científicas são os vetores, matrizes, tensores, ou mais geralmente o que chamamos de `Array` em Julia.
 
 Arrays podem ser construídos com notação de lista, o que também é bastante conveniente:
 """
@@ -235,7 +235,7 @@ end
 
 # ╔═╡ 47e58082-70ac-4155-a900-54e6184e5d44
 md"""
-Isso é tudo que precisamos saber de programação básica em Julia para o restante minicurso. Para aprender mais sobre a linguagem, recomendamos a leitura do [manual oficial](https://docs.julialang.org/en/v1/manual/getting-started) e os fóruns de usuários como [Discourse](https://discourse.julialang.org) e [Zulip](https://julialang.zulipchat.com) para tirar dúvidas.
+Isso é tudo que precisamos saber de programação básica em Julia para o restante do minicurso. Para aprender mais sobre a linguagem, recomendamos a leitura do [manual oficial](https://docs.julialang.org/en/v1/manual/getting-started) e os fóruns de usuários como [Discourse](https://discourse.julialang.org) e [Zulip](https://julialang.zulipchat.com) para tirar dúvidas.
 """
 
 # ╔═╡ cce1ce0d-002f-4c5a-a753-e89b076f7041
