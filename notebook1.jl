@@ -122,7 +122,7 @@ begin
 					holeid = :HOLEID, x = :X, y = :Y, z = :Z)
 
 	# Importação da tabela Survey
-	survey = Survey(file = "data/survey.csv", invertdip = true,
+	survey = Survey(file = "data/survey.csv",
 					holeid = :HOLEID, at = :AT, azm = :AZM, dip = :DIP)
 
 	# Importação da tabela Assay
@@ -1046,7 +1046,7 @@ begin
 	# Converte coordenadas esféricas para Cartesianas
 	function sph2cart(azi, dip)
 		θ, ϕ = deg2rad(azi), deg2rad(dip)
-		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), sin(ϕ)
+		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), -sin(ϕ)
 	end
 	
 	# Converte coordenadas Cartesianas para esféricas
@@ -1118,7 +1118,7 @@ Agora que o variograma down hole foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 0585add6-1320-4a31-a318-0c40b7a444fa
 md"""
 
-Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.045, show_value=true))
+Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.03, show_value=true))
 
 Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.055, show_value=true))
 
@@ -1275,7 +1275,7 @@ colorpri, colorsec, colorter = cgrad(:Purples)[[9,7,5]];
 # ╔═╡ 97670210-2c91-4be7-a607-0da83cb16f44
 md"""
 
-Dip: $(@bind dip Slider(-90.0:22.5:0.0, default=-22.5, show_value=true))°
+Dip: $(@bind dip Slider(0.0:22.5:90.0, default=22.5, show_value=true))°
 
 Número de passos: $(@bind nlagspri Slider(5:1:20, default=10, show_value=true))
 
