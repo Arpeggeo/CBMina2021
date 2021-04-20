@@ -197,8 +197,8 @@ Quanto mais complexa é a função $f$, mais exemplos são necessários para apr
 
 Observamos que:
 
-- O eixo $x$ no aprendizado clássico representa uma **propriedade ou característica** do exemplo. Por exemplo, o módulo de Young ou o teor de um certo minério numa amostra.
-- O eixo $y$ representa uma **propriedade que se quer prever**, e que está relacionada de alguma forma com a propriedade $x$.
+- O eixo $x$ no aprendizado clássico representa uma **característica** do exemplo como o módulo de Young ou o teor de um certo minério numa amostra.
+- O eixo $y$ representa uma **característica que se quer prever**, e que está relacionada de alguma forma com a característica $x$.
 """
 
 # ╔═╡ a280a283-59c3-4728-9110-b91d5ea63568
@@ -212,7 +212,7 @@ md"""
 
 A **teoria de aprendizado clássica** utilizada no desenvolvimento de vários métodos de aprendizado de máquina **não é apropriada para lidar com dados geoespaciais**, principalmente porque a maior parte da literatura assume que:
 
-1. A distribuição das propriedades dos exemplos é fixa.
+1. A distribuição das características dos exemplos é fixa.
 2. Os exemplos  são independentes e identicamente distribuídos (I.I.D.).
 3. Os exemplos tem um suporte amostral (ou volume físico) comum.
 
@@ -250,7 +250,7 @@ e uma tarefa de aprendizado que consiste em prever o tipo de formação da rocha
 md"""
 #### Falsificação da hipótese 1
 
-Por simplicidade, eliminaremos as linhas da tabela com dados faltantes para os logs `GR`, `SP`, `DENS`, `NEUT` e `DTC`, e manteremos apenas as linhas com formações `Manganui` e `Urenui`.
+Queremos testar a hipótese (1) acima. Por simplicidade, eliminaremos as linhas da tabela com dados faltantes para os logs `GR`, `SP`, `DENS`, `NEUT` e `DTC`, e manteremos apenas as linhas com formações `Manganui` e `Urenui`.
 
 Para facilitar a interpretação dos dados e o posterior treinamento de modelos de aprendizado, nós normalizaremos os logs para que tenham média zero e desvio padrão unitário.
 """
@@ -313,14 +313,14 @@ end
 
 # ╔═╡ 4eadc228-7905-4328-ab01-f21339dd40aa
 md"""
-Da visualização concluimos que a hipótese (1) da teoria clássica não é válida neste caso. Isto é, a **distribuição das propriedades dos exemplos varia drasticamente** de um domínio geoespacial para outro, mesmo quando consideramos um subconjunto pequeno dos dados para duas formações localizadas em uma única bacia.
+Da visualização concluimos que a hipótese (1) da teoria clássica não é válida neste caso. Isto é, a **distribuição das características dos exemplos varia drasticamente** de um domínio geoespacial para outro, mesmo quando consideramos um subconjunto pequeno dos dados para duas formações localizadas em uma única bacia.
 """
 
 # ╔═╡ 3855a6d5-7b8a-487b-abad-288f9fc0152d
 md"""
 #### Falsificação da hipótese 2
 
-Vejamos agora a hipótese (2) da teoria clássica que assume que exemplos utilizados no treinamento de um modelo de aprendizado são amostrados de forma independente no espaço de propriedades.
+Vejamos agora a hipótese (2) da teoria clássica que assume que exemplos utilizados no treinamento de um modelo de aprendizado são amostrados de forma independente no espaço de características.
 
 Para avaliarmos essa hipótese, utilizaremos a **análise variográfica**. O GeoStats.jl possui estimadores de variogramas de alta performance que conseguem lidar com **centenas de milhares** de amostras em poucos segundos. [Hoffimann & Zadrozny. 2019. Efficient variography with partition variograms.](https://www.sciencedirect.com/science/article/pii/S0098300419302936).
 
@@ -334,7 +334,7 @@ schema(samples)
 
 # ╔═╡ 4b41d46e-ccf0-4232-8ce8-f9520a90efea
 md"""
-Nós iremos converter os tipos científicos `Textual` e `Count` das colunas `FORMATION` e `ONSHORE` pelo tipo `Multiclass` que representa uma propriedade categórica.
+Nós iremos converter os tipos científicos `Textual` e `Count` das colunas `FORMATION` e `ONSHORE` pelo tipo `Multiclass` que representa uma característica categórica.
 
 Por fim, nós iremos agregar todas as amostras com coordenadas repetidas em uma única amostra já que procedimentos de variografia requerem unicidade de coordenadas no conjunto de dados.
 
@@ -385,7 +385,7 @@ plot(γ); plot!(γₜ, 0, 100)
 
 # ╔═╡ 4c76d345-1d77-4f7f-9fbe-2d4707d70b29
 md"""
-A partir da análise variográfica, concluimos que a hipótese (2) também não é valida neste caso. As amostras são adjacentes no espaço físico, e estão mais próximas entre si do que o comprimento de correlação do processo. Ou seja, as **amostras estão associadas geoespacialmente**.
+A partir da análise variográfica, concluimos que a hipótese (2) também não é valida neste caso. As amostras são adjacentes no espaço físico, e estão mais próximas entre si do que o comprimento de correlação do processo. Ou seja, as **características estão associadas geoespacialmente**.
 """
 
 # ╔═╡ 06e19a21-5a4e-48c0-9030-9c6c43a3afdb
@@ -399,27 +399,13 @@ A hipótese (3) não é valida, pois como discutimos no primeiro dia do minicurs
 md"""
 #### Resumo
 
-- A **análise bivariada** indicou que as **distribuições das propriedades** em poços `ONSHORE` e `OFFSHORE` **são distintas**. Portanto, não é aconselhável treinar um modelo de aprendizado com anotações em poços `ONSHORE` e aplicá-lo diretamente a poços `OFFSHORE`, e vice versa.
+- A **análise bivariada** indicou que as **distribuições das características** em poços `ONSHORE` e `OFFSHORE` **são distintas**. Portanto, não é aconselhável treinar um modelo de aprendizado com anotações em poços `ONSHORE` e aplicá-lo diretamente a poços `OFFSHORE`, e vice versa.
 
 - A **análise variográfica** indicou a **existência de correlação linear** ao longo dos poços. Isso significa que modelos de aprendizado clássicos desenvolvidos assumindo independência de exemplos podem apresentar, e geralmente apresentam, deterioração de performance em aplicações práticas em geociências.
 
 Precisamos de uma nova definição de aprendizado com dados geoespaciais, que chamaremos de **aprendizado geoestatístico** ou GL:
 
 **Definição (GL).** *Dado um domínio geoespacial de origem $\mathcal{D}_s$ (ou "source") e uma tarefa de aprendizado $\mathcal{T}_s$, e um domínio de destino $\mathcal{D}_t$ (ou "target") e uma tarefa de aprendizado $\mathcal{T}_t$. O aprendizado geoestatístico consiste em aprender a tarefa $\mathcal{T}_t$ no domínio $\mathcal{D}_t$ utilizando o conhecimento adquirido no aprendizado da tarefa $\mathcal{T}_s$ no domínio $\mathcal{D}_s$. Assumindo que as propriedades em $\mathcal{D}_s$ e $\mathcal{D}_t$ são uma única realização dos processos envolvidos.*
-"""
-
-# ╔═╡ 0e168bfe-902b-4732-8ecb-a9a75b330bbb
-md"""
-### 3. Elementos do aprendizado geoestatístico
-
-Para esclarecer a definição de GL, continuaremos explorando os dados da Nova Zelândia.
-
-#### Domínio geoespacial
-
-O primeiro elemento da definição é o **domínio geoespacial** onde os dados estão georreferenciados:
-
-- O **domínio de origem** $\mathcal{D}_s$ representa as trajetórias dos poços `ONSHORE`. Nesse domínio estão disponíveis os logs, assim como as anotações do tipo de formação feitas por especialistas.
-- O **domínio de destino** $\mathcal{D}_t$ representa as trajetórias dos poços `OFFSHORE`. Nesse domínio estão disponíveis apenas os logs que serão utilizados pelo modelo de aprendizao para previsão do tipo de formação.
 """
 
 # ╔═╡ bfbb10f9-364f-441a-872a-96753c3d2231
@@ -437,6 +423,20 @@ html"""
 
 </p>
 
+"""
+
+# ╔═╡ 0e168bfe-902b-4732-8ecb-a9a75b330bbb
+md"""
+### 3. Elementos do aprendizado geoestatístico
+
+Para esclarecer a definição de GL, continuaremos explorando os dados da Nova Zelândia.
+
+#### Domínio geoespacial
+
+O primeiro elemento da definição é o **domínio geoespacial** onde os dados estão georreferenciados:
+
+- O **domínio de origem** $\mathcal{D}_s$ representa as trajetórias dos poços `ONSHORE`. Nesse domínio estão disponíveis os logs, assim como as anotações do tipo de formação feitas por especialistas.
+- O **domínio de destino** $\mathcal{D}_t$ representa as trajetórias dos poços `OFFSHORE`. Nesse domínio estão disponíveis apenas os logs que serão utilizados pelo modelo de aprendizao para previsão do tipo de formação.
 """
 
 # ╔═╡ 89e8f272-8812-4e1e-8ab6-1cb7700c0fde
@@ -475,6 +475,12 @@ end
 
 # ╔═╡ 340c939a-2a9b-475d-91ef-62effb2a8da3
 𝒮ₛ, 𝒮ₜ = onandoff(𝒮)
+
+# ╔═╡ 3525d02a-e046-407c-ad77-b2b3ddccf8f9
+𝒟ₛ = domain(𝒮ₛ)
+
+# ╔═╡ c6051522-993f-4a9b-a41c-d83a19b7c947
+𝒟ₜ = domain(𝒮ₜ)
 
 # ╔═╡ 2c7442fa-5b8c-411d-b3f8-f0ed2ed00dc8
 md"""
@@ -845,9 +851,9 @@ Diferentemente do méotodo CV onde especicamos o número de folds $k$ diretament
 
 ##### Tamanho do bloco $(r_1,r_2,\ldots,r_d)$
 
-A escolha do tamanho do bloco é baseada no **comprimento de correlação** ou "range" dos variogramas das propriedades utilizadas no problema de aprendizado geoestatístico.
+A escolha do tamanho do bloco é baseada no **comprimento de correlação** ou "range" dos variogramas das variáveis utilizadas no problema de aprendizado geoestatístico.
 
-Nós já estimamos do comprimento de correlação geoespacial para uma das propriedades (`GR`) na etapa de análise variográfica:
+Nós já estimamos o comprimento de correlação geoespacial para uma das variáveis (`GR`) na etapa de análise variográfica:
 """
 
 # ╔═╡ 213d2c41-2e59-4e9e-a948-ab1854ae3cfa
@@ -855,7 +861,7 @@ r
 
 # ╔═╡ ed49afa5-ab89-4d3c-b1b1-0579776bf05e
 md"""
-Precisamos escolher um tamanho do bloco superior ao maior comprimento de correlação geoespacial de todas as propriedades no problema, e grande o suficiente de forma que número de folds seja computacionalmente viável.
+Precisamos escolher um tamanho do bloco superior ao maior comprimento de correlação geoespacial de todas as variáveis no problema, e grande o suficiente de forma que número de folds seja computacionalmente viável.
 
 Os poços `ONSHORE` estão distribuídos geoespacialmente dentro de uma caixa de tamanho:
 """
@@ -911,7 +917,7 @@ Por fim revisamos o método de validação com razão de densidade. Esse método
 
 Apesar de não ter sido desenvolvido para dados geoespaciais, o método apresenta bons resultados em geral, e é indicado como método padrão no aprendizado geoestatístico caso o usuário não saiba que método deve escolher.
 
-Por não tratar geoespaciais explicitamente, o método DRV também é **super otimista** em modelos de aprendizado de moderada a alta complexidade.
+Por não tratar dados geoespaciais explicitamente, o método DRV também é **super otimista** em modelos de aprendizado de elevada complexidade de representação.
 """
 
 # ╔═╡ 141524ec-9f9d-4950-9881-8b5ddcaa95f8
@@ -933,11 +939,11 @@ html"""
 
 # ╔═╡ 041c791b-41ca-445b-8b80-50a927eaf5fe
 md"""
-O método utiliza a razão de densidade de probabilidade das propriedades no domínio de destino e de origem para definir pesos para cada exemplo $j$ do domínio de origem:
+O método utiliza a razão de densidade de probabilidade das características no domínio de destino e de origem para definir pesos para cada exemplo $j$ do domínio de origem:
 
 $w(x_j) = \frac{p_t(x_j)}{p_s(x_j)}$
 
-Dos três métodos de validação apresentados, esse é o único método que adota uma estretégia de pesagem não uniforme. Para estimar a razão de densidade o método utiliza uma função "kernel" com um **desvio padrão** $\sigma$ no espaço de propriedades e um estimador do pacote [DensityRatioEstimation.jl](https://github.com/JuliaEarth/DensityRatioEstimation.jl). Para mais detalhes técnicos, recomendamos a leitura do nosso artigo.
+Dos três métodos de validação apresentados, esse é o único método que adota uma estretégia de **pesagem não uniforme**. Para estimar a razão de densidade o método utiliza uma função "kernel" com um **desvio padrão** $\sigma$ no espaço de características e um estimador do [DensityRatioEstimation.jl](https://github.com/JuliaEarth/DensityRatioEstimation.jl). Para mais detalhes técnicos, recomendamos a leitura do nosso artigo.
 
 ##### Número de folds $k$
 
@@ -951,7 +957,7 @@ k
 md"""
 ##### Desvio $\sigma$
 
-Como normalizamos os dados para que as propriedades tenham um desvio padrão unitário $\sigma_o=1$, nós podemos utilizar um desvio $\sigma = 2\sigma_o = 2$ como parâmetro no método DRV. Utilizaremos o estimador `LSIF` para a razão de densidade:
+Como normalizamos os dados para que as propriedades tenham um desvio padrão unitário $\sigma_o=1$, nós podemos utilizar um desvio $\sigma = 2\sigma_o = 2$ como parâmetro no método DRV para ter garantia que o "kernel" envolve as amostras vizinhas. Utilizaremos o estimador `LSIF` para a razão de densidade:
 """
 
 # ╔═╡ 0051d2a8-907c-4def-853d-c388807c392f
@@ -972,11 +978,16 @@ drv_ϵ = error(solvers[index], problem, drv)
 
 # ╔═╡ fe87e49e-ae13-4ba4-ab35-8f1b97a12f60
 md"""
-Podemos comparar as três estimativas de erro CV, BCV e DRV lado a lado e perceber que nenhuma dessas estimativas é satisfatória neste caso:
+Podemos comparar as três estimativas de erro CV, BCV e DRV lado a lado e perceber que nenhuma dessas estimativas é satisfatória na previsão do erro real:
 """
 
 # ╔═╡ 4a561e82-98ab-412a-8af1-7ef9acd903c6
 DataFrame(REAL=[ϵ], CV=[cv_ϵ[:FORMATION]], BCV=[bcv_ϵ[:FORMATION]], DRV=[drv_ϵ[:FORMATION]])
+
+# ╔═╡ 388701c4-c4fc-40d2-a3cf-cc0333b6df02
+md"""
+Esse exemplo serve para enfatizar que o **aprendizado geoestatístico tem muitas questões interessantes em aberto**, e para motivar profissionais e pesquisadores interessados na área a participarem do desenvolvimento da teoria e implementação no GeoStats.jl.
+"""
 
 # ╔═╡ 3b64c7e0-d6f6-453d-872c-a938dce64ab9
 md"""
@@ -993,7 +1004,7 @@ md"""
 
 Parabéns mais uma vez por esta conquista!👏🏻 Entendemos que algumas partes do material talvez não tenham sido muito fáceis de entender, mas você chegou até o fim! 🎉🎊
 
-Terá todo o tempo agora para rever o material com calma.
+Agora você terá todo o tempo que precisar para rever o material com calma.
 
 ![fireworks](https://media.giphy.com/media/nbJUuYFI6s0w0/giphy.gif)
 
@@ -1006,8 +1017,8 @@ Terá todo o tempo agora para rever o material com calma.
 
 Agradecemos se puder:
 
-1. **Compartilhar a experiência**
-2. **Dar uma estrela no projeto** ⭐️
+1. **Compartilhar a experiência** nas redes sociais
+2. **Dar uma estrela no projeto** no GitHub ⭐️
 
 Isso ajuda muito!
 
@@ -1017,15 +1028,15 @@ Isso ajuda muito!
 
 Tem um desafio específico e dados disponíveis? Entre em contato: [julio.hoffimann@impa.br](mailto:julio.hoffimann@impa.br)
 
+[![Profile](https://img.shields.io/badge/Website-purple.svg?style=for-the-badge&logo=google-chrome&logoColor=white)](https://juliohm.github.io)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-blue.svg?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/j%C3%BAlio-hoffimann-834936116)
+[![YouTube](https://img.shields.io/badge/YouTube-red.svg?style=for-the-badge&logo=youtube)](https://www.youtube.com/channel/UCiOnsyYAZM-voi5diu8lN9w)
+
 - Estamos fazendo **parcerias com mineradoras** para resolver os maiores desafios de geomodelagem na indústria com **matemática de ponta**.
 
 - E **parcerias com universidades** para treinar pesquisadores e alunos em uma ferramenta de **código aberto**, sem custos ou barreiras de licença de software.
 
-Desejamos sucesso,
-
-[![Profile](https://img.shields.io/badge/Website-purple.svg?style=for-the-badge&logo=google-chrome&logoColor=white)](https://juliohm.github.io)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-blue.svg?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/j%C3%BAlio-hoffimann-834936116)
-[![YouTube](https://img.shields.io/badge/YouTube-red.svg?style=for-the-badge&logo=youtube)](https://www.youtube.com/channel/UCiOnsyYAZM-voi5diu8lN9w)
+Desejamos muito sucesso.
 """
 
 
@@ -1071,8 +1082,8 @@ Desejamos sucesso,
 # ╟─4c76d345-1d77-4f7f-9fbe-2d4707d70b29
 # ╟─06e19a21-5a4e-48c0-9030-9c6c43a3afdb
 # ╟─e3c46f60-b32e-4911-971f-230c87507f37
-# ╟─0e168bfe-902b-4732-8ecb-a9a75b330bbb
 # ╟─bfbb10f9-364f-441a-872a-96753c3d2231
+# ╟─0e168bfe-902b-4732-8ecb-a9a75b330bbb
 # ╟─89e8f272-8812-4e1e-8ab6-1cb7700c0fde
 # ╠═8ee75575-d2f2-409f-9016-dac048fc6ff6
 # ╟─a21d65cb-d369-4e9b-a1a6-53b06b09dc22
@@ -1080,6 +1091,8 @@ Desejamos sucesso,
 # ╟─8712e1ec-0b84-4fc4-a44e-6f5a91180b8b
 # ╠═59c355a1-34d5-415b-9e29-afcab5103576
 # ╠═340c939a-2a9b-475d-91ef-62effb2a8da3
+# ╠═3525d02a-e046-407c-ad77-b2b3ddccf8f9
+# ╠═c6051522-993f-4a9b-a41c-d83a19b7c947
 # ╟─2c7442fa-5b8c-411d-b3f8-f0ed2ed00dc8
 # ╠═a7b23e9e-b3f3-4a8b-a5a7-dae05fd73bf1
 # ╠═777f4131-2cbb-4ba5-b786-d6175e3036a5
@@ -1149,5 +1162,6 @@ Desejamos sucesso,
 # ╠═3cc83dc2-c94c-41cd-886a-b798d58dabea
 # ╟─fe87e49e-ae13-4ba4-ab35-8f1b97a12f60
 # ╟─4a561e82-98ab-412a-8af1-7ef9acd903c6
+# ╟─388701c4-c4fc-40d2-a3cf-cc0333b6df02
 # ╟─3b64c7e0-d6f6-453d-872c-a938dce64ab9
 # ╟─f6850354-6daa-4ae9-a5ed-c44e09f8cd35
