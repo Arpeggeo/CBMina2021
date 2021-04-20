@@ -93,13 +93,16 @@ A função aceita um número n = $(@bind n Scrubbable(1:100, default=50)) de amo
 """
 
 # ╔═╡ e435eb7d-3f90-4a1a-a6c7-bc27bf4d0b64
-xs = rand(d1, n)
+xₛ = rand(d1, n)
 
 # ╔═╡ c469fefc-038b-435a-b3b7-f1dc94f8815d
 begin
-	plot(d1, fill = true, alpha = 0.5, label = "Distribuição 1D")
+	plot(d1, fill = true, alpha = 0.5,
+		 label = "Distribuição 1D")
 	vline!([mean(d1)], label = "Média")
-	scatter!([(x, 0) for x in xs], marker = :spike, color = :black, label = "Realizações")
+	scatter!([(x, 0) for x in xₛ],
+		     marker = :spike, color = :black,
+		     label = "Realizações")
 end
 
 # ╔═╡ 193188b1-7b41-42c6-84d8-62e4d87c7da1
@@ -243,10 +246,134 @@ A **principal diferença** entre os dois métodos **na prática** está no fato 
 # ╔═╡ 1b17b6c6-6001-4861-b8da-839cb561a92b
 md"""
 ### 2. Simulação com GeoStats.jl
+
+A literatura de simulação geoestatística é bastante rica, no entanto poucos softwares comerciais oferecem implementações desses métodos. O GeoStats.jl oferece vários métodos de simulação com excelente performance computacional.
+
+#### LUGS
+
+O solver `LUGS` é o solver baseado na decomposição LU da covariância, com detalhes adicionais para performance e condicionamento. É recomendado quando o número de blocos no modelo de blocos está em torno de alguns milhares de blocos como no exemplo abaixo.
+
+Parâmetros do variograma:
+
+range = $(@bind range Slider(1:25, default=10, show_value=true))
+
+sill = $(@bind sill Slider(0.5:0.1:1, default=0.7, show_value=true))
+
+nugget = $(@bind nugget Slider(0:0.05:0.2, default=0.1, show_value=true))
+
+model = $(@bind gamma Select(["Gaussian","Spherical","Exponential"]))
 """
 
-# ╔═╡ 017611ba-511c-4e30-a465-ecd95d106b05
+# ╔═╡ 81e0f6d5-9edd-4a22-b2e9-d53ee4949429
+begin
+	xs = rand(0.0:1.0:99.0, 100)
+	ys = rand(0.0:1.0:24.0, 100)
+	zs = randn(100)
+		
+	data = georef((X=zs,), collect(zip(xs,ys)))
+end;
 
+# ╔═╡ 230dcfb9-da92-4266-8363-0754c71b612f
+begin
+	model = Dict("Spherical"=>SphericalVariogram,
+		         "Gaussian"=>GaussianVariogram,
+		         "Exponential"=>ExponentialVariogram)
+	
+	g = model[gamma](sill=Float64(sill), range=Float64(range), nugget=Float64(nugget))
+	
+	gplot = plot(g, 0, 25, c=:black, ylim=(0,1),
+		         legend=:topright, size=(650,300))
+	vline!([range], c=:grey, ls=:dash, primary=false)
+	annotate!(range-2, 1, "range")
+	hline!([sill], c=:brown, ls=:dash, primary=false)
+	annotate!(23, sill+0.05, "sill")
+	if n > 0
+		hline!([nugget], c=:orange, ls=:dash, primary=false)
+		annotate!(23, n+0.05, "nugget")
+	end
+	gplot
+end
+
+# ╔═╡ 0ad94903-c4de-45d7-a025-39b5fb2f3723
+begin
+	P   = SimulationProblem(data, CartesianGrid(100,25), :X, 1)
+	
+	LU  = LUGS(:X => (variogram=g,))
+	
+	sol = solve(P, LU)
+	
+	plot(sol, clim=(-3,3), size=(700,200))
+	plot!(data, markersize=2, markershape=:square,
+		  markerstrokecolor=:white, markerstrokewidth=3)
+end
+
+# ╔═╡ ef7871ae-9476-4255-9957-44a619316a2c
+md"""
+#### FFTGS
+
+O solver `FFTGS` é baseado na transformada de Fourier e portanto só pode ser utilizado em domínios Cartesianos com amostragem regular. Ele é extremamente rápido podendo gerar modelos 3D com **centenas de milhões** de blocos em poucos segundos.
+"""
+
+# ╔═╡ eb1fa2e8-79e8-48cf-8d23-32e3491bfaab
+blocks = (1000,1000)
+
+# ╔═╡ 6c003049-d590-4425-a72b-ebaa2309d4d0
+problem = SimulationProblem(CartesianGrid(blocks...), :X=>Float64, 1)
+
+# ╔═╡ 7799b274-de86-4c73-afeb-cbab5ee1b15f
+fftgs = FFTGS(:X => (variogram = GaussianVariogram(range=30.),));
+
+# ╔═╡ 0d274d47-541f-4903-9cf0-1d784a81682a
+fftsol = solve(problem, fftgs)
+
+# ╔═╡ b7cd766e-0fd5-453b-bd3b-751371e51072
+plot(fftsol)
+
+# ╔═╡ 247bd77b-630f-4229-8d5b-e834cf10565a
+md"""
+#### SGS
+
+O solver `SGS` é baseado na simulação sequencial de blocos. É o solver mais popular na mineração por permitir elipsóides de busca, parâmetros de vizinhança, etc.
+
+>**Aviso**: Alguns detalhes de condicionamento numérico ainda estão sendo resolvidos no `SGS`. Simulações com variogramas Gaussianos podem apresentar artefatos indesejados.
+"""
+
+# ╔═╡ caa6ae71-3ab0-4369-84ec-9c98525d0104
+prob = SimulationProblem(CartesianGrid(500,500), :X=>Float64, 1)
+
+# ╔═╡ 273f4ed4-07c1-4825-8777-b4bdd7b29f39
+sgs = SGS(:X => (
+		variogram    = SphericalVariogram(range=30.),
+		neighborhood = Ellipsoid([10.,10.], [0.]),
+		path         = RandomPath()
+	)
+);
+
+# ╔═╡ 41dd3c9b-a717-41be-b403-728bb2f1b5ff
+sgssol = solve(prob, sgs)
+
+# ╔═╡ 76e910ce-ff67-47fc-b218-48293369ad73
+plot(sgssol)
+
+# ╔═╡ 6c98983f-3efd-40c5-a7ca-48f8bb3a241a
+md"""
+#### Outros solvers
+
+Além de simulação Gaussiana, o GeoStats oferece vários outros solvers bastante utilizados na área de óleo e gás como o [ImageQuilting.jl](https://github.com/JuliaEarth/ImageQuilting.jl) para simulação geostatística multi-ponto.
+"""
+
+# ╔═╡ 9ce06a3e-0c74-47de-9c4b-ec861b0af535
+md"""
+### Resumo
+
+Este módulo teve como principal objetivo **ilustrar as ferramentas de simulação disponíveis** no projeto. Observamos que:
+
+- Simulação Gaussiana é uma alternativa direta à Krigagem.
+- Vários solvers de simulação estão disponíveis no GeoStats.jl.
+- Referências bibliográficas se encontram disponíveis na documentação.
+
+No próximo módulo sobre **aprendizado geoestatístico** teremos mais tempo para entrar em detalhes dos métodos, e utilizaremos um caso prático para aprender sobre esta nova área de grande potencial tecnológico.
+"""
 
 # ╔═╡ Cell order:
 # ╟─3e0ccac6-3efd-11eb-2949-a9aa855356b2
@@ -280,4 +407,19 @@ md"""
 # ╟─b8ed44f2-24d1-4bd2-be6c-1c0371c95ffa
 # ╟─b00c2db6-b588-4652-bd7a-df2823583537
 # ╟─1b17b6c6-6001-4861-b8da-839cb561a92b
-# ╠═017611ba-511c-4e30-a465-ecd95d106b05
+# ╟─81e0f6d5-9edd-4a22-b2e9-d53ee4949429
+# ╟─230dcfb9-da92-4266-8363-0754c71b612f
+# ╟─0ad94903-c4de-45d7-a025-39b5fb2f3723
+# ╟─ef7871ae-9476-4255-9957-44a619316a2c
+# ╠═eb1fa2e8-79e8-48cf-8d23-32e3491bfaab
+# ╠═6c003049-d590-4425-a72b-ebaa2309d4d0
+# ╠═7799b274-de86-4c73-afeb-cbab5ee1b15f
+# ╠═0d274d47-541f-4903-9cf0-1d784a81682a
+# ╠═b7cd766e-0fd5-453b-bd3b-751371e51072
+# ╟─247bd77b-630f-4229-8d5b-e834cf10565a
+# ╠═caa6ae71-3ab0-4369-84ec-9c98525d0104
+# ╠═273f4ed4-07c1-4825-8777-b4bdd7b29f39
+# ╠═41dd3c9b-a717-41be-b403-728bb2f1b5ff
+# ╠═76e910ce-ff67-47fc-b218-48293369ad73
+# ╟─6c98983f-3efd-40c5-a7ca-48f8bb3a241a
+# ╟─9ce06a3e-0c74-47de-9c4b-ec861b0af535
