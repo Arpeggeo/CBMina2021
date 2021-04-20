@@ -48,7 +48,7 @@ Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](
 
 # ╔═╡ 3c79e7aa-b316-4c4b-b44e-e73312085c20
 md"""
-## Aprendizado geoestatístico
+## Aprendizado geoestatístico 🔥
 
 Neste módulo aprenderemos sobre esta nova área denominada **aprendizado geoestatístico** ([Hoffimann et al 2021](https://arxiv.org/abs/2102.08791)). Introduziremos os elementos do problema de aprendizado com **dados geoespaciais**, e veremos como a biblioteca [GeoStats.jl](https://github.com/JuliaEarth/GeoStats.jl) está na vanguarda desta tecnologia.
 
@@ -987,6 +987,48 @@ md"""
 - Estamos pesquisando novos **métodos de validação geoespaciais** para contornar esses desafios.
 """
 
+# ╔═╡ f6850354-6daa-4ae9-a5ed-c44e09f8cd35
+md"""
+### Concluimos o minicurso!
+
+Parabéns mais uma vez por esta conquista!👏🏻 Entendemos que algumas partes do material talvez não tenham sido muito fáceis de entender, mas você chegou até o fim! 🎉🎊
+
+Terá todo o tempo agora para rever o material com calma.
+
+![fireworks](https://media.giphy.com/media/nbJUuYFI6s0w0/giphy.gif)
+
+### Feedback
+
+- Você gostou do minicurso? O que achou do formato?
+- Aprendeu algo novo? Foi interessante?
+- Algo que podemos fazer melhor da próxima vez?
+- Vai continuar aprendendo **Julia** e **GeoStats.jl**? ❤️
+
+Agradecemos se puder:
+
+1. **Compartilhar a experiência**
+2. **Dar uma estrela no projeto** ⭐️
+
+Isso ajuda muito!
+
+[![stars](https://img.shields.io/github/stars/JuliaEarth/GeoStats.jl?style=social)](https://github.com/JuliaEarth/GeoStats.jl)
+
+### Parcerias
+
+Tem um desafio específico e dados disponíveis? Entre em contato: [julio.hoffimann@impa.br](mailto:julio.hoffimann@impa.br)
+
+- Estamos fazendo **parcerias com mineradoras** para resolver os maiores desafios de geomodelagem na indústria com **matemática de ponta**.
+
+- E **parcerias com universidades** para treinar pesquisadores e alunos em uma ferramenta de **código aberto**, sem custos ou barreiras de licença de software.
+
+Desejamos sucesso,
+
+[![Profile](https://img.shields.io/badge/Website-purple.svg?style=for-the-badge&logo=google-chrome&logoColor=white)](https://juliohm.github.io)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-blue.svg?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/j%C3%BAlio-hoffimann-834936116)
+[![YouTube](https://img.shields.io/badge/YouTube-red.svg?style=for-the-badge&logo=youtube)](https://www.youtube.com/channel/UCiOnsyYAZM-voi5diu8lN9w)
+"""
+
+
 # ╔═╡ Cell order:
 # ╟─32f6d41e-3248-4549-9546-53b34d5aa7c6
 # ╟─762a6e04-fcb7-4713-859d-fdbfe8ead1bc
@@ -1108,3 +1150,4 @@ md"""
 # ╟─fe87e49e-ae13-4ba4-ab35-8f1b97a12f60
 # ╟─4a561e82-98ab-412a-8af1-7ef9acd903c6
 # ╟─3b64c7e0-d6f6-453d-872c-a938dce64ab9
+# ╟─f6850354-6daa-4ae9-a5ed-c44e09f8cd35
