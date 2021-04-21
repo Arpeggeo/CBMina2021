@@ -1,20 +1,20 @@
 # GeoStats.jl @ CBMina 2021
 
-Instrutores: [Júlio Hoffimann](https://github.com/juliohm), [Franco Naghetini](https://github.com/fnaghetini)
+Instrutores: [Júlio Hoffimann](https://github.com/juliohm) & [Franco Naghetini](https://github.com/fnaghetini)
 
 # Agenda
 
 ## 26 de Abril (16:00hs - 19:30hs)
-- [30min]: Introdução ao minicurso
-- [30min]: Instalacao do software
+- [15min]: Introdução ao minicurso
+- [45min]: Instalação do software
 - [1hora]: Krigagem 3D de recursos
-- [1hora]: Geocência de dados
+- [1hora]: Geociência de dados
 
 Carga horária: 3 horas + 30 minutos discussão
 
 ## 27 de Abril (16:00hs - 19:30hs)
-- [30min]: Estimação vs. Simulação
-- [1hora]: Simulação 3D de recursos
+- [45min]: Estimação vs. Simulação
+- [15min]: Contribuindo tutoriais
 - [1hora]: Aprendizado geoestatístico
 - [30min]: Discussão e fechamento
 
@@ -53,6 +53,8 @@ de instalação de pacotes.
 
 Após a instalação, pressione <kbd>Backspace</kbd> para
 voltar ao modo de execução.
+
+3. Abra o notebook `install.jl` para finalizar a instalação.
 
 # Como executar os notebooks?
 
