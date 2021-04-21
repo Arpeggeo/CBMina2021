@@ -338,11 +338,11 @@ Neste formato, estamos criando novas colunas `col1`, `col2`, ..., `coln` a parti
 
 Para exemplificar o formato, vamos calcular o valor médio e desvio padrão de `Au` dentro de cada geologia `geo`. Para fazer isso, utilizaremos as funções `mean` e `std` da biblioteca padrão `Statistics`.
 
-Vamos criar duas novas colunas chamadas `μAu` e `σ²Au` após agruparmos as amostras por geologia:
+Vamos criar duas novas colunas chamadas `μAu` e `σAu` após agruparmos as amostras por geologia:
 """
 
 # ╔═╡ 62cfb9ee-35f0-46a8-af76-4d2c7a09661c
-samples |> @groupby(_.geo) |> @map({geo = key(_), μAu = mean(_.Au), σ²Au = std(_.Au)})
+samples |> @groupby(_.geo) |> @map({geo = key(_), μAu = mean(_.Au), σAu = std(_.Au)})
 
 # ╔═╡ 1e8bd0a3-3a4a-4681-a994-53d6185eca97
 md"""
@@ -366,7 +366,7 @@ end
 md"""
 ##### Exemplo mais avançado
 
-Suponha que estamos interessados na massa total de ouro `Au` que será minada de cada litologia `litho`. Vamos assumir que o volume de cada amostra é `1` unidade por simplicidade.
+Suponha que estamos interessados na massa total de ouro `Au` que será lavrada de cada litologia `litho`. Vamos assumir que o volume de cada amostra é `1` unidade por simplicidade.
 
 Podemos escrever uma query que:
 
@@ -390,7 +390,7 @@ Além de responder perguntas sobre os dados, e ajudar no cálculo de estatístic
 Diferentemente da ciência de dados tradicional, existem dois tipos de espaço de visualização na **geo**ciência de dados, são eles:
 
 1. Espaço geográfico
-2. Espaço de características
+2. Espaço de atributos
 
 Começaremos investigando o espaço geográfico através de visualizações das amostras em suas localizações no mundo físico. Utilizaremos o pacote [StatsPlots.jl](https://github.com/JuliaPlots/StatsPlots.jl) pela sua boa integração com o pacote Query.jl. O pacote introduz a operação `@df` como demonstrado a seguir:
 """
@@ -440,7 +440,7 @@ Visualize todas as localizações `X`, `Y`, `Z` com amostras tais que `Au > 0.5`
 
 # ╔═╡ 907a7f9b-b7da-421f-a2b8-91753c0d78ac
 md"""
-Além de gerar visualizações no espaço geográfico, podemos facilmente gerar visualizações no espaço de características (ou variáveis) das amostras.
+Além de gerar visualizações no espaço geográfico, podemos facilmente gerar visualizações no espaço de atributos (ou variáveis) das amostras.
 
 Por exemplo, podemos gerar uma visualização dos teores de `Au` versus `Ag` agrupados por `litho`:
 """
