@@ -122,7 +122,7 @@ begin
 					holeid = :HOLEID, x = :X, y = :Y, z = :Z)
 
 	# Importação da tabela Survey
-	survey = Survey(file = "data/survey.csv", invertdip = true,
+	survey = Survey(file = "data/survey.csv",
 					holeid = :HOLEID, at = :AT, azm = :AZM, dip = :DIP)
 
 	# Importação da tabela Assay
@@ -467,7 +467,7 @@ begin
 	# Compositagem das amostras para um suporte de 10 m
 	composites = composite(drillholes, interval = 10.0, mode = :nodiscard)
 
-	# Armazenando a tabela de furos compositados na variável "comps"
+	# Armazenando a tabela de furos compositados na variável "cp"
 	cp = composites.table
 
 	# Sumário estatístico da tabela de furos compositados
@@ -733,13 +733,13 @@ md"""
 
 Algumas conclusões obtidas para este banco de dados:
 
-- A média do Cu é igual a $(Cu_comp.X̄) %.
+- A média do Cu é igual a $(round(Cu_comp.X̄[1], digits=2)) %.
 
-- O coeficiente de variação do Cu é de $(Cu_comp.Cᵥ) %.
+- O coeficiente de variação do Cu é de $(round(Cu_comp.Cᵥ[1], digits=2)).
 
-- A princípio, os _low grades_ do depósito correspondem a amostras ≤ $(Cu_comp.P10) %.
+- A princípio, os _low grades_ do depósito correspondem a amostras ≤ $(round(Cu_comp.P10[1], digits=2)) %.
 
-- A princípio, os _high grades_ do depósito correspondem a amostras > $(Cu_comp.P90) %.
+- A princípio, os _high grades_ do depósito correspondem a amostras > $(round(Cu_comp.P90[1], digits=2)) %.
 
 - Como X̅ > P50, Skew > 0 e tem-se cauda alongada à direita, a distribuição da variável Cu é assimétrica positiva. Isso faz sentido, uma vez que o Cu é tipicamente um elemento menor.
 
@@ -779,7 +779,7 @@ Uma forma de mitigar esse viés amostral intrínseco à indústria da mineraçã
 md"""
 #### Georreferenciamento
 
-Antes de realizar a declusterização, é necessário **georreferenciar os furos** compositados.
+Antes de realizar a declusterização, é necessário **georreferenciar**  os furos compositados.
 
 No pacote [Geostats.jl](https://juliaearth.github.io/GeoStats.jl/stable), georreferenciar os dados consiste em informar quais atributos devem ser tratados como coordenadas geográficas e quais devem ser entendidos com variáveis.
 
@@ -1002,7 +1002,7 @@ Em seguida ilustramos o fluxo de trabalho para a obtenção do modelo de variogr
 md"""
 #### Variograma down hole
 
-Primeiramente, devemos calcular o **variograma experimental down hole**, com o intuito de se obter o **efeito pepita** e o valor da **variância espacial por estrutura**. Esses valores serão utilizados na modelagem dos demais variogramas experimentais.
+Primeiramente, devemos calcular o **variograma experimental down hole**, com o intuito de se obter o **efeito pepita** e o valor da **contribuição por estrutura**. Esses valores serão utilizados na modelagem dos demais variogramas experimentais.
 
 """
 
@@ -1046,7 +1046,7 @@ begin
 	# Converte coordenadas esféricas para Cartesianas
 	function sph2cart(azi, dip)
 		θ, ϕ = deg2rad(azi), deg2rad(dip)
-		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), sin(ϕ)
+		sin(θ)*cos(ϕ), cos(θ)*cos(ϕ), -sin(ϕ)
 	end
 	
 	# Converte coordenadas Cartesianas para esféricas
@@ -1076,7 +1076,7 @@ md"""
 # ╔═╡ 1465f010-c6a7-4e72-9842-4504c6dda0be
 md"""
 
-Número de passos: $(@bind nlagsdh Slider(5:1:30, default=12, show_value=true))
+Número de passos: $(@bind nlagsdh Slider(5:1:30, default=11, show_value=true))
 
 Largura da banda: $(@bind toldh Slider(10:5:50, default=45, show_value=true)) m
 
@@ -1118,15 +1118,15 @@ Agora que o variograma down hole foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 0585add6-1320-4a31-a318-0c40b7a444fa
 md"""
 
-Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.045, show_value=true))
+Efeito pepita: $(@bind cₒ Slider(0.00:0.005:0.06, default=0.025, show_value=true))
 
 Contribuição 1ª estrutura: $(@bind c₁ Slider(0.045:0.005:0.18, default=0.055, show_value=true))
 
-Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.055, show_value=true))
+Contribuição 2ª estrutura: $(@bind c₂ Slider(0.045:0.005:0.18, default=0.065, show_value=true))
 
-Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:140.0, default=80.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rdh₁ Slider(10.0:2.0:140.0, default=78.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:140.0, default=118.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rdh₂ Slider(10.0:2.0:140.0, default=110.0, show_value=true)) m
 
 """
 
@@ -1214,16 +1214,16 @@ end
 md"""
 ##### Modelagem do variograma azimute
 
-Agora que o variograma azimute foi calculado, podemos ajustá-lo com um modelo teórico conhecido, considerando os valores de efeito pepita e variância espacial obtidos na etapa anterior:
+Agora que o variograma azimute foi calculado, podemos ajustá-lo com um modelo teórico conhecido, considerando os valores de efeito pepita e contribuição obtidos na etapa anterior:
 
 """
 
 # ╔═╡ 78b45d90-c850-4a7e-96b8-535dd23bd1a7
 md"""
 
-Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:300.0, default=112.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind razi₁ Slider(10.0:2.0:300.0, default=54.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind razi₂ Slider(10.0:2.0:300.0, default=194.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind razi₂ Slider(10.0:2.0:300.0, default=174.0, show_value=true)) m
 
 """
 
@@ -1275,9 +1275,9 @@ colorpri, colorsec, colorter = cgrad(:Purples)[[9,7,5]];
 # ╔═╡ 97670210-2c91-4be7-a607-0da83cb16f44
 md"""
 
-Dip: $(@bind dip Slider(-90.0:22.5:0.0, default=-22.5, show_value=true))°
+Dip: $(@bind dip Slider(0.0:22.5:90.0, default=22.5, show_value=true))°
 
-Número de passos: $(@bind nlagspri Slider(5:1:20, default=10, show_value=true))
+Número de passos: $(@bind nlagspri Slider(5:1:20, default=8, show_value=true))
 
 Largura de banda: $(@bind tolpri Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1308,9 +1308,9 @@ Agora que o variograma primário foi calculado, podemos ajustá-lo com um modelo
 # ╔═╡ 92d11f3b-c8be-4701-8576-704b73d1b619
 md"""
 
-Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:300.0, default=134.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rpri₁ Slider(10.0:2.0:300.0, default=84.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind rpri₂ Slider(10.0:2.0:300.0, default=192.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rpri₂ Slider(10.0:2.0:300.0, default=190.0, show_value=true)) m
 
 """
 
@@ -1361,7 +1361,7 @@ md"""
 
 ##### Cálculo dos variogramas secundário e terciário
 
-Para o cálculo dos variogramas experimentais secundário e terciário, podemos utilizar os pares de direções ortogonais representados pelos pontos pretos da Figura 9. Devemos escolher duas direções para serem eleitas as **direções primária e secundária** do modelo de variograma:
+Para o cálculo dos variogramas experimentais secundário e terciário, devemos escolher duas direções para serem eleitas as **direções secundária e terciária** do modelo de variograma:
 
 """
 
@@ -1370,7 +1370,7 @@ md"""
 
 Ângulo de rotação: $(@bind θ Slider(range(0, stop=90-180/8, step=180/8), default=45, show_value=true))°
 
-Número de passos: $(@bind nlagssec Slider(5:1:20, default=12, show_value=true))
+Número de passos: $(@bind nlagssec Slider(5:1:20, default=11, show_value=true))
 
 Largura de banda: $(@bind tolsec Slider(10:10:100, default=70, show_value=true)) m
 
@@ -1419,9 +1419,9 @@ Agora que elegemos o variograma experimental representante do eixo secundário, 
 # ╔═╡ 922d81f3-0836-4b14-aaf2-83be903c8642
 md"""
 
-Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:200.0, default=88.0, show_value=true)) m
+Alcance 1ª estrutura: $(@bind rsec₁ Slider(10.0:2.0:200.0, default=60.0, show_value=true)) m
 
-Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:200.0, default=94.0, show_value=true)) m
+Alcance 2ª estrutura: $(@bind rsec₂ Slider(10.0:2.0:200.0, default=84.0, show_value=true)) m
 
 """
 
@@ -1460,9 +1460,9 @@ Fazemos o mesmo para o variograma terciário:
 # ╔═╡ dacfe446-3c19-430d-8f5f-f276a022791f
 md"""
 
-Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:200.0, default=66.0, show_value=true)) m
+Alcance 1ª Estrutura: $(@bind rter₁ Slider(10.0:2.0:200.0, default=58.0, show_value=true)) m
 
-Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:200.0, default=66.0, show_value=true)) m
+Alcance 2ª Estrutura: $(@bind rter₂ Slider(10.0:2.0:200.0, default=62.0, show_value=true)) m
 
 """
 
@@ -1514,7 +1514,7 @@ begin
 
     plot!(γsec, color = colorsec, lw = 2, label = "secundário")
 
-    plot!(γter, color = colorter, lw = 2, label = "terciário",
+    plot!(γter, 0, range(γpri)+10, color = colorter, lw = 2, label = "terciário",
 		  ylims = (0, σ²+0.05))
 	
 	hline!([σ²], color = :gray, ls = :dash, primary = false)
@@ -1531,11 +1531,11 @@ Com as informações acima, podemos utilizar uma convenção de rotação, e def
 
 Nesse sentido, utilizando a **convenção de rotação do GSLIB**, as rotações do modelo de variograma serão:
 
-| Rotação | Eixo |  Ângulo  |
-|:-------:|:----:|:--------:|
-|    1ª   |   Z  |  $azi °  |
-|    2ª   |   X  |  $dip °  |
-|    3ª   |   Y  |  $(-θ) ° |
+| Rotação | Eixo |   Ângulo   |
+|:-------:|:----:|:----------:|
+|    1ª   |   Z  |  $azi °    |
+|    2ª   |   X  |  $(-dip) ° |
+|    3ª   |   Y  |  $(-θ) °   |
 
 """
 
@@ -1543,9 +1543,9 @@ Nesse sentido, utilizando a **convenção de rotação do GSLIB**, as rotações
 begin
 	
 	# Elipsoides de anisotropia (θ seguindo regra da mão esquerda)
-	ellipsoid₁ = Ellipsoid([rpri₁, rsec₁, rter₁], [azi, dip, -θ], convention = GSLIB)
+	ellipsoid₁ = Ellipsoid([rpri₁, rsec₁, rter₁], [azi, -dip, -θ], convention = GSLIB)
 
-    ellipsoid₂ = Ellipsoid([rpri₂, rsec₂, rter₂], [azi, dip, -θ], convention = GSLIB)
+    ellipsoid₂ = Ellipsoid([rpri₂, rsec₂, rter₂], [azi, -dip, -θ], convention = GSLIB)
 
 	# Estruturas do variograma final
 	γₒ = NuggetEffect(nugget = Float64(cₒ))
@@ -1570,11 +1570,20 @@ Grande parte das estimativas realizadas na indústria são baseadas em estimador
 \hat{z}(x_o) = \sum_{i=1}^{n} w_i \cdot z(x_i) = w_1 \cdot z(x_1) + w_2 \cdot z(x_2) + \cdots + w_n \cdot z(x_n)
 ```
 
-Neste módulo, estimaremos os teores de Cu a partir dos estimadores lineares conhecidos como Krigagem Simples e Krigagem Ordinária.
+Neste módulo, estimaremos os teores de Cu a partir dos seguintes estimadores lineares:
+
+No método **Inverso da Distância** os pesos da combinação linear são calculados como o inverso da distância às amostras. Opcionalmente, as distâncias podem ser elevadas a uma potência, por exemplo o quadrado da distância.
 
 Na **Krigagem Simples (SK)**, a média populacional é assumida como conhecida e constante em todo o domínio de estimativa. Devemos portanto definir esse parâmetro como entrada desse estimador que, no nosso contexto, será a média declusterizada. Diferentemente da Krigagem Ordinária, não há condição de fechamento para os pesos atribuídos às amostras da vizinhança e, nesse sentido, uma parte do peso é atribuída à média especificada.
 
 Por outro lado, a **Krigagem Ordinária (OK)** não assume o conhecimento da média populacional. Nesse caso há condição de fechamento, em que o somatório dos pesos atribuídos às amostras da vizinhança deve resultar na unidade.
+
+Seguiremos os seguintes passos no **GeoStats.jl**:
+
+- Criação do modelo de blocos
+- Definição do problema de estimação
+- Definição do solver geoestatístico
+- Solução do problema de estimação
 
 """
 
@@ -1626,7 +1635,7 @@ plot(grid, camera = (ψ₁,ψ₂), xlabel = "X", ylabel = "Y", zlabel = "Z")
 # ╔═╡ a8adf478-620d-4744-aae5-99d0891fe6b0
 md"""
 
-##### Definição do problema
+##### Definição do problema de estimação
 
 Para definirmos o problema de estimação, devemos passar como parâmetros:
 
@@ -1642,7 +1651,7 @@ problem = EstimationProblem(samples, grid, :CU)
 # ╔═╡ 31cd3d10-a1e8-4ad8-958f-51de08d0fa54
 md"""
 
-##### Definição do solver
+##### Definição do solver geoestatístico
 
 Um **solver** nada mais é do que o estimador que utilizaremos para realizar a estimativa. No nosso contexto, criaremos três solvers:
 
@@ -1687,7 +1696,7 @@ end;
 # ╔═╡ 9b3fe534-78fa-48db-a101-e2a43f2478d6
 md"""
 
-##### Solução do problema
+##### Solução do problema de estimação
 
 Para gerar o modelo de teores de Cu, resolvemos o problema definido com qualquer um dos solvers. Como o notebook que estamos trabalhando reage a qualquer alteração dos parâmetros, nós adicionamos um checkbox para apenas executar os solvers sob demanda.
 

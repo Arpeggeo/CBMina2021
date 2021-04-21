@@ -107,7 +107,7 @@ end
 
 # ╔═╡ 193188b1-7b41-42c6-84d8-62e4d87c7da1
 md"""
-Vemos que podemos gerar várias amostras ou **realizações** da distribuição, e que cada amostra representa uma alternativa possível a variável que estamos modelando.
+Observamos que podemos gerar várias amostras ou **realizações** da distribuição, e que cada amostra representa uma alternativa possível a variável que estamos modelando.
 
 #### Simulação 2D
 
@@ -224,7 +224,7 @@ end
 
 # ╔═╡ b00c2db6-b588-4652-bd7a-df2823583537
 md"""
-Notamos que as **realizações são muito diferente da média**. Enquanto as realizações parecem capturar o variograma especificado, a média é um valor suavizado calculado de "infinitas" realizações.
+Notamos que as **realizações são muito diferentes da média**. Enquanto as realizações parecem capturar o variograma especificado, a média é um valor suavizado calculado de "infinitas" realizações.
 
 Portanto, a variável que está sendo modelada na mina com o auxílio de variogramas nunca irá se parecer visualmente com o resultado da Krigagem a menos que a densidade de furos seja muito alta.
 
@@ -233,12 +233,12 @@ A **Krigagem** é amplamente difundida por diversos motivos:
 1. Fornece uma estimativa estatisticamente "segura".
 2. Não assume nenhuma distribuição nos dados.
 2. Softwares comerciais oferecem essa opção há anos.
-3. Falta de treinamento na indústria.
+3. Falta de treinamento em métodos de simulação.
 
-As **simulação Gaussiana** tem algumas vantagens:
+A **simulação Gaussiana** tem algumas vantagens:
 
 1. Oferece estimativa de incerteza ponto a ponto.
-2. Reproduz a variável espacial visualmente.
+2. Reproduz visualmente a variável sendo modelada.
 
 A **principal diferença** entre os dois métodos **na prática** está no fato de que a simulação Gaussiana requer **pré- e pós-processamento dos dados** para que a distribuição se aproxime de uma distribuição Gaussiana.
 """
@@ -335,7 +335,7 @@ md"""
 
 O solver `SGS` é baseado na simulação sequencial de blocos. É o solver mais popular na mineração por permitir elipsóides de busca, parâmetros de vizinhança, etc.
 
->**Aviso**: Alguns detalhes de condicionamento numérico ainda estão sendo resolvidos no `SGS`. Simulações com variogramas Gaussianos podem apresentar artefatos indesejados.
+>**Aviso**: Algumas questões de mal condicionamento numérico ainda estão sendo resolvidos no `SGS`. Simulações com variogramas Gaussianos podem apresentar artefatos indesejados.
 """
 
 # ╔═╡ caa6ae71-3ab0-4369-84ec-9c98525d0104

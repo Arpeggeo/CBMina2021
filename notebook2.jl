@@ -45,7 +45,7 @@ Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](
 md"""
 ## Geociência de dados 🔥
 
-Neste módulo aprenderemos sobre esta nova área que está pegando fogo em geociências, a **geociência de dados**. Vamos aprender técnicas de manipulação de grandes bases de dados na mineração, assim como visualizações avançadas que podem ser customizadas para necessidades específicas de projetos.
+Neste módulo aprenderemos sobre esta nova área que está crescendo muito em geociências, a **geociência de dados**. Vamos aprender técnicas de manipulação de grandes bases de dados na mineração, assim como visualizações avançadas que podem ser customizadas para necessidades específicas de projetos.
 
 Ao final deste módulo, você será capaz de:
 
@@ -104,7 +104,7 @@ Também podemos utilizar símbolos matemáticos para as nossas variáveis, o que
 
 # ╔═╡ 800a6ddc-41fc-11eb-0909-dfd4d9e0179b
 md"""
-Podemos definir funções de várias formas bem simples, principalmente se comparamos com outras linguagens de programação populares:
+Podemos definir funções de várias formas bastante simples, principalmente se comparamos com outras linguagens de programação populares:
 """
 
 # ╔═╡ 800cc280-41fc-11eb-193e-f38e4102427c
@@ -161,7 +161,7 @@ namedtuple = (a = 1, b = 2)
 
 # ╔═╡ 803883ac-41fc-11eb-02ad-772e3cf848af
 md"""
-As coleções mais utilizadas m aplicações científicas são os vetores, matrizes, tensores, ou mais geralmente o que chamamos de `Array` em Julia.
+As coleções mais utilizadas em aplicações científicas são os vetores, matrizes, tensores, ou mais geralmente o que chamamos de `Array` em Julia.
 
 Arrays podem ser construídos com notação de lista, o que também é bastante conveniente:
 """
@@ -235,7 +235,7 @@ end
 
 # ╔═╡ 47e58082-70ac-4155-a900-54e6184e5d44
 md"""
-Isso é tudo que precisamos saber de programação básica em Julia para o restante minicurso. Para aprender mais sobre a linguagem, recomendamos a leitura do [manual oficial](https://docs.julialang.org/en/v1/manual/getting-started) e os fóruns de usuários como [Discourse](https://discourse.julialang.org) e [Zulip](https://julialang.zulipchat.com) para tirar dúvidas.
+Isso é tudo que precisamos saber de programação básica em Julia para o restante do minicurso. Para aprender mais sobre a linguagem, recomendamos a leitura do [manual oficial](https://docs.julialang.org/en/v1/manual/getting-started) e os fóruns de usuários como [Discourse](https://discourse.julialang.org) e [Zulip](https://julialang.zulipchat.com) para tirar dúvidas.
 """
 
 # ╔═╡ cce1ce0d-002f-4c5a-a753-e89b076f7041
@@ -338,11 +338,11 @@ Neste formato, estamos criando novas colunas `col1`, `col2`, ..., `coln` a parti
 
 Para exemplificar o formato, vamos calcular o valor médio e desvio padrão de `Au` dentro de cada geologia `geo`. Para fazer isso, utilizaremos as funções `mean` e `std` da biblioteca padrão `Statistics`.
 
-Vamos criar duas novas colunas chamadas `μAu` e `σ²Au` após agruparmos as amostras por geologia:
+Vamos criar duas novas colunas chamadas `μAu` e `σAu` após agruparmos as amostras por geologia:
 """
 
 # ╔═╡ 62cfb9ee-35f0-46a8-af76-4d2c7a09661c
-samples |> @groupby(_.geo) |> @map({geo = key(_), μAu = mean(_.Au), σ²Au = std(_.Au)})
+samples |> @groupby(_.geo) |> @map({geo = key(_), μAu = mean(_.Au), σAu = std(_.Au)})
 
 # ╔═╡ 1e8bd0a3-3a4a-4681-a994-53d6185eca97
 md"""
@@ -366,7 +366,7 @@ end
 md"""
 ##### Exemplo mais avançado
 
-Suponha que estamos interessados na massa total de ouro `Au` que será minada de cada litologia `litho`. Vamos assumir que o volume de cada amostra é `1` unidade por simplicidade.
+Suponha que estamos interessados na massa total de ouro `Au` que será lavrada de cada litologia `litho`. Vamos assumir que o volume de cada amostra é `1` unidade por simplicidade.
 
 Podemos escrever uma query que:
 
@@ -390,7 +390,7 @@ Além de responder perguntas sobre os dados, e ajudar no cálculo de estatístic
 Diferentemente da ciência de dados tradicional, existem dois tipos de espaço de visualização na **geo**ciência de dados, são eles:
 
 1. Espaço geográfico
-2. Espaço de características
+2. Espaço de atributos
 
 Começaremos investigando o espaço geográfico através de visualizações das amostras em suas localizações no mundo físico. Utilizaremos o pacote [StatsPlots.jl](https://github.com/JuliaPlots/StatsPlots.jl) pela sua boa integração com o pacote Query.jl. O pacote introduz a operação `@df` como demonstrado a seguir:
 """
@@ -440,7 +440,7 @@ Visualize todas as localizações `X`, `Y`, `Z` com amostras tais que `Au > 0.5`
 
 # ╔═╡ 907a7f9b-b7da-421f-a2b8-91753c0d78ac
 md"""
-Além de gerar visualizações no espaço geográfico, podemos facilmente gerar visualizações no espaço de características (ou variáveis) das amostras.
+Além de gerar visualizações no espaço geográfico, podemos facilmente gerar visualizações no espaço de atributos (ou variáveis) das amostras.
 
 Por exemplo, podemos gerar uma visualização dos teores de `Au` versus `Ag` agrupados por `litho`:
 """
