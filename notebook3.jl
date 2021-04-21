@@ -19,11 +19,9 @@ begin
 	using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
 
 	# load packages used in this notebook
-	using GeoStats
-	using Distributions
-	using PlutoUI
-	using Plots
-	using StatsPlots
+	using CSV, DataFrames, Query
+	using Statistics, PlutoUI
+	using Plots, StatsPlots
 
 	# default plot settings
 	gr(format=:png)
@@ -45,381 +43,724 @@ Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](
 
 # ╔═╡ f2a77ee0-3ee1-11eb-1ce3-213bfda427c6
 md"""
-## Simulação de recursos
+## Geociência de dados 🔥
 
-Neste curto módulo, aprenderemos sobre **simulação geoestatística** de recursos. Um conceito simples, mas que é muitas vezes explicado de forma misteriosa na indústria.
+Neste módulo aprenderemos sobre esta nova área que está crescendo muito em geociências, a **geociência de dados**. Vamos aprender técnicas de manipulação de grandes bases de dados na mineração, assim como visualizações avançadas que podem ser customizadas para necessidades específicas de projetos.
 
-Como temos muito material para cobrir no último módulo do minicurso (**aprendizado geoestatístico**), não nos aprofundaremos nos diferentes métodos de simulação disponíveis no GeoStats.jl.
+Ao final deste módulo, você será capaz de:
 
-O objetivo deste módulo é ilustrar que após a variografia ter sido realizada, é trivial utilizar um solver de **simulação Gaussiana**.
+1. Responder perguntas não-triviais sobre dados de mineracão
+2. Calcular estatísticas de interesse, incluindo **estatísticas geoespaciais**
+2. Produzir **visualizações avançadas** com poucas linhas de código
 
-### Agenda
-
-1. Estimação vs. Simulação
-2. Simulação com GeoStats.jl
+A demanda por profissionais com essas habilidades só tende a crescer na indústria de mineração. Torcemos que este material seja útil na sua formação e gere inovação no seu ambiente de trabalho.
 """
 
-# ╔═╡ 902f52bf-db33-48c7-a626-453856f2da37
+# ╔═╡ 25ddd894-3f2c-11eb-327f-ad0031d2e7a7
 md"""
-### 1. Estimação vs. Simulação
+### Primeiros passos em Julia
 
-#### Simulação 1D
+Hoje vamos dar nossos primeiros passos em [Julia](https://julialang.org), uma linguagem de programação moderna com as características necessárias para geoestatística de **alta-performance** e geociência de dados.
 
-Para entendermos o conceito de simulação, vamos considerar uma distribuição 1D:
+A linguagem é *simples de usar* como Python e *rápida* como C. 🚀
 """
 
-# ╔═╡ 8cb117c9-b256-46a4-a109-f018096fa14d
-d1 = Normal(0, 1)
+# ╔═╡ 1623916e-41fc-11eb-19ce-91716fd0f8ea
+html"""
+<img src="https://github.com/JuliaLang/julia-logo-graphics/blob/master/images/animated-logo.gif?raw=true" height=200>
+"""
 
-# ╔═╡ a76c95eb-4949-4ffc-a58e-073abf63908d
-plot(d1, func=cdf, label = "CDF")
-
-# ╔═╡ 3e16501d-1c36-4115-9f52-fab7d243036b
+# ╔═╡ 7ff43936-41fc-11eb-3aea-dfaaba545497
 md"""
-Podemos amostrar **qualquer** distribuição 1D dada a sua funcão de probabilidade acumulada $CDF$ utilizando o método da função inversa:
+#### Variáveis e funções
 
-1. Primeiro nós geramos um número aleatório uniformemente no intervalo $u \sim Uniform(0,1)$.
-2. Em seguida avaliamos a função $CDF^{-1}(u)$ para obter uma amostra da distribuição.
-
-Esse método e outros métodos estão disponíveis na função `rand`:
+Para definir variáveis no notebook, utilizamos a sintaxe `variável = valor`. Existem vários tipos de valores possíveis para variáveis, como por exemplo:
 """
 
-# ╔═╡ 6a20c9f6-aa3a-4a87-a6dd-f727f19d8f94
-rand(d1)
+# ╔═╡ 7ff62bce-41fc-11eb-1f51-b9b2b9833df4
+name = "Vanessa"
 
-# ╔═╡ 30daa327-7154-4678-9dbc-e52438ce6c99
+# ╔═╡ 7ff7b6a6-41fc-11eb-0f01-c991a9782cf3
+country = "🇧🇷"
+
+# ╔═╡ 7fff28dc-41fc-11eb-328d-8f1499a16a5f
+age = 25
+
+# ╔═╡ 7fff8066-41fc-11eb-3392-654640e59658
 md"""
-A função aceita um número n = $(@bind n Scrubbable(1:100, default=50)) de amostras como segundo parâmetro, que podemos visualizar no eixo horizontal do plot junto ao valor médio da distribuição:
+Essas variáveis podem ser utilizadas em qualquer outra célula para customizar seu relatório:
 """
 
-# ╔═╡ e435eb7d-3f90-4a1a-a6c7-bc27bf4d0b64
-xₛ = rand(d1, n)
+# ╔═╡ 80034070-41fc-11eb-00d5-819ce259b506
+"Bem-vinda $name $(country)! Me disseram que você tem $age anos!"
 
-# ╔═╡ c469fefc-038b-435a-b3b7-f1dc94f8815d
-begin
-	plot(d1, fill = true, alpha = 0.5,
-		 label = "Distribuição 1D")
-	vline!([mean(d1)], label = "Média")
-	scatter!([(x, 0) for x in xₛ],
-		     marker = :spike, color = :black,
-		     label = "Realizações")
+# ╔═╡ 80066c5a-41fc-11eb-075a-cd61e67f3adc
+md"""
+Também podemos utilizar símbolos matemáticos para as nossas variáveis, o que é bastante conveniente. Abaixo criamos três variáveis de uma vez. O resultado da célula é uma tupla:
+"""
+
+# ╔═╡ 8006c7c2-41fc-11eb-2ec1-e582eaafc2ab
+α, β, τ = 1.5, 2.6, 0.5
+
+# ╔═╡ 800a6ddc-41fc-11eb-0909-dfd4d9e0179b
+md"""
+Podemos definir funções de várias formas bastante simples, principalmente se comparamos com outras linguagens de programação populares:
+"""
+
+# ╔═╡ 800cc280-41fc-11eb-193e-f38e4102427c
+f(α, β) = 2α + β
+
+# ╔═╡ 800f4fe6-41fc-11eb-387d-a5919143b34e
+function g(τ)
+	return τ^2
 end
 
-# ╔═╡ 193188b1-7b41-42c6-84d8-62e4d87c7da1
+# ╔═╡ 80128724-41fc-11eb-29db-d9a9611b203d
+h = α -> √α
+
+# ╔═╡ 8012f434-41fc-11eb-0cfe-2b01bf041b7d
+f(1, 2) + g(3) + h(4)
+
+# ╔═╡ 8016c1d6-41fc-11eb-2619-112f9669b0e7
 md"""
-Observamos que podemos gerar várias amostras ou **realizações** da distribuição, e que cada amostra representa uma alternativa possível a variável que estamos modelando.
+##### Exercício
 
-#### Simulação 2D
-
-Queremos agora amostrar uma distribuição 2D. Por simplicidade, vamos nos concentrar no caso **Gaussiano**. Neste caso, basta definir um vetor média $\boldsymbol{\mu}$ e uma matriz de covariância $\boldsymbol{\Sigma}$ para especificar a distribuição.
-
-Um método de simulação simples consiste em gerar a decomposição da matriz de covariância $\boldsymbol{\Sigma} = \boldsymbol{LU}$ em uma matriz triangular inferior $\boldsymbol{L}$ e uma matriz triangular superior $\boldsymbol{U}$, e realizar os seguintes passos:
-
-1. Primeiro geramos amostras 1D independentemente: $x_1 \sim N(0,1)$ e $x_2 \sim N(0,1)$.
-2. Em seguida geramos o vetor $\boldsymbol{x} = \boldsymbol{L}\begin{bmatrix}x_1 \\ x_2\end{bmatrix} + \boldsymbol{\mu}$ como uma amostra da distribuição 2D.
-
-Novamente, nós podemos utilizar a função `rand` e um número m = $(@bind m Scrubbable(1:100, default=50)) de amostras:
+Escreva uma função `volume` que retorna o volume da esfera com raio `r`:
 """
 
-# ╔═╡ b6c9ffe2-aa49-47a4-841f-667b8b16dc42
-μ = [0.0
-	 0.0]
+# ╔═╡ 801961ac-41fc-11eb-2b65-0b14581715e4
+volume(r) = missing
 
-# ╔═╡ 62344df1-0908-4775-a4d4-6adf594111f9
-Σ = [1.0 0.5
-	 0.5 1.0]
+# ╔═╡ 8020249c-41fc-11eb-1cef-ebe1819db6f4
+md"""
+#### Coleções
 
-# ╔═╡ a616edc2-5f47-490b-8ab9-616bfe7770b2
-d2 = MvNormal(μ, Σ)
+Vários tipos de coleções estão disponíveis para armazenar um conjunto de valores: tuplas, vetores, matrizes, tensores, dicionários, etc. A linguagem é bastante poderosa para processar essas coleções como veremos nas próximas seções deste módulo.
+"""
 
-# ╔═╡ 9a1f16a4-34db-4d6b-ab49-d024bb47a7c1
-X = rand(d2, m)
+# ╔═╡ 8026b4c4-41fc-11eb-36d0-41f86c453fb2
+tuple = (1, 2, 3)
 
-# ╔═╡ 417501f7-46df-44c7-8689-4675c07e6792
-begin
-	covellipse(μ, Σ, n_std=3, aspect_ratio = :equal, xlabel = "x₁", ylabel = "x₂", label = "Envelope 3σ")
-	scatter!([Tuple(μ)], label = "Média")
-	scatter!(Tuple.(eachcol(X)), marker = (:cross,:black), label = "Realizações")
+# ╔═╡ 80270ba4-41fc-11eb-3ced-cbf85a15f3b3
+vector = [1, 2, 3]
+
+# ╔═╡ 802b5e32-41fc-11eb-12d4-6b2dc82cf55a
+matrix = [
+	1 2
+	3 4
+]
+
+# ╔═╡ 802f779e-41fc-11eb-24e4-a3b5bcfc85c4
+tensor = ones(3, 3, 2)
+
+# ╔═╡ 802fe0bc-41fc-11eb-1c57-e942c94b5a71
+dict = Dict(:a => 1, :b => 2)
+
+# ╔═╡ 80348f0e-41fc-11eb-0efa-e7fb50fc7504
+namedtuple = (a = 1, b = 2)
+
+# ╔═╡ 803883ac-41fc-11eb-02ad-772e3cf848af
+md"""
+As coleções mais utilizadas em aplicações científicas são os vetores, matrizes, tensores, ou mais geralmente o que chamamos de `Array` em Julia.
+
+Arrays podem ser construídos com notação de lista, o que também é bastante conveniente:
+"""
+
+# ╔═╡ 803f7716-41fc-11eb-25df-d9da725053f5
+[i for i in 1:5]
+
+# ╔═╡ 803ffb28-41fc-11eb-1be4-27cb0f8e537e
+[i for i in 1:5 if isodd(i)]
+
+# ╔═╡ 804217b4-41fc-11eb-1908-fb5e506bdb06
+[i+j for i in 1:3, j in 1:4]
+
+# ╔═╡ 8046bee0-41fc-11eb-0464-bd19d7586aef
+[i+j for i in 1:3 for j in 1:4]
+
+# ╔═╡ 804b55f4-41fc-11eb-1c23-6b398276e6fe
+md"""
+##### Exercício
+
+Dado um ângulo `θ` em radianos, escreva uma função `rotation` que retorna a matriz de rotação 2D dada por $R(θ) = \begin{bmatrix}cos(θ) & -sin(θ)\\ sin(θ) & cos(θ)\end{bmatrix}$.
+"""
+
+# ╔═╡ 8050228c-41fc-11eb-00b2-a1fd938fe153
+function rotation(θ)
+	missing
 end
 
-# ╔═╡ 30f06d24-58ad-40b3-abc7-48d9b05fd578
+# ╔═╡ 80604f04-41fc-11eb-1af3-c9accd6abd14
 md"""
-#### Simulação N-D
-
-O mesmo método de simulação 2D descrito acima funciona para distribuições em N dimensões. Vamos agora imaginar que **cada dimensão é uma localização no espaço físico**. Tudo que precisamos fazer é construir uma matriz de covariância
-
-$\boldsymbol{\Sigma} = \begin{bmatrix}\sigma_{11} & \sigma_{12} & \cdots & \sigma_{1k}\\ \sigma_{21} & \sigma_{22} & \cdots & \sigma_{2k}\\ \sigma_{31} & \sigma_{32} & \ddots & \sigma_{3k}\\ \sigma_{k1} & \sigma_{k2} & \cdots & \sigma_{kk}\\ \end{bmatrix}$
-
-para todas as localizações $s_1, s_2, \ldots, s_k$, e seguir o mesmo procedimento. Cada entrada da matriz é obtida da função variograma que modelamos no módulo de Krigagem:
-
-$\sigma_{ij} = \gamma(h_{ij})$.
-
-onde $h_{ij} = ||s_i - s_j||$ é a distância geográfica entre as localizações. Para exemplificar esse conceito, vamos considerar uma distribuição Gaussiana definida em 100 localizações:
+Escreva a função `square` que retorna todos os elementos da coleção `xs` ao quadrado:
 """
 
-# ╔═╡ 2da0c405-7ef0-4cb3-b41d-5ae7394854f4
-# Domínio 1D com 100 localizações
-𝒢 = CartesianGrid(100)
+# ╔═╡ 8064bd5a-41fc-11eb-3f0d-07a6eff7b1ac
+square(xs) = missing
 
-# ╔═╡ 4a9b1c77-e786-43e0-b8df-2ffb47c661ae
+# ╔═╡ 807404ea-41fc-11eb-1c0c-83bf90a95a42
 md"""
-Também vamos considerar que algumas dessas localizações já foram amostradas:
+#### Controle de fluxo
+
+Podemos tomar ações diferentes dependendo do valor de variáveis. Por exemplo, podemos dobrar o valor da variável `b` se a variável `a` for positiva, somar o valor `1` a `b` se a variável `a` for negativa ou atribuir um valor aleatório a `b` caso nenhuma das condições anteriores seja satisfeita:
+
+```julia
+if a > 0 # caso 1
+  b = 2b
+elseif a < 0 # caso 2
+  b = b + 1
+else # outros casos
+  b = rand()
+end
+```
 """
 
-# ╔═╡ 32b6405f-3847-4a1b-b1ea-538c9788ae44
-begin
-	# Localizações s em um domínio 1D
-	s = [(20.,),(40.,),(70.,)]
-	
-	# Medições x(s) da variável na localização s
-	x = [0.0, 1.0, -0.5]
-	
-	# Dado geoespacial com medições
-	𝒮 = georef((X=x,), s)
+# ╔═╡ 8078e488-41fc-11eb-08a4-e5945a37e3a3
+md"""
+##### Exercício
+
+Escreva uma função `emoji` que recebe o nome de um emoji e retorna o símbolo do emoji:
+
+- "diamond" --> 💎
+- "tool" --> ⛏️
+- "tractor" --> 🚜
+
+Você pode copiar e colar o símbolo de um emoji dentro de uma string `"🚜"` usando `Ctrl+C` e `Ctrl+V` dentro da sua função.
+"""
+
+# ╔═╡ 80809c78-41fc-11eb-0249-af3de04c3d83
+function emoji(name)
+	missing
 end
 
-# ╔═╡ 9603c203-9431-4709-ae79-b3f35900ecd1
+# ╔═╡ 47e58082-70ac-4155-a900-54e6184e5d44
 md"""
-Para compararmos os resultados com a Krigagem, vamos definir dois problemas geoestatísticos, um de estimação e um de simulação, e vamos resolver os dois problemas com os solvers `Kriging` e `LUGS`:
+Isso é tudo que precisamos saber de programação básica em Julia para o restante do minicurso. Para aprender mais sobre a linguagem, recomendamos a leitura do [manual oficial](https://docs.julialang.org/en/v1/manual/getting-started) e os fóruns de usuários como [Discourse](https://discourse.julialang.org) e [Zulip](https://julialang.zulipchat.com) para tirar dúvidas.
 """
 
-# ╔═╡ d114ce29-fc89-461a-8d4c-6927a6eebd21
-# Problema de estimação a ser resolvido por Krigagem
-problem₁ = EstimationProblem(𝒮, 𝒢, :X)
+# ╔═╡ cce1ce0d-002f-4c5a-a753-e89b076f7041
+md"""
+### Geociência de dados
 
-# ╔═╡ a6383d1b-0a41-45aa-a237-1c891a164f76
-# Problema de simulação a ser resolvido por Simulação Gaussiana
-problem₂ = SimulationProblem(𝒮, 𝒢, :X=>Float64, 3)
+Investigaremos os dados `Bonnie` disponibilizados sob a seguinte licença:
 
-# ╔═╡ fcc9e8c9-0f8a-4c82-93db-74795a73faa7
+```
+The Bonnie Project Example is under copyright of Transmin Metallurgical Consultants, 2019. It is issued under the Creative Commons Attribution-ShareAlike 4.0 International Public License.
+```
+
+Os dados estão no formato CSV no arquivo `data/bonnie.csv`. Para carregar o arquivo no notebook, utilizaremos os pacotes [CSV.jl](https://github.com/JuliaData/CSV.jl) e [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl).
+
+Especificamos o caminho do arquivo e redirecionamos o resultado para uma tabela `DataFrame` utilizando o operador `|>`, conhecido como operador "pipe" em Julia:
+"""
+
+# ╔═╡ 03422030-504e-47fb-96a1-4a2d35842107
+table = CSV.File("data/bonnie.csv") |> DataFrame
+
+# ╔═╡ d84ab2b1-eb39-4432-9899-ef69839d459c
+md"""
+Podemos obter estatísticas básicas de cada coluna da tabela com a função `describe`:
+"""
+
+# ╔═╡ e3581031-38e4-4180-bff6-065c565ecc40
+describe(table)
+
+# ╔═╡ 0dca6624-99e1-4e85-b3f5-bda0a3388983
+md"""
+Notamos que cada coluna tem um tipo de elemento `eltype` e que a coluna `:CODE` tem 70 elementos faltantes. Elementos faltantes neste caso tem o tipo `Union{Missing,String}` que representa a união do tipo `String` com o tipo `Missing`. Ou seja, a coluna `:CODE` tem elementos que são `String` mas algumas linhas tem o elemento `missing`.
+"""
+
+# ╔═╡ 68b81f0e-9560-4fbb-8131-84071115bf9b
+md"""
+#### Limpeza de dados
+
+O primeiro passo na geociência de dados é a limpeza e preparação dos dados. Usaremos o pacote [Query.jl](https://github.com/queryverse/Query.jl) para manipular tabelas de uma forma sucinta e poderosa. O pacote introduz um conjunto de operações que podem ser facilmente concatenadas para produzir novas tabelas:
+
+```julia
+table |> @filter(...) |> @select(...)
+```
+
+Por exemplo, podemos eliminar as linhas da tabela que contém elementos faltantes usando a operação `@dropna` e em seguida renomear algumas das colunas da tabela resultante para maior legibilidade usando a operação `@rename`:
+"""
+
+# ╔═╡ 8afea00a-ede9-435a-9b69-0c3d854a7ca8
+samples = table |> @dropna() |> @rename(:EAST=>:X, :NORTH=>:Y, :RL=>:Z,
+	                                    :Auppm=>:Au, :Agppm=>:Ag, :Cuppm=>:Cu,
+	                                    :Asppm=>:As, :Sper=>:S, :CODE=>:geo,
+	                                    :OX=>:litho, :ISBD=>:ρ)
+
+# ╔═╡ 78655ad4-1c53-48c1-b108-c7a6c23cc331
+md"""
+##### Exercício
+
+Utilizando a [documentação](http://www.queryverse.org/Query.jl/stable/standalonequerycommands/#The-@replacena-command-1) do Query.jl, escreva uma query que troca todos os valores faltantes da tabela `table` pelo valor `0` e salva o resultado na variável `q1`:
+"""
+
+# ╔═╡ 741cdeca-45ff-40df-b45b-96ba97cefa83
+q1 = missing
+
+# ╔═╡ b20b8d48-c4ad-43ef-a39c-ca983a0323c1
+md"""
+#### Filtragem de dados
+
+Para poder responder qualquer pergunta sobre os dados, nós precisamos saber filtrar as linhas da tabela que são relevantes para o cálculo da resposta. Para isso, utilizaremos a operação `@filter`.
+
+A operação utiliza o símbolo especial `_` para se referir a linha atual da tabela sendo filtrada. Podemos escrever `_.Au` para nos referirmos ao valor da coluna (ou variável) `Au` na linha atual.
+
+Por exemplo, podemos filtrar todas as amostras onde `Au > 0.5` e `Cu > 0`:
+"""
+
+# ╔═╡ 8bba9702-8166-4399-a801-51f67971056d
+samples |> @filter(_.Au > 0.5 && _.Cu > 0)
+
+# ╔═╡ e9355bf7-ae22-4a7f-9da3-8e42ccd563e6
+md"""
+##### Exercício
+
+Encontre todas as amostras onde a soma dos teores de `Au` e `Cu` é inferior a `0.5`. Salve o resultado da query na variável `q2`.
+"""
+
+# ╔═╡ 900f4fc6-027a-47a6-b56c-45dd2cd82a2b
+q2 = missing
+
+# ╔═╡ 84e1bdab-677c-417a-98ba-6b4506ed47e4
+md"""
+#### Agrupamento de dados
+
+Para responder perguntas mais avançadas sobre os dados, precisamos saber agrupar informações que estão dispersas na tabela, mas que fazem parte de um mesmo grupo (e.g. litologia). Para isso, utilizaremos as operações `@groupby` e `@map`.
+
+A operação `@map` tem um formato mais difícil de entender:
+
+```julia
+@map({col1 = exp1, col2 = exp2, coln = expn})
+```
+
+Neste formato, estamos criando novas colunas `col1`, `col2`, ..., `coln` a partir de diferentes expressões `exp1`, `exp2`, ..., `expn` em função de outras colunas.
+
+Para exemplificar o formato, vamos calcular o valor médio e desvio padrão de `Au` dentro de cada geologia `geo`. Para fazer isso, utilizaremos as funções `mean` e `std` da biblioteca padrão `Statistics`.
+
+Vamos criar duas novas colunas chamadas `μAu` e `σAu` após agruparmos as amostras por geologia:
+"""
+
+# ╔═╡ 62cfb9ee-35f0-46a8-af76-4d2c7a09661c
+samples |> @groupby(_.geo) |> @map({geo = key(_), μAu = mean(_.Au), σAu = std(_.Au)})
+
+# ╔═╡ 1e8bd0a3-3a4a-4681-a994-53d6185eca97
+md"""
+A função `key(_)` retorna o valor da variável utilizada no agrupamento. Neste caso, a geologia pode assumir os valores `C1` ou `C2` como ilustrado na tabela.
+"""
+
+# ╔═╡ 4cf756d2-98e6-47f0-9952-17c47bab8210
+md"""
+##### Exercício
+
+Escreva uma query para encontrar as litologias `litho` dentro de cada geologia `geo`.
+Utilize os nomes de coluna `geo` e `litho`, nesta ordem, na tabela de resultados.
+"""
+
+# ╔═╡ e84dedf5-fdee-49c1-8765-8bc3bb869933
+function query3(samples)
+	missing
+end
+
+# ╔═╡ 6d757d5f-69ec-41ec-b05c-c5731af2c33b
+md"""
+##### Exemplo mais avançado
+
+Suponha que estamos interessados na massa total de ouro `Au` que será lavrada de cada litologia `litho`. Vamos assumir que o volume de cada amostra é `1` unidade por simplicidade.
+
+Podemos escrever uma query que:
+
+1. Usa a operação `@mutate` para calcular uma nova coluna `mass` com a massa de `Au`
+2. Usa a operação `@groupby` para agrupar as amostras por litologia `litho`
+3. Usa a operação `@map` para somar a massa de `Au` dentro de cada litologia `litho`
+"""
+
+# ╔═╡ 972939e8-85d1-4754-9c41-fbac682d5245
+samples |>
+@mutate(mass = _.ρ * 1 * _.Au) |>
+@groupby(_.litho) |>
+@map({litho = key(_), mass = sum(_.mass)})
+
+# ╔═╡ 5b58bf67-fb11-44f8-9b36-f534b0e66a8e
+md"""
+#### Visualização de dados
+
+Além de responder perguntas sobre os dados, e ajudar no cálculo de estatísticas de interesse, a geociência de dados abrange metodologias de visualização, super importantes para gerar conhecimento.
+
+Diferentemente da ciência de dados tradicional, existem dois tipos de espaço de visualização na **geo**ciência de dados, são eles:
+
+1. Espaço geográfico
+2. Espaço de atributos
+
+Começaremos investigando o espaço geográfico através de visualizações das amostras em suas localizações no mundo físico. Utilizaremos o pacote [StatsPlots.jl](https://github.com/JuliaPlots/StatsPlots.jl) pela sua boa integração com o pacote Query.jl. O pacote introduz a operação `@df` como demonstrado a seguir:
+"""
+
+# ╔═╡ 28b22b40-7b26-48ad-839f-0a7770fd7765
+samples |> @df scatter(:X, :Y, :Z, group = :litho, marker = :square,
+	                   xlabel = "X", ylabel = "Y", zlabel = "Z")
+
+# ╔═╡ cadf9937-8c09-49d2-b5f5-f745c1a07050
+md"""
+Essa operação recebe uma tabela e permite criar plots acessando os nomes das colunas. No exemplo acima, utilizamos as colunas `X`, `Y` e `Z` com as coordenadas geográficas e agrupamos as amostras por litologia `litho`.
+
+Em outro exemplo, podemos gerar uma visão de topo do modelo de blocos utilizando apenas as coordenadas `X` e `Y` da tabela:
+"""
+
+# ╔═╡ 472eec28-72ed-4e2d-ba1e-36e804298066
+samples |> @df scatter(:X, :Y, group = :litho, marker = :square,
+	                   xlabel = "X", ylabel = "Y")
+
+# ╔═╡ b0aa83f8-49f4-4e58-983e-7a80da3ea474
+md"""
+##### Interatividade
+
+Para explorar melhor os dados, podemos adicionar elementos de interatividade. Esses elementos permitem que o usuário manipule paramêtros do notebook, como os ângulos de visualização. Utilizaremos o pacote `PlutoUI.jl` para adicionar elementos de interatividade:
+"""
+
+# ╔═╡ 5c628225-ab3c-4f08-afcb-bf78f9c68d7a
+@bind θ Slider(0:90, default=30)
+
+# ╔═╡ f8e40e45-31bb-4f52-bab5-850533df0caa
+@bind ϕ Slider(0:90, default=30)
+
+# ╔═╡ 5c10f73d-2f10-4c02-b484-1ddbaf565a20
+samples |> @df scatter(:X, :Y, :Z, group = :litho,
+	                   marker = :square, camera = (θ, ϕ),
+	                   xlabel = "X", ylabel = "Y", zlabel = "Z")
+
+# ╔═╡ 007bfdb2-4cd9-46a1-ac0a-41374192fd45
+md"""
+##### Exercício
+
+Visualize todas as localizações `X`, `Y`, `Z` com amostras tais que `Au > 0.5`. Crie um elemento `Slider` para interagir com o valor de cutoff.
+"""
+
+# ╔═╡ 87c0e372-4472-41da-a3ec-716e2d42167a
+
+
+# ╔═╡ 907a7f9b-b7da-421f-a2b8-91753c0d78ac
+md"""
+Além de gerar visualizações no espaço geográfico, podemos facilmente gerar visualizações no espaço de atributos (ou variáveis) das amostras.
+
+Por exemplo, podemos gerar uma visualização dos teores de `Au` versus `Ag` agrupados por `litho`:
+"""
+
+# ╔═╡ 309e1817-17a1-4763-abc5-d3bf1ef7f7e7
+samples |> @df scatter(:Au, :Ag, group = :litho, xlabel = "Au", ylabel = "Ag")
+
+# ╔═╡ d9639cc5-8bc0-41f8-91e2-031bdcec173b
+md"""
+Ou gerar histogramas para diferentes variáveis:
+"""
+
+# ╔═╡ 61ce0145-cef4-49e3-9e66-418e3440658d
+samples |> @df histogram(:Au, group = :litho, xlabel = "Au", ylabel = "Counts")
+
+# ╔═╡ f365b503-29a8-4572-9be0-467d9d208960
+md"""
+##### Exemplo mais avançado
+
+Suponha que estamos interessados em visualizar a função densidade de probabilidade de `Ag` para cada geologia `geo` considerando apenas amostras na litologia `"TR1"` que estão livres de `S`.
+
+Podemos escrever uma visualização que:
+
+1. Usa a operação `@filter` para eliminar amostras irrelevantes
+2. Usa a operação `@df` para gerar o plot de densidade
+
+Escrevemos uma operação por linha para facilitar a leitura:
+"""
+
+# ╔═╡ 3339d4f1-5f6d-4d8a-a179-4f77995bf1b3
+samples |>
+@filter(_.litho == "TR1" && _.S == 0) |>
+@df density(:Ag, group = :geo,
+	        fill = true, legend = :topleft,
+            xlabel = "Ag", ylabel = "PDF")
+
+# ╔═╡ 0cf80a48-a326-4c64-b657-4be2f95e66ea
+md"""
+#### Outros exemplos
+
+Exemplos mais avançados podem ser facilmente construídos seguindo os mesmos princípios que aprendemos neste módulo. Com tempo, prática e conhecimento de domínio você vai ser capaz de gerar visualizações úteis que são impossíveis de gerar em softwares comerciais.
+
+Violin plot de `Cu` agrupado por geologia `geo`, para diferentes litologias `litho`:
+"""
+
+# ╔═╡ 76decafb-0aa9-46df-b3a2-f699ea202406
+samples |> @df violin(:litho, :Cu, group = :geo, xlabel = "Lithology", ylabel = "Cu")
+
+# ╔═╡ 056db77f-4187-45cc-b771-5434a08be0e6
+md"""
+Histograma bivariado entre `Au` and `Cu`:
+"""
+
+# ╔═╡ f7055ed8-4ea3-41a5-91f4-3993c5147b15
+samples |> @df marginalhist(:Au, :Cu, xlabel="Au", ylabel="Cu")
+
+# ╔═╡ 253b8c06-b045-481a-89ca-9099ba1a1e39
+md"""
+e muitas outras possibilidades.
+"""
+
+# ╔═╡ bc0738b1-aa76-4c36-adc3-12854720dd4e
+md"""
+### Concluimos por hoje 🎉
+
+Se chegou até aqui, parabéns por esta conquista! 👏🏻 Esperamos que esteja gostando do minicurso! Está muito difícil? Muito fácil? O que podemos fazer para melhorar o material? Compartilhe conosco e tentaremos melhorar numa próxima versão.
+
+#### O que veremos amanhã?
+
+- **Simulacão Gaussiana** como uma alternativa à Krigagem
+- A nova área de **Aprendizado Geoestatístico** ([Hoffimann 2021](https://arxiv.org/abs/2102.08791))
+"""
+
+# ╔═╡ 200257ea-3ef2-11eb-0f63-2fed43dabcaf
 begin
-	# Variograma obtido da variografia
-	γ = ExponentialVariogram(range=25.)
-	
-	# Krigagem para resolver o problema de estimação
-	solver₁ = Kriging(:X => (variogram = γ,))
-	
-	# Simulação LU para resolver o problema de simulação
-	solver₂ = LUGS(:X => (variogram = γ,))
+	hint(text) = Markdown.MD(Markdown.Admonition("hint", "Dica", [text]))
+
+	almost(text) = Markdown.MD(Markdown.Admonition("warning", "Quase lá!", [text]))
+
+	still_missing(text=md"Troque `missing` pela sua resposta.") = Markdown.MD(Markdown.Admonition("warning", "Aqui vamos nós!", [text]))
+
+	keep_working(text=md"A resposta não está totalmente certa.") = Markdown.MD(Markdown.Admonition("danger", "Continue trabalhando nisto!", [text]))
+
+	yays = [md"Fantástico!", md"Ótimo!", md"Yay ❤", md"Legal! 🎉", md"Muito bem!", md"Bom trabalho!", md"Você conseguiu a resposta certa!", md"Vamos seguir para próxima seção."]
+
+	correct(text=rand(yays)) = Markdown.MD(Markdown.Admonition("correct", "Got it!", [text]))
+
+	not_defined(variable_name) = Markdown.MD(Markdown.Admonition("danger", "Oops!", [md"Tenha certeza que definiu uma variável chamada **$(Markdown.Code(string(variable_name)))**"]))
 end;
 
-# ╔═╡ b69fd4db-f7e4-4c63-a2da-12f9a639ce26
-sol₁ = solve(problem₁, solver₁)
-
-# ╔═╡ 322cc143-8475-42bd-9f43-68d62045cf34
-sol₂ = solve(problem₂, solver₂)
-
-# ╔═╡ b8ed44f2-24d1-4bd2-be6c-1c0371c95ffa
+# ╔═╡ 801c3b32-41fc-11eb-20fd-11deaf47542b
 begin
-	p = plot(xlabel = "s", ylabel = "x(s)", size = (800,400))
-	plot!(sol₁[:X], ribbon = 3*sol₁["X-variance"],
-		  ls = :dash, lc=:black, c=:gray90, label = "Média (Kriging)")
-	for (i, real) in enumerate(sol₂)
-		plot!(real[:X], label = "Realização $i (LUGS)")
+	scored1 = false
+	_vol = volume(3)
+	if ismissing(_vol)
+		still_missing()
+	elseif _vol ≈ (4/3)*π*3^3
+		scored1 = true
+		correct()
+	elseif _vol isa Number
+		almost(md"A fórmula não está certa...")
+	else
+		keep_working()
 	end
-	plot!(𝒮, color = :black, legend = true,
-		  label = "Medições", title = "Estimação vs. Simulação")
-	p
 end
 
-# ╔═╡ b00c2db6-b588-4652-bd7a-df2823583537
-md"""
-Notamos que as **realizações são muito diferentes da média**. Enquanto as realizações parecem capturar o variograma especificado, a média é um valor suavizado calculado de "infinitas" realizações.
+# ╔═╡ 801fb322-41fc-11eb-0784-e5053c75e5ff
+hint(md"Alguém me disse que a fórmula é $\frac{4}{3}\pi r^3$...")
 
-Portanto, a variável que está sendo modelada na mina com o auxílio de variogramas nunca irá se parecer visualmente com o resultado da Krigagem a menos que a densidade de furos seja muito alta.
-
-A **Krigagem** é amplamente difundida por diversos motivos:
-
-1. Fornece uma estimativa estatisticamente "segura".
-2. Não assume nenhuma distribuição nos dados.
-2. Softwares comerciais oferecem essa opção há anos.
-3. Falta de treinamento em métodos de simulação.
-
-A **simulação Gaussiana** tem algumas vantagens:
-
-1. Oferece estimativa de incerteza ponto a ponto.
-2. Reproduz visualmente a variável sendo modelada.
-
-A **principal diferença** entre os dois métodos **na prática** está no fato de que a simulação Gaussiana requer **pré- e pós-processamento dos dados** para que a distribuição se aproxime de uma distribuição Gaussiana.
-"""
-
-# ╔═╡ 1b17b6c6-6001-4861-b8da-839cb561a92b
-md"""
-### 2. Simulação com GeoStats.jl
-
-A literatura de simulação geoestatística é bastante rica, no entanto poucos softwares comerciais oferecem implementações desses métodos. O GeoStats.jl oferece vários métodos de simulação com excelente performance computacional.
-
-#### LUGS
-
-O solver `LUGS` é o solver baseado na decomposição LU da covariância, com detalhes adicionais para performance e condicionamento. É recomendado quando o número de blocos no modelo de blocos está em torno de alguns milhares de blocos como no exemplo abaixo.
-
-Parâmetros do variograma:
-
-range = $(@bind range Slider(1:25, default=10, show_value=true))
-
-sill = $(@bind sill Slider(0.5:0.1:1, default=0.7, show_value=true))
-
-nugget = $(@bind nugget Slider(0:0.05:0.2, default=0.1, show_value=true))
-
-model = $(@bind gamma Select(["Gaussian","Spherical","Exponential"]))
-"""
-
-# ╔═╡ 81e0f6d5-9edd-4a22-b2e9-d53ee4949429
+# ╔═╡ 8055419c-41fc-11eb-2a1e-5bf1d4b9a4b1
 begin
-	xs = rand(0.0:1.0:99.0, 100)
-	ys = rand(0.0:1.0:24.0, 100)
-	zs = randn(100)
-		
-	data = georef((X=zs,), collect(zip(xs,ys)))
-end;
-
-# ╔═╡ 230dcfb9-da92-4266-8363-0754c71b612f
-begin
-	model = Dict("Spherical"=>SphericalVariogram,
-		         "Gaussian"=>GaussianVariogram,
-		         "Exponential"=>ExponentialVariogram)
-	
-	g = model[gamma](sill=Float64(sill), range=Float64(range), nugget=Float64(nugget))
-	
-	gplot = plot(g, 0, 25, c=:black, ylim=(0,1),
-		         legend=:topright, size=(650,300))
-	vline!([range], c=:grey, ls=:dash, primary=false)
-	annotate!(range-2, 1, "range")
-	hline!([sill], c=:brown, ls=:dash, primary=false)
-	annotate!(23, sill+0.05, "sill")
-	if n > 0
-		hline!([nugget], c=:orange, ls=:dash, primary=false)
-		annotate!(23, n+0.05, "nugget")
+	scored2 = false
+	_rot = rotation(π)
+	if ismissing(_rot)
+		still_missing()
+	elseif _rot ≈ [cos(π) -sin(π); sin(π) cos(π)]
+		scored2 = true
+		correct()
+	elseif _rot isa Matrix
+		almost(md"Trocou `sin` e `cos` talvez?")
+	else
+		keep_working()
 	end
-	gplot
 end
 
-# ╔═╡ 0ad94903-c4de-45d7-a025-39b5fb2f3723
+# ╔═╡ 805a398c-41fc-11eb-364f-cf4a9c87d864
+hint(md"Escreva \theta e pressione TAB para escrever o símbolo θ")
+
+# ╔═╡ 806ab098-41fc-11eb-0102-0d5729033a3e
 begin
-	P   = SimulationProblem(data, CartesianGrid(100,25), :X, 1)
-	
-	LU  = LUGS(:X => (variogram=g,))
-	
-	sol = solve(P, LU)
-	
-	plot(sol, clim=(-3,3), size=(700,200))
-	plot!(data, markersize=2, markershape=:square,
-		  markerstrokecolor=:white, markerstrokewidth=3)
+	scored3 = false
+	_sqr = square([1 2; 3 4])
+	if ismissing(_sqr)
+		still_missing()
+	elseif _sqr == [1 4; 9 16]
+		scored3 = true
+		correct()
+	elseif _sqr == [1, 9, 4, 16]
+		almost(md"Tente usar a dica")
+	else
+		keep_working()
+	end
 end
 
-# ╔═╡ ef7871ae-9476-4255-9957-44a619316a2c
-md"""
-#### FFTGS
+# ╔═╡ 806e40aa-41fc-11eb-2933-43d9c2c4c194
+hint(md"A notação de lista `[f(x) for x in xs]` pode ser bem útil!")
 
-O solver `FFTGS` é baseado na transformada de Fourier e portanto só pode ser utilizado em domínios Cartesianos com amostragem regular. Ele é extremamente rápido podendo gerar modelos 3D com **centenas de milhões** de blocos em poucos segundos.
-"""
+# ╔═╡ 80871a58-41fc-11eb-1820-b1604f6aa881
+begin
+	scored4 = false
+	_emj = emoji.(["diamond","tool","tractor"])
+	if all(ismissing.(_emj))
+		still_missing()
+	elseif all(_emj .== ["💎","⛏️","🚜"])
+		scored4 = true
+		correct()
+	elseif _emj ⊆ ["💎","⛏️","🚜"]
+		almost(md"Cheque os emojis novamente...")
+	else
+		keep_working()
+	end
+end
 
-# ╔═╡ eb1fa2e8-79e8-48cf-8d23-32e3491bfaab
-blocks = (1000,1000)
+# ╔═╡ 808cb788-41fc-11eb-3085-895eec8a68be
+hint(md"Basta escrever uma sequência de `if name == \"diamond\" return \"💎\" end`")
 
-# ╔═╡ 6c003049-d590-4425-a72b-ebaa2309d4d0
-problem = SimulationProblem(CartesianGrid(blocks...), :X=>Float64, 1)
+# ╔═╡ fed76047-e402-4f6a-b9a2-b998f6d2879d
+begin
+	scored5 = false
+	if ismissing(q1)
+		still_missing()
+	elseif q1 |> DataFrame == (table |> @replacena(0) |> DataFrame)
+		scored5 = true
+		correct()
+	else
+		keep_working()
+	end
+end
 
-# ╔═╡ 7799b274-de86-4c73-afeb-cbab5ee1b15f
-fftgs = FFTGS(:X => (variogram = GaussianVariogram(range=30.),));
+# ╔═╡ cebff47b-9a33-41b6-9757-cc99f89190f8
+hint(md"Utilize a operação `@replacena`")
 
-# ╔═╡ 0d274d47-541f-4903-9cf0-1d784a81682a
-fftsol = solve(problem, fftgs)
+# ╔═╡ cceabfd2-728c-49fa-b944-cfddf3adf2e7
+begin
+	scored6 = false
+	if ismissing(q2)
+		still_missing()
+	elseif q2 |> DataFrame == (samples |> @filter(_.Au + _.Cu < 0.5) |> DataFrame)
+	# elseif DataFrame(q2) == DataFrame(geo=["C1","C2"], litho=[["TR1","OX1","OX2"],["OX1","FR1","TR1","OX2"]])
+		scored6 = true
+		correct()
+	else
+		keep_working()
+	end
+end
 
-# ╔═╡ b7cd766e-0fd5-453b-bd3b-751371e51072
-plot(fftsol)
+# ╔═╡ bd122b99-38b3-4b5c-a18f-8590aeadd4db
+hint(md"Use o último exemplo como ponto de partida.")
 
-# ╔═╡ 247bd77b-630f-4229-8d5b-e834cf10565a
-md"""
-#### SGS
+# ╔═╡ 2a12ec7e-617f-441a-885e-6d21a63acf87
+begin
+	scored7 = false
+	q3 = query3(samples)
+	if ismissing(q3)
+		still_missing()
+	elseif DataFrame(q3) == DataFrame(geo=["C1","C2"], litho=[["TR1","OX1","OX2"],["OX1","FR1","TR1","OX2"]])
+		scored7 = true
+		correct()
+	else
+		keep_working()
+	end
+end
 
-O solver `SGS` é baseado na simulação sequencial de blocos. É o solver mais popular na mineração por permitir elipsóides de busca, parâmetros de vizinhança, etc.
+# ╔═╡ 74b9ea7e-5acc-48e1-b7de-468993c50be0
+scored7 ? q3 : nothing
 
->**Aviso**: Algumas questões de mal condicionamento numérico ainda estão sendo resolvidos no `SGS`. Simulações com variogramas Gaussianos podem apresentar artefatos indesejados.
-"""
+# ╔═╡ 0887e587-4857-40ec-a356-7280c7152994
+hint(md"Adapte o último exemplo para usar a função `unique` na coluna `litho`.")
 
-# ╔═╡ caa6ae71-3ab0-4369-84ec-9c98525d0104
-prob = SimulationProblem(CartesianGrid(500,500), :X=>Float64, 1)
-
-# ╔═╡ 273f4ed4-07c1-4825-8777-b4bdd7b29f39
-sgs = SGS(:X => (
-		variogram    = SphericalVariogram(range=30.),
-		neighborhood = Ellipsoid([10.,10.], [0.]),
-		path         = RandomPath()
-	)
-);
-
-# ╔═╡ 41dd3c9b-a717-41be-b403-728bb2f1b5ff
-sgssol = solve(prob, sgs)
-
-# ╔═╡ 76e910ce-ff67-47fc-b218-48293369ad73
-plot(sgssol)
-
-# ╔═╡ 6c98983f-3efd-40c5-a7ca-48f8bb3a241a
-md"""
-#### Outros solvers
-
-Além de simulação Gaussiana, o GeoStats oferece vários outros solvers bastante utilizados na área de óleo e gás como o [ImageQuilting.jl](https://github.com/JuliaEarth/ImageQuilting.jl) para simulação geostatística multi-ponto.
-"""
-
-# ╔═╡ 9ce06a3e-0c74-47de-9c4b-ec861b0af535
-md"""
-### Resumo
-
-Este módulo teve como principal objetivo **ilustrar as ferramentas de simulação disponíveis** no projeto. Observamos que:
-
-- Simulação Gaussiana é uma alternativa direta à Krigagem.
-- Vários solvers de simulação estão disponíveis no GeoStats.jl.
-- Referências bibliográficas se encontram disponíveis na documentação.
-
-No próximo módulo sobre **aprendizado geoestatístico** teremos mais tempo para entrar em detalhes dos métodos, e utilizaremos um caso prático para aprender sobre esta nova área de grande potencial tecnológico.
-"""
+# ╔═╡ 4d1bf0ad-9c9c-45d4-9f18-5832b7ee0226
+hint(md"Utilize `@filter` para filtrar as amostras antes de utilizar `@df`")
 
 # ╔═╡ Cell order:
 # ╟─3e0ccac6-3efd-11eb-2949-a9aa855356b2
 # ╟─51dd001e-41f7-11eb-0f21-6b97ea0d70cb
 # ╟─8066e25c-3fc1-11eb-1d21-89b95a15287f
 # ╟─f2a77ee0-3ee1-11eb-1ce3-213bfda427c6
-# ╟─902f52bf-db33-48c7-a626-453856f2da37
-# ╠═8cb117c9-b256-46a4-a109-f018096fa14d
-# ╠═a76c95eb-4949-4ffc-a58e-073abf63908d
-# ╟─3e16501d-1c36-4115-9f52-fab7d243036b
-# ╠═6a20c9f6-aa3a-4a87-a6dd-f727f19d8f94
-# ╟─30daa327-7154-4678-9dbc-e52438ce6c99
-# ╠═e435eb7d-3f90-4a1a-a6c7-bc27bf4d0b64
-# ╟─c469fefc-038b-435a-b3b7-f1dc94f8815d
-# ╟─193188b1-7b41-42c6-84d8-62e4d87c7da1
-# ╠═b6c9ffe2-aa49-47a4-841f-667b8b16dc42
-# ╠═62344df1-0908-4775-a4d4-6adf594111f9
-# ╠═a616edc2-5f47-490b-8ab9-616bfe7770b2
-# ╠═9a1f16a4-34db-4d6b-ab49-d024bb47a7c1
-# ╟─417501f7-46df-44c7-8689-4675c07e6792
-# ╟─30f06d24-58ad-40b3-abc7-48d9b05fd578
-# ╠═2da0c405-7ef0-4cb3-b41d-5ae7394854f4
-# ╟─4a9b1c77-e786-43e0-b8df-2ffb47c661ae
-# ╠═32b6405f-3847-4a1b-b1ea-538c9788ae44
-# ╟─9603c203-9431-4709-ae79-b3f35900ecd1
-# ╠═d114ce29-fc89-461a-8d4c-6927a6eebd21
-# ╠═a6383d1b-0a41-45aa-a237-1c891a164f76
-# ╠═fcc9e8c9-0f8a-4c82-93db-74795a73faa7
-# ╠═b69fd4db-f7e4-4c63-a2da-12f9a639ce26
-# ╠═322cc143-8475-42bd-9f43-68d62045cf34
-# ╟─b8ed44f2-24d1-4bd2-be6c-1c0371c95ffa
-# ╟─b00c2db6-b588-4652-bd7a-df2823583537
-# ╟─1b17b6c6-6001-4861-b8da-839cb561a92b
-# ╟─81e0f6d5-9edd-4a22-b2e9-d53ee4949429
-# ╟─230dcfb9-da92-4266-8363-0754c71b612f
-# ╟─0ad94903-c4de-45d7-a025-39b5fb2f3723
-# ╟─ef7871ae-9476-4255-9957-44a619316a2c
-# ╠═eb1fa2e8-79e8-48cf-8d23-32e3491bfaab
-# ╠═6c003049-d590-4425-a72b-ebaa2309d4d0
-# ╠═7799b274-de86-4c73-afeb-cbab5ee1b15f
-# ╠═0d274d47-541f-4903-9cf0-1d784a81682a
-# ╠═b7cd766e-0fd5-453b-bd3b-751371e51072
-# ╟─247bd77b-630f-4229-8d5b-e834cf10565a
-# ╠═caa6ae71-3ab0-4369-84ec-9c98525d0104
-# ╠═273f4ed4-07c1-4825-8777-b4bdd7b29f39
-# ╠═41dd3c9b-a717-41be-b403-728bb2f1b5ff
-# ╠═76e910ce-ff67-47fc-b218-48293369ad73
-# ╟─6c98983f-3efd-40c5-a7ca-48f8bb3a241a
-# ╟─9ce06a3e-0c74-47de-9c4b-ec861b0af535
+# ╟─25ddd894-3f2c-11eb-327f-ad0031d2e7a7
+# ╟─1623916e-41fc-11eb-19ce-91716fd0f8ea
+# ╟─7ff43936-41fc-11eb-3aea-dfaaba545497
+# ╠═7ff62bce-41fc-11eb-1f51-b9b2b9833df4
+# ╠═7ff7b6a6-41fc-11eb-0f01-c991a9782cf3
+# ╠═7fff28dc-41fc-11eb-328d-8f1499a16a5f
+# ╟─7fff8066-41fc-11eb-3392-654640e59658
+# ╟─80034070-41fc-11eb-00d5-819ce259b506
+# ╟─80066c5a-41fc-11eb-075a-cd61e67f3adc
+# ╠═8006c7c2-41fc-11eb-2ec1-e582eaafc2ab
+# ╟─800a6ddc-41fc-11eb-0909-dfd4d9e0179b
+# ╠═800cc280-41fc-11eb-193e-f38e4102427c
+# ╠═800f4fe6-41fc-11eb-387d-a5919143b34e
+# ╠═80128724-41fc-11eb-29db-d9a9611b203d
+# ╠═8012f434-41fc-11eb-0cfe-2b01bf041b7d
+# ╟─8016c1d6-41fc-11eb-2619-112f9669b0e7
+# ╠═801961ac-41fc-11eb-2b65-0b14581715e4
+# ╟─801c3b32-41fc-11eb-20fd-11deaf47542b
+# ╟─801fb322-41fc-11eb-0784-e5053c75e5ff
+# ╟─8020249c-41fc-11eb-1cef-ebe1819db6f4
+# ╠═8026b4c4-41fc-11eb-36d0-41f86c453fb2
+# ╠═80270ba4-41fc-11eb-3ced-cbf85a15f3b3
+# ╠═802b5e32-41fc-11eb-12d4-6b2dc82cf55a
+# ╠═802f779e-41fc-11eb-24e4-a3b5bcfc85c4
+# ╠═802fe0bc-41fc-11eb-1c57-e942c94b5a71
+# ╠═80348f0e-41fc-11eb-0efa-e7fb50fc7504
+# ╟─803883ac-41fc-11eb-02ad-772e3cf848af
+# ╠═803f7716-41fc-11eb-25df-d9da725053f5
+# ╠═803ffb28-41fc-11eb-1be4-27cb0f8e537e
+# ╠═804217b4-41fc-11eb-1908-fb5e506bdb06
+# ╠═8046bee0-41fc-11eb-0464-bd19d7586aef
+# ╟─804b55f4-41fc-11eb-1c23-6b398276e6fe
+# ╠═8050228c-41fc-11eb-00b2-a1fd938fe153
+# ╟─8055419c-41fc-11eb-2a1e-5bf1d4b9a4b1
+# ╟─805a398c-41fc-11eb-364f-cf4a9c87d864
+# ╟─80604f04-41fc-11eb-1af3-c9accd6abd14
+# ╠═8064bd5a-41fc-11eb-3f0d-07a6eff7b1ac
+# ╟─806ab098-41fc-11eb-0102-0d5729033a3e
+# ╟─806e40aa-41fc-11eb-2933-43d9c2c4c194
+# ╟─807404ea-41fc-11eb-1c0c-83bf90a95a42
+# ╟─8078e488-41fc-11eb-08a4-e5945a37e3a3
+# ╠═80809c78-41fc-11eb-0249-af3de04c3d83
+# ╟─80871a58-41fc-11eb-1820-b1604f6aa881
+# ╟─808cb788-41fc-11eb-3085-895eec8a68be
+# ╟─47e58082-70ac-4155-a900-54e6184e5d44
+# ╟─cce1ce0d-002f-4c5a-a753-e89b076f7041
+# ╠═03422030-504e-47fb-96a1-4a2d35842107
+# ╟─d84ab2b1-eb39-4432-9899-ef69839d459c
+# ╠═e3581031-38e4-4180-bff6-065c565ecc40
+# ╟─0dca6624-99e1-4e85-b3f5-bda0a3388983
+# ╟─68b81f0e-9560-4fbb-8131-84071115bf9b
+# ╠═8afea00a-ede9-435a-9b69-0c3d854a7ca8
+# ╟─78655ad4-1c53-48c1-b108-c7a6c23cc331
+# ╠═741cdeca-45ff-40df-b45b-96ba97cefa83
+# ╟─fed76047-e402-4f6a-b9a2-b998f6d2879d
+# ╟─cebff47b-9a33-41b6-9757-cc99f89190f8
+# ╟─b20b8d48-c4ad-43ef-a39c-ca983a0323c1
+# ╠═8bba9702-8166-4399-a801-51f67971056d
+# ╟─e9355bf7-ae22-4a7f-9da3-8e42ccd563e6
+# ╠═900f4fc6-027a-47a6-b56c-45dd2cd82a2b
+# ╟─cceabfd2-728c-49fa-b944-cfddf3adf2e7
+# ╟─bd122b99-38b3-4b5c-a18f-8590aeadd4db
+# ╟─84e1bdab-677c-417a-98ba-6b4506ed47e4
+# ╠═62cfb9ee-35f0-46a8-af76-4d2c7a09661c
+# ╟─1e8bd0a3-3a4a-4681-a994-53d6185eca97
+# ╟─4cf756d2-98e6-47f0-9952-17c47bab8210
+# ╠═e84dedf5-fdee-49c1-8765-8bc3bb869933
+# ╟─74b9ea7e-5acc-48e1-b7de-468993c50be0
+# ╟─2a12ec7e-617f-441a-885e-6d21a63acf87
+# ╟─0887e587-4857-40ec-a356-7280c7152994
+# ╟─6d757d5f-69ec-41ec-b05c-c5731af2c33b
+# ╠═972939e8-85d1-4754-9c41-fbac682d5245
+# ╟─5b58bf67-fb11-44f8-9b36-f534b0e66a8e
+# ╠═28b22b40-7b26-48ad-839f-0a7770fd7765
+# ╟─cadf9937-8c09-49d2-b5f5-f745c1a07050
+# ╠═472eec28-72ed-4e2d-ba1e-36e804298066
+# ╟─b0aa83f8-49f4-4e58-983e-7a80da3ea474
+# ╠═5c628225-ab3c-4f08-afcb-bf78f9c68d7a
+# ╠═f8e40e45-31bb-4f52-bab5-850533df0caa
+# ╠═5c10f73d-2f10-4c02-b484-1ddbaf565a20
+# ╟─007bfdb2-4cd9-46a1-ac0a-41374192fd45
+# ╠═87c0e372-4472-41da-a3ec-716e2d42167a
+# ╟─4d1bf0ad-9c9c-45d4-9f18-5832b7ee0226
+# ╟─907a7f9b-b7da-421f-a2b8-91753c0d78ac
+# ╠═309e1817-17a1-4763-abc5-d3bf1ef7f7e7
+# ╟─d9639cc5-8bc0-41f8-91e2-031bdcec173b
+# ╠═61ce0145-cef4-49e3-9e66-418e3440658d
+# ╟─f365b503-29a8-4572-9be0-467d9d208960
+# ╠═3339d4f1-5f6d-4d8a-a179-4f77995bf1b3
+# ╟─0cf80a48-a326-4c64-b657-4be2f95e66ea
+# ╠═76decafb-0aa9-46df-b3a2-f699ea202406
+# ╟─056db77f-4187-45cc-b771-5434a08be0e6
+# ╠═f7055ed8-4ea3-41a5-91f4-3993c5147b15
+# ╟─253b8c06-b045-481a-89ca-9099ba1a1e39
+# ╟─bc0738b1-aa76-4c36-adc3-12854720dd4e
+# ╟─200257ea-3ef2-11eb-0f63-2fed43dabcaf
