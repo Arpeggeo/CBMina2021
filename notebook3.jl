@@ -224,7 +224,7 @@ end
 
 # ╔═╡ b00c2db6-b588-4652-bd7a-df2823583537
 md"""
-Notamos que as **realizações são muito diferente da média**. Enquanto as realizações parecem capturar o variograma especificado, a média é um valor suavizado calculado de "infinitas" realizações.
+Notamos que as **realizações são muito diferentes da média**. Enquanto as realizações parecem capturar o variograma especificado, a média é um valor suavizado calculado de "infinitas" realizações.
 
 Portanto, a variável que está sendo modelada na mina com o auxílio de variogramas nunca irá se parecer visualmente com o resultado da Krigagem a menos que a densidade de furos seja muito alta.
 
