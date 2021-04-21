@@ -81,7 +81,7 @@ Ao final deste módulo você será capaz de:
 md"""
 ### 1. O que é o aprendizado de máquina?
 
-Antes de podermos entender o problema de aprendizado **geo**estatístico, isto é, o problema de aprendizado com dados **geoespacias**, precisamos entender o problema genérico de **aprendizado de máquina** introduzido na ciência da computação na área de **inteligência artificial**.
+Antes de podermos entender o problema de aprendizado **geo**estatístico, isto é, o problema de aprendizado com dados **geoespaciais**, precisamos entender o problema genérico de **aprendizado de máquina** introduzido na ciência da computação na área de **inteligência artificial**.
 
 Nessa área, buscam-se criar tecnologias capazes de "imitar" a inteligência humana. Ao invés de tentarmos definir inteligência, vamos nos concentrar em duas habilidades que nós humanos exercermos todo dia:
 
@@ -163,7 +163,7 @@ Por exemplo, um programa de computador pode aprender a jogar xadrez jogando part
 
 Aqui estamos interessados no **aprendizado estatístico** que consiste de aprender novas regras utilizando grandes bases de dados como furos de sondagem, dados oriundos da geometalurgia, e imagens de satélite. Em particular, estamos interessados na aplicacão dessa teoria por meio de programas de computador, conhecida como **aprendizado de máquina** (em inglês "machine learning" ou "ML").
 
-A teoria de aprendizado estatístico está por trás de diversas tecnologias atuais, especialmente o **aprendizado estatístico supervisionado** que consiste em aprender uma função *desconhecida* $f\colon x \mapsto y$ por meio de vários exemplos $\left\{(x_1,y_1), (x_2,y_2),\ldots,(x_n,y_n)\right\}$ de entrada e saída da função:
+A teoria de aprendizado estatístico está por trás de diversas tecnologias atuais, especialmente o **aprendizado estatístico supervisionado** que consiste em aprender uma função *desconhecida* $f\colon x \mapsto y$ por meio de vários exemplos $\left\{(x^{(1)},y^{(1)}), (x^{(2)},y^{(2)}),\ldots,(x^{(n)},y^{(n)})\right\}$ de entrada e saída da função:
 """
 
 # ╔═╡ 29cf81d4-996e-4283-8d72-63d3ed1f55a7
@@ -185,9 +185,9 @@ begin
 		 xlims = (-1, 1), ylims = (-1, 1),
 		 xlabel = "x", ylabel = "y",
 	     title = "Como aprender f(x)?")
-	scatter!([(x, -1) for x in xs], label = "x₁, x₂, ..., xₙ",
+	scatter!([(x, -1) for x in xs], label = "x¹, x², ..., xⁿ",
 	         marker = (:spike, 10, :black))
-	scatter!(collect(zip(xs, ys)), label = "y₁, y₂, ..., yₙ",
+	scatter!(collect(zip(xs, ys)), label = "y¹, y², ..., yⁿ",
 	         marker = (:circle, 3, :black))
 end
 
@@ -436,7 +436,7 @@ Para esclarecer a definição de GL, continuaremos explorando os dados da Nova Z
 O primeiro elemento da definição é o **domínio geoespacial** onde os dados estão georreferenciados:
 
 - O **domínio de origem** $\mathcal{D}_s$ representa as trajetórias dos poços `ONSHORE`. Nesse domínio estão disponíveis os logs, assim como as anotações do tipo de formação feitas por especialistas.
-- O **domínio de destino** $\mathcal{D}_t$ representa as trajetórias dos poços `OFFSHORE`. Nesse domínio estão disponíveis apenas os logs que serão utilizados pelo modelo de aprendizao para previsão do tipo de formação.
+- O **domínio de destino** $\mathcal{D}_t$ representa as trajetórias dos poços `OFFSHORE`. Nesse domínio estão disponíveis apenas os logs que serão utilizados pelo modelo de aprendizado para previsão do tipo de formação.
 """
 
 # ╔═╡ 89e8f272-8812-4e1e-8ab6-1cb7700c0fde
@@ -653,7 +653,7 @@ md"""
 Observamos que:
 
 - O **modelo mais simples** (logistic) apresenta os **melhores resultados** nos poços `OFFSHORE`.
-- Os **modelos mais complexos** (e.g. decision tree, knn) ficam **"superfitados"** aos poços `ONSHORE` devido principalmente a diferença de distribuição `ONSHORE` e `OFFSHORE`.
+- Os **modelos mais complexos** (e.g. decision tree, knn) ficam **sobreajustados** aos poços `ONSHORE` devido principalmente a diferença de distribuição `ONSHORE` e `OFFSHORE`.
 - O modelo constante apresenta o pior resultado como esperado.
 
 Podemos sumarizar a informação da matriz de confusão com diferentes medidas, como por exemplo a medida $F_1$-score. A medida é bastante utilizada na área médica, e é calculada como
@@ -758,7 +758,7 @@ A validação cruzada clássica é o método mais simples de validação no qual
 
 O maior problema da validação cruzada clássica é que ela não foi desenvolvida para dados geoespaciais. A existência de correlação entre duas localizações do domínio compromete a estimativa do erro que se torna **super otimista**.
 
-Para ilustrar esse problema, tentaremos estimar o erro de qualquer um dos solvers (e.g. poitwise decision tree) utilizando o método CV. Precisamos definir o **número de folds** e a **função de perda**.
+Para ilustrar esse problema, tentaremos estimar o erro de qualquer um dos solvers (e.g. pointwise decision tree) utilizando o método CV. Precisamos definir o **número de folds** e a **função de perda**.
 
 ##### Número de folds $k$
 O número de folds geralmente é escolhido em função da quantidade de dados no domínio de origem e do recurso computacional disponível. Como existem muitos exemplos (>300k) nos poços `ONSHORE`, podemos escolher valores de $k$ em função do custo computacional. Valores muito maiores que $k=20$ são desnecessariamente caros computacionalmente:
