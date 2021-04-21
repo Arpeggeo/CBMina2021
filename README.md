@@ -8,15 +8,16 @@ Instrutores: [Júlio Hoffimann](https://github.com/juliohm) & [Franco Naghetini]
 - [15min]: Introdução ao minicurso
 - [45min]: Instalação do software
 - [1hora]: Krigagem 3D de recursos
-- [1hora]: Geociência de dados
+- [15min]: Intervalo para discussão
+- [45min]: Estimação vs. Simulação
 
 Carga horária: 3 horas + 30 minutos discussão
 
 ## 27 de Abril (16:00hs - 19:30hs)
-- [45min]: Estimação vs. Simulação
-- [15min]: Contribuindo tutoriais
-- [1hora]: Aprendizado geoestatístico
-- [30min]: Discussão e fechamento
+- [1hora]: Geociência de dados
+- [15min]: Intervalo para discussão
+- [1.5hora]: Aprendizado geoestatístico
+- [15min]: Discussão e encerramento
 
 Carga horária: 3 horas + 30 minutos discussão
 
