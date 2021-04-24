@@ -375,10 +375,10 @@ Portanto, um procedimento denominado **compositagem** deve ser conduzido, visand
 
 - Adequar o comprimento das amostras à escala de trabalho (Figura 2).
 
-Quando a compositagem é realizada, os teores originais são recalculados, a partir de uma média dos teores amostrais ponderada pelo comprimento amostral. Os teores resultantes são denominados **teores compostos (Tc)**:
+Quando a compositagem é realizada, os teores originais são recalculados, a partir de uma média dos teores amostrais ponderada pelo comprimento amostral. Os teores resultantes são denominados **teores compostos** $z_c$:
 
 ```math
-Tc = \frac{\sum_{i=1}^{n} tᵢ.eᵢ}{\sum_{i=1}^{n} eᵢ}
+z_c = \frac{\sum_{i=1}^{n} z_i \cdot l_i}{\sum_{i=1}^{n} l_i}
 ```
 
 """
@@ -596,7 +596,7 @@ md"""
 
 ### 3. Análise exploratória
 
-A análise exploratória dos dados é uma das etapas mais cruciais do fluxo de trabalho. Em essência, ela consiste em sumarizar as principais características do dado através de estatísticas de interesse e visualizações. Veremos esta etapa em mais detalhes no segundo módulo **geociência de dados** hoje.
+A análise exploratória dos dados é uma das etapas mais cruciais do fluxo de trabalho. Em essência, ela consiste em sumarizar as principais características do dado através de estatísticas de interesse e visualizações. Veremos esta etapa em mais detalhes no módulo **geociência de dados**.
 
 Aqui apresentaremos o resultado de uma análise simples e visualizações interativas para ilustrar o potencial do modelo de trabalho com notebooks [Pluto](https://github.com/fonsp/Pluto.jl).
 
@@ -735,7 +735,7 @@ Algumas conclusões obtidas para este banco de dados:
 
 - A média do Cu é igual a $(round(Cu_comp.X̄[1], digits=2)) %.
 
-- O coeficiente de variação do Cu é de $(round(Cu_comp.Cᵥ[1], digits=2)).
+- O coeficiente de variação do Cu é de $(round(Cu_comp.Cᵥ[1], digits=2) * 100) %.
 
 - A princípio, os _low grades_ do depósito correspondem a amostras ≤ $(round(Cu_comp.P10[1], digits=2)) %.
 
@@ -767,7 +767,7 @@ md"""
 
 A **Teoria da Amostragem** deixa claro que a amostragem de um fenômeno (*e.g.* mineralização de Cu) deve ser representativa. Em outras palavras:
 
-> *Uma amostra é representativa, quando qualquer parte do todo (população/depósito) tem iguais chances de ser amostrada. Se alguma parte for favorecida/desfavorecida na amostragem, a amostra não é representativa*.
+> *Uma amostragem é representativa, quando qualquer parte do todo (população/depósito) tem iguais chances de ser amostrada. Se alguma parte for favorecida/desfavorecida na amostragem, a amostra não é representativa*.
 
 Nesse sentido, como frequentemente há um agrupamento amostral preferencial nas porções ricas dos depósitos, podemos dizer que a amostragem de depósitos minerais não é representativa. Dessa maneira, como temos uma amostragem sistematicamente não representativa, teremos uma estimativa sistematicamente não fiel à realidade do depósito.
 
@@ -1368,7 +1368,7 @@ Para o cálculo dos variogramas experimentais secundário e terciário, devemos 
 # ╔═╡ 120f4a9c-2ca6-49f1-8abc-999bcc559149
 md"""
 
-Ângulo de rotação: $(@bind θ Slider(range(0, stop=90-180/8, step=180/8), default=45, show_value=true))°
+Rake (θ): $(@bind θ Slider(range(0, stop=90-180/8, step=180/8), default=45, show_value=true))°
 
 Número de passos: $(@bind nlagssec Slider(5:1:20, default=11, show_value=true))
 
