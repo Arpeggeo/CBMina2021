@@ -907,7 +907,7 @@ Podemos calcular variogramas experimentais (direcionais) para diversas direçõe
 html"""
 
 <p align="center">
-    <img src="https://i.postimg.cc/Y02gMfZ3/lags.png">
+    <img src="https://i.postimg.cc/vHmM45Qh/bandwidth.png">
 </p>
 
 <p align="center">
