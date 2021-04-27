@@ -1002,7 +1002,7 @@ md"""
 md"""
 ### Concluimos o minicurso!
 
-Parabéns mais uma vez por esta conquista!👏🏻 Entendemos que algumas partes do material talvez não tenham sido muito fáceis de entender, mas você chegou até o fim! 🎉🎊
+Parabéns mais uma vez por esta conquista!👏🏻 Entendemos que algumas partes do material talvez não tenham sido simples de acompanhar, mas você chegou até o fim! 🎉🎊
 
 Agora você terá todo o tempo que precisar para rever o material com calma.
 
@@ -1032,9 +1032,11 @@ Possui um desafio específico e dados disponíveis? Entre em contato: [julio.hof
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-blue.svg?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/j%C3%BAlio-hoffimann-834936116)
 [![YouTube](https://img.shields.io/badge/YouTube-red.svg?style=for-the-badge&logo=youtube)](https://www.youtube.com/channel/UCiOnsyYAZM-voi5diu8lN9w)
 
-- Estamos fazendo **parcerias com mineradoras** para resolver os maiores desafios de geomodelagem na indústria com **matemática de ponta**.
+Estamos fazendo parcerias com:
 
-- E **parcerias com universidades** para treinar pesquisadores e alunos em uma ferramenta de **código aberto**, sem custos ou barreiras de licença de software.
+- **Indústrias** para resolver desafios de geomodelagem com **matemática e software de ponta**.
+
+- **Universidades** para treinar pesquisadores e alunos em uma ferramenta de **código aberto**, sem custos ou barreiras de licença de software.
 
 Desejamos muito sucesso na sua carreira!
 """

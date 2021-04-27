@@ -19,7 +19,8 @@ begin
 	using Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
 
 	# load packages used in this notebook
-	using CSV, DataFrames, Query
+	using CSV, DataFrames
+	using GeoStats, Query
 	using Statistics, PlutoUI
 	using Plots, StatsPlots
 
@@ -45,7 +46,7 @@ Instrutores: [Júlio Hoffimann](https://juliohm.github.io) & [Franco Naghetini](
 md"""
 ## Geociência de dados 🔥
 
-Neste módulo aprenderemos sobre esta nova área que está crescendo muito em geociências, a **geociência de dados**. Vamos aprender técnicas de manipulação de grandes bases de dados na mineração, assim como visualizações avançadas que podem ser customizadas para necessidades específicas de projetos.
+Neste módulo aprenderemos sobre esta nova área que está crescendo bastante em geociências, a **geociência de dados**. Vamos aprender técnicas de manipulação de grandes bases de dados na mineração, assim como visualizações avançadas que podem ser customizadas para necessidades específicas de projetos.
 
 Ao final deste módulo, você será capaz de:
 
@@ -504,14 +505,31 @@ e muitas outras possibilidades.
 
 # ╔═╡ bc0738b1-aa76-4c36-adc3-12854720dd4e
 md"""
-### Concluimos por hoje 🎉
+### Query.jl + GeoStats.jl
 
-Se chegou até aqui, parabéns por esta conquista! 👏🏻 Esperamos que esteja gostando do minicurso! Está muito difícil? Muito fácil? O que podemos fazer para melhorar o material? Compartilhe conosco e tentaremos melhorar numa próxima versão.
+**Todas as operações do Query.jl funcionam com dados geoespaciais do GeoStats.jl** 🎉
 
-#### O que veremos amanhã?
+Como vimos ontem, modelos de blocos, furos de sondagem, ou qualquer dado georreferenciado com a função `georef` se comporta como uma tabela. A principal diferença é que dados geoespaciais possuem uma coluna especial chamada `geometry`:
+"""
 
-- **Simulacão Gaussiana** como uma alternativa à Krigagem
-- A nova área de **Aprendizado Geoestatístico** ([Hoffimann 2021](https://arxiv.org/abs/2102.08791))
+# ╔═╡ e5713480-efe2-4dee-981c-d955e6d2f52c
+𝒢 = georef((a=[1,2,3,4], b=[5,6,7,8]), CartesianGrid(2,2))
+
+# ╔═╡ 688642ae-f4fe-4558-aa0b-972e86275e8c
+md"""
+Podemos fazer cálculos avançados com essas geometrias, ou simplesmente alterar o suporte da medição de blocos (i.e. `Quadrangle`) para centróides (i.e. `Point`):
+"""
+
+# ╔═╡ 50204bc7-0d7e-45f3-a16b-e9ad69470ee2
+𝒢 |> @mutate(geometry = centroid(_.geometry))
+
+# ╔═╡ f2d32394-9cd9-44d7-a1a5-70d06abdd6ec
+md"""
+#### Intervalo
+
+Retornaremos em breve com o último módulo do minicurso sobre **aprendizado geoestatístico**. Este último módulo será um módulo mais extenso, então vale a pena descansar um pouco a mente.
+
+![](https://media.giphy.com/media/7erBV7JsTvPuU/giphy.gif)
 """
 
 # ╔═╡ 200257ea-3ef2-11eb-0f63-2fed43dabcaf
@@ -763,4 +781,8 @@ hint(md"Utilize `@filter` para filtrar as amostras antes de utilizar `@df`")
 # ╠═f7055ed8-4ea3-41a5-91f4-3993c5147b15
 # ╟─253b8c06-b045-481a-89ca-9099ba1a1e39
 # ╟─bc0738b1-aa76-4c36-adc3-12854720dd4e
+# ╠═e5713480-efe2-4dee-981c-d955e6d2f52c
+# ╟─688642ae-f4fe-4558-aa0b-972e86275e8c
+# ╠═50204bc7-0d7e-45f3-a16b-e9ad69470ee2
+# ╟─f2d32394-9cd9-44d7-a1a5-70d06abdd6ec
 # ╟─200257ea-3ef2-11eb-0f63-2fed43dabcaf
