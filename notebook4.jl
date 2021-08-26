@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.2
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -24,9 +24,20 @@ begin
 	using LossFunctions
 	using DensityRatioEstimation
 	using Distributions
+	using DataDeps
 	using PlutoUI
 	using Plots
 	using StatsPlots
+	
+	# skip prompt when downloading dataset
+	ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
+	
+	# register dataset with name NewZealand
+	register(DataDep("NewZealand",
+         "Taranaki Basin Curated Well Logs",
+         "https://zenodo.org/record/3832955/files/taranaki-basin-curated-well-logs.tar.gz",
+         "608f7aad5a4e9fded6441fd44f242382544d3f61790446175f5ede83f15f4d11",
+         post_fetch_method=DataDeps.unpack))
 
 	# default plot settings
 	gr(format=:png)
@@ -238,8 +249,12 @@ html"""
 
 """
 
+# ╔═╡ 702a5e67-8b22-4f85-bf4b-212e64cdd153
+# Download de dataset (pode levar alguns minutos dependendo da internet...)
+fname = joinpath(datadep"NewZealand","taranaki-basin-curated-well-logs","logs.csv")
+
 # ╔═╡ b6b9f6db-5d69-496b-9862-bf7d6add901b
-table = CSV.File("data/taranaki/logs.csv") |> DataFrame
+table = CSV.File(fname) |> DataFrame
 
 # ╔═╡ 2702b5c2-b0b8-4926-aabb-9e1a34feb1d6
 md"""
@@ -1062,6 +1077,7 @@ Desejamos muito sucesso na sua carreira!
 # ╟─a280a283-59c3-4728-9110-b91d5ea63568
 # ╟─bfdbec36-069d-422d-8f88-fd97f8d85455
 # ╟─aeb7423b-73c4-4e6f-9b88-b99641211be0
+# ╠═702a5e67-8b22-4f85-bf4b-212e64cdd153
 # ╠═b6b9f6db-5d69-496b-9862-bf7d6add901b
 # ╟─2702b5c2-b0b8-4926-aabb-9e1a34feb1d6
 # ╟─c2fbca00-a248-4f9e-9754-08fd47225bed
